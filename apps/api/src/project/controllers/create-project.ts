@@ -1,5 +1,9 @@
 import db from "../../database";
 import { columnTable, projectTable } from "../../database/schema";
+import {
+  addProjectMemberWithRole,
+  seedProjectRoles,
+} from "../../project-rbac/seed-default-project-roles";
 
 export const DEFAULT_PROJECT_COLUMNS = [
   { name: "To Do", slug: "to-do", position: 0, isFinal: false },
@@ -13,6 +17,7 @@ async function createProject(
   name: string,
   icon: string,
   slug: string,
+  creatorUserId: string,
 ) {
   return db.transaction(async (tx) => {
     const [createdProject] = await tx
@@ -35,6 +40,13 @@ async function createProject(
           isFinal: col.isFinal,
         });
       }
+      await seedProjectRoles(tx, createdProject.id);
+      await addProjectMemberWithRole(
+        tx,
+        createdProject.id,
+        creatorUserId,
+        "Owner",
+      );
     }
 
     return createdProject;

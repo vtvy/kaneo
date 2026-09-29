@@ -9,6 +9,7 @@ import {
   type SQL,
   sql,
 } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import {
@@ -16,9 +17,12 @@ import {
   externalLinkTable,
   labelTable,
   projectTable,
+  taskInvolvementTable,
   taskTable,
   userTable,
 } from "../../database/schema";
+
+const reporterUser = alias(userTable, "reporter_user");
 
 type GetTasksOptions = {
   assigneeId?: string;
@@ -127,6 +131,7 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
     description: taskTable.description,
     status: taskTable.status,
     priority: taskTable.priority,
+    points: taskTable.points,
     startDate: taskTable.startDate,
     dueDate: taskTable.dueDate,
     position: taskTable.position,
@@ -135,13 +140,18 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
     assigneeName: userTable.name,
     assigneeId: userTable.id,
     assigneeImage: userTable.image,
+    reporterId: taskTable.reporterId,
+    reporterName: reporterUser.name,
+    reporterImage: reporterUser.image,
     projectId: taskTable.projectId,
+    sprintId: taskTable.sprintId,
   };
 
   const query = db
     .select(taskSelection)
     .from(taskTable)
     .leftJoin(userTable, eq(taskTable.userId, userTable.id))
+    .leftJoin(reporterUser, eq(taskTable.reporterId, reporterUser.id))
     .leftJoin(projectTable, eq(taskTable.projectId, projectTable.id))
     .where(whereClause)
     .orderBy(orderByClause);
@@ -173,6 +183,17 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
           .where(inArray(externalLinkTable.taskId, taskIds))
       : [];
 
+  const involvementData =
+    taskIds.length > 0
+      ? await db
+          .select({
+            taskId: taskInvolvementTable.taskId,
+            userId: taskInvolvementTable.userId,
+          })
+          .from(taskInvolvementTable)
+          .where(inArray(taskInvolvementTable.taskId, taskIds))
+      : [];
+
   const taskLabelsMap = new Map<
     string,
     Array<{ id: string; name: string; color: string }>
@@ -188,6 +209,14 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
         color: label.color,
       });
     }
+  }
+
+  const taskInvolvedUserIdsMap = new Map<string, string[]>();
+  for (const row of involvementData) {
+    if (!taskInvolvedUserIdsMap.has(row.taskId)) {
+      taskInvolvedUserIdsMap.set(row.taskId, []);
+    }
+    taskInvolvedUserIdsMap.get(row.taskId)?.push(row.userId);
   }
 
   const taskExternalLinksMap = new Map<
@@ -207,11 +236,17 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
     if (!taskExternalLinksMap.has(externalLink.taskId)) {
       taskExternalLinksMap.set(externalLink.taskId, []);
     }
+    let metadata: Record<string, unknown> | null = null;
+    if (externalLink.metadata) {
+      try {
+        metadata = JSON.parse(externalLink.metadata) as Record<string, unknown>;
+      } catch {
+        metadata = null;
+      }
+    }
     taskExternalLinksMap.get(externalLink.taskId)?.push({
       ...externalLink,
-      metadata: externalLink.metadata
-        ? JSON.parse(externalLink.metadata)
-        : null,
+      metadata,
     });
   }
 
@@ -226,6 +261,7 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
     slug: column.slug,
     name: column.name,
     icon: column.icon,
+    color: column.color,
     isFinal: column.isFinal,
     tasks: paginatedTasks
       .filter((task) => task.status === column.slug)
@@ -233,24 +269,9 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
         ...task,
         labels: taskLabelsMap.get(task.id) || [],
         externalLinks: taskExternalLinksMap.get(task.id) || [],
+        involvedUserIds: taskInvolvedUserIdsMap.get(task.id) || [],
       })),
   }));
-
-  const archivedTasks = paginatedTasks
-    .filter((task) => task.status === "archived")
-    .map((task) => ({
-      ...task,
-      labels: taskLabelsMap.get(task.id) || [],
-      externalLinks: taskExternalLinksMap.get(task.id) || [],
-    }));
-
-  const plannedTasks = paginatedTasks
-    .filter((task) => task.status === "planned")
-    .map((task) => ({
-      ...task,
-      labels: taskLabelsMap.get(task.id) || [],
-      externalLinks: taskExternalLinksMap.get(task.id) || [],
-    }));
 
   return {
     data: {
@@ -262,8 +283,6 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
       isPublic: project.isPublic,
       workspaceId: project.workspaceId,
       columns,
-      archivedTasks,
-      plannedTasks,
     },
     pagination: usePagination
       ? {

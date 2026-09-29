@@ -12,6 +12,7 @@ import {
   workspaceTable,
 } from "../database/schema";
 import { assertPublicWebhookDestination } from "../plugins/generic-webhook/config";
+import { localizeNotificationEmail } from "./email-content";
 import { decryptSecret } from "./secrets";
 
 const DEFAULT_OUTBOUND_FETCH_TIMEOUT_MS = 15_000;
@@ -124,6 +125,27 @@ function buildDeliveryContent(notification: {
           : "A time entry was created in Kaneo.",
       };
     }
+    case "mention": {
+      const taskTitle = getStringValue(notification.eventData, "taskTitle");
+      return {
+        title: "You were mentioned",
+        body: taskTitle
+          ? `You were mentioned on ${taskTitle}.`
+          : "You were mentioned in Kaneo.",
+      };
+    }
+    case "invitation": {
+      const workspaceName = getStringValue(
+        notification.eventData,
+        "workspaceName",
+      );
+      return {
+        title: "Workspace invitation",
+        body: workspaceName
+          ? `You were invited to ${workspaceName}.`
+          : "You were invited to a workspace in Kaneo.",
+      };
+    }
     case "due_date_reminder": {
       const taskTitle = getStringValue(notification.eventData, "taskTitle");
       const reminderType = getStringValue(
@@ -146,6 +168,22 @@ function buildDeliveryContent(notification: {
         body: taskTitle
           ? `"${taskTitle}" is past its due date.`
           : "A task is past its due date.",
+      };
+    }
+    case "task_deleted": {
+      const taskTitle = getStringValue(notification.eventData, "taskTitle");
+      const deletedByName = getStringValue(
+        notification.eventData,
+        "deletedByName",
+      );
+      return {
+        title: "Task deleted",
+        body:
+          taskTitle && deletedByName
+            ? `${deletedByName} deleted "${taskTitle}".`
+            : taskTitle
+              ? `Task deleted: ${taskTitle}`
+              : "A task was deleted in Kaneo.",
       };
     }
     default:
@@ -455,13 +493,28 @@ export async function deliverNotification(
     },
   };
 
-  const deliveries: Array<Promise<void>> = [];
+  // Deliveries report per-channel results (e.g. EmailResult); only
+  // settlement matters here.
+  const deliveries: Array<Promise<unknown>> = [];
 
   if (decryptedPreference.emailEnabled && rule.emailEnabled && user.email) {
+    const emailContent = localizeNotificationEmail(
+      {
+        type: notification.type,
+        title: notification.title ?? null,
+        content: notification.content ?? null,
+        eventData:
+          notification.eventData && typeof notification.eventData === "object"
+            ? (notification.eventData as Record<string, unknown>)
+            : null,
+      },
+      user.locale,
+      content,
+    );
     deliveries.push(
-      sendNotificationEmail(user.email, content.title, {
-        title: content.title,
-        message: content.body,
+      sendNotificationEmail(user.email, emailContent.title, {
+        title: emailContent.title,
+        message: emailContent.body,
         actionUrl: context.taskUrl,
         actionLabel: context.taskUrl ? "Open in Kaneo" : undefined,
         locale: user.locale ?? null,

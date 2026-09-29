@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import * as v from "valibot";
+import { projectPermission } from "../project-rbac/require-project-permission";
 import { projectSchema } from "../schemas";
 import { requireWorkspacePermission } from "../utils/require-workspace-permission";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
@@ -43,9 +44,11 @@ const project = new Hono<{
     workspaceAccess.fromQuery(),
     async (c) => {
       const workspaceId = c.get("workspaceId");
+      const userId = c.get("userId");
       const { includeArchived } = c.req.valid("query");
       const projects = await getProjectsCtrl(
         workspaceId,
+        userId,
         includeArchived === "true",
       );
       return c.json(projects);
@@ -80,7 +83,14 @@ const project = new Hono<{
     async (c) => {
       const { name, icon, slug } = c.req.valid("json");
       const workspaceId = c.get("workspaceId");
-      const newProject = await createProjectCtrl(workspaceId, name, icon, slug);
+      const userId = c.get("userId");
+      const newProject = await createProjectCtrl(
+        workspaceId,
+        name,
+        icon,
+        slug,
+        userId,
+      );
       return c.json(newProject);
     },
   )
@@ -101,6 +111,7 @@ const project = new Hono<{
     }),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromProject(),
+    projectPermission.fromParam({ item: ["read"] }, "id"),
     async (c) => {
       const { id } = c.req.valid("param");
       const workspaceId = c.get("workspaceId");
@@ -132,13 +143,17 @@ const project = new Hono<{
         slug: v.string(),
         description: v.string(),
         isPublic: v.boolean(),
+        sprintCycleWeeks: v.optional(
+          v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(8)),
+        ),
       }),
     ),
     workspaceAccess.fromProject(),
-    requireWorkspacePermission({ project: ["update"] }),
+    projectPermission.fromParam({ role: ["manage"] }, "id"),
     async (c) => {
       const { id } = c.req.valid("param");
-      const { name, icon, slug, description, isPublic } = c.req.valid("json");
+      const { name, icon, slug, description, isPublic, sprintCycleWeeks } =
+        c.req.valid("json");
       const workspaceId = c.get("workspaceId");
       const updatedProject = await updateProjectCtrl(
         id,
@@ -148,6 +163,7 @@ const project = new Hono<{
         description,
         isPublic,
         workspaceId,
+        sprintCycleWeeks,
       );
       return c.json(updatedProject);
     },
@@ -169,7 +185,7 @@ const project = new Hono<{
     }),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromProject(),
-    requireWorkspacePermission({ project: ["delete"] }),
+    projectPermission.fromParam({ role: ["manage"] }, "id"),
     async (c) => {
       const { id } = c.req.valid("param");
       const workspaceId = c.get("workspaceId");
@@ -194,7 +210,7 @@ const project = new Hono<{
     }),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromProject(),
-    requireWorkspacePermission({ project: ["update"] }),
+    projectPermission.fromParam({ role: ["manage"] }, "id"),
     async (c) => {
       const { id } = c.req.valid("param");
       const workspaceId = c.get("workspaceId");
@@ -219,7 +235,7 @@ const project = new Hono<{
     }),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromProject(),
-    requireWorkspacePermission({ project: ["update"] }),
+    projectPermission.fromParam({ role: ["manage"] }, "id"),
     async (c) => {
       const { id } = c.req.valid("param");
       const workspaceId = c.get("workspaceId");

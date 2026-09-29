@@ -59,10 +59,16 @@ export function formatRelativeTime(
   value: DateInput,
   locale?: string,
   now = new Date(),
+  options?: { clampFuture?: boolean },
 ) {
   const target = toDate(value);
   const diffMs = target.getTime() - now.getTime();
-  const diffSeconds = Math.round(diffMs / 1000);
+  let diffSeconds = Math.round(diffMs / 1000);
+  // Activity/comment timestamps should never be in the future; a positive diff
+  // usually means timezone-naive DB values were stored/read in different TZs.
+  if (options?.clampFuture && diffSeconds > 0) {
+    diffSeconds = -diffSeconds;
+  }
   const absSeconds = Math.abs(diffSeconds);
 
   const units: Array<[Intl.RelativeTimeFormatUnit, number]> = [

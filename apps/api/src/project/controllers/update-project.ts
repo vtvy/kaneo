@@ -11,6 +11,7 @@ async function updateProject(
   description: string,
   isPublic: boolean,
   workspaceId: string,
+  sprintCycleWeeks?: number,
 ) {
   const [existingProject] = await db
     .select()
@@ -36,6 +37,7 @@ async function updateProject(
       slug,
       description,
       isPublic,
+      ...(sprintCycleWeeks !== undefined ? { sprintCycleWeeks } : {}),
     })
     .where(eq(projectTable.id, id))
     .returning();

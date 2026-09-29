@@ -13,6 +13,8 @@ import {
   assertValidPriority,
   assertValidTaskStatus,
 } from "../validate-task-fields";
+import recordTaskDeletion from "./record-task-deletion";
+import { recordAssigneeHandoff } from "./record-task-involvement";
 
 type BulkOperation =
   | "updateStatus"
@@ -39,6 +41,10 @@ async function bulkUpdateTasks({
       id: taskTable.id,
       projectId: taskTable.projectId,
       workspaceId: projectTable.workspaceId,
+      userId: taskTable.userId,
+      title: taskTable.title,
+      number: taskTable.number,
+      reporterId: taskTable.reporterId,
     })
     .from(taskTable)
     .innerJoin(projectTable, eq(taskTable.projectId, projectTable.id))
@@ -88,20 +94,21 @@ async function bulkUpdateTasks({
 
   switch (operation) {
     case "updateStatus": {
-      if (!value) {
-        throw new HTTPException(400, { message: "Status value is required" });
-      }
+      // A null/empty value clears the status (moves the task to the backlog).
+      const nextStatus = value || null;
       const projectIds = [...new Set(tasks.map((t) => t.projectId))];
 
       for (const projectId of projectIds) {
-        await assertValidTaskStatus(value, projectId);
+        await assertValidTaskStatus(nextStatus, projectId);
 
-        const column = await db.query.columnTable.findFirst({
-          where: and(
-            eq(columnTable.projectId, projectId),
-            eq(columnTable.slug, value),
-          ),
-        });
+        const column = nextStatus
+          ? await db.query.columnTable.findFirst({
+              where: and(
+                eq(columnTable.projectId, projectId),
+                eq(columnTable.slug, nextStatus),
+              ),
+            })
+          : null;
 
         const projectTaskIds = tasks
           .filter((t) => t.projectId === projectId)
@@ -109,7 +116,7 @@ async function bulkUpdateTasks({
 
         const result = await db
           .update(taskTable)
-          .set({ status: value, columnId: column?.id ?? null })
+          .set({ status: nextStatus, columnId: column?.id ?? null })
           .where(inArray(taskTable.id, projectTaskIds));
 
         updatedCount += result.rowCount ?? projectTaskIds.length;
@@ -119,7 +126,7 @@ async function bulkUpdateTasks({
             taskId,
             projectId,
             userId,
-            newStatus: value,
+            newStatus: nextStatus,
             type: "status_changed",
           });
         }
@@ -158,20 +165,30 @@ async function bulkUpdateTasks({
     }
 
     case "updateAssignee": {
+      const nextAssigneeId = value || null;
       const result = await db
         .update(taskTable)
-        .set({ userId: value || null })
+        .set({ userId: nextAssigneeId })
         .where(inArray(taskTable.id, foundIds));
 
       updatedCount = result.rowCount ?? foundIds.length;
 
       for (const task of tasks) {
+        if (task.userId !== nextAssigneeId) {
+          await recordAssigneeHandoff({
+            taskId: task.id,
+            previousAssigneeId: task.userId,
+            nextAssigneeId,
+          });
+        }
+
         const eventType = value ? "task.assignee_changed" : "task.unassigned";
         await publishEvent(eventType, {
           taskId: task.id,
           projectId: task.projectId,
           userId,
-          newAssigneeId: value || null,
+          oldAssignee: task.userId,
+          newAssigneeId: nextAssigneeId,
           type: value ? "assignee_changed" : "unassigned",
         });
       }
@@ -180,10 +197,28 @@ async function bulkUpdateTasks({
 
     case "delete": {
       for (const task of tasks) {
+        const deletion = await recordTaskDeletion(
+          {
+            taskId: task.id,
+            projectId: task.projectId,
+            title: task.title,
+            number: task.number,
+            reporterId: task.reporterId,
+            assigneeId: task.userId,
+          },
+          userId,
+        );
+
         await publishEvent("task.deleted", {
           taskId: task.id,
           projectId: task.projectId,
           userId,
+          title: task.title,
+          number: task.number,
+          reporterId: task.reporterId,
+          assigneeId: task.userId,
+          workspaceId: deletion?.workspaceId ?? task.workspaceId,
+          deletedByName: deletion?.deletedByName,
         });
       }
 

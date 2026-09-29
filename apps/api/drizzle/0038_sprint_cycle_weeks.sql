@@ -1,0 +1,1 @@
+ALTER TABLE "project" ADD COLUMN "sprint_cycle_weeks" integer DEFAULT 2 NOT NULL;

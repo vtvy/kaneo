@@ -20,8 +20,10 @@ type Task = {
   title: string;
   number: number | null;
   description: string | null;
-  status: string;
+  // Nullable to match the API schema (`task.status` has no NOT NULL).
+  status: string | null;
   priority: string | null;
+  points?: number | null;
   startDate: string | null;
   dueDate: string | null;
   position: number | null;
@@ -31,10 +33,15 @@ type Task = {
   assigneeId: string | null;
   assigneeName: string | null;
   assigneeImage?: string | null;
+  reporterId?: string | null;
+  reporterName?: string | null;
+  reporterImage?: string | null;
   projectId: string;
   columnId?: string | null;
+  sprintId?: string | null;
   labels?: TaskLabel[];
   externalLinks?: TaskExternalLink[];
+  involvedUserIds?: string[];
 };
 
 export default Task;

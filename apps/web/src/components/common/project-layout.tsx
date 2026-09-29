@@ -1,10 +1,18 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { CalendarDays, SquareKanban, SquircleDashed } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import {
+  CalendarDays,
+  Files,
+  Repeat,
+  SquareKanban,
+  SquircleDashed,
+} from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import MobileProjectNav from "@/components/common/header/mobile-project-nav";
 import ProjectCrumbSelect from "@/components/common/header/project-crumb-select";
 import WorkspaceCrumbSelect from "@/components/common/header/workspace-crumb-select";
 import Layout from "@/components/common/layout";
+import NotificationDropdown from "@/components/notification/notification-dropdown";
 import CreateProjectModal from "@/components/shared/modals/create-project-modal";
 import { Button } from "@/components/ui/button";
 import { KbdSequence } from "@/components/ui/kbd";
@@ -17,8 +25,11 @@ import {
 } from "@/components/ui/tooltip";
 import { shortcuts } from "@/constants/shortcuts";
 import useGetProject from "@/hooks/queries/project/use-get-project";
+import useGetWorkspaces from "@/hooks/queries/workspace/use-get-workspaces";
 import { useProjectWebSocket } from "@/hooks/use-project-websocket";
+import { useTrackRecentVisits } from "@/hooks/use-track-recent-visits";
 import { cn } from "@/lib/cn";
+import { clearLastProjectForWorkspace } from "@/store/recent-visits";
 
 type ProjectLayoutProps = {
   projectId: string;
@@ -26,7 +37,7 @@ type ProjectLayoutProps = {
   headerActions?: ReactNode;
   children: ReactNode;
   showViewSwitcher?: boolean;
-  activeView?: "backlog" | "board" | "gantt";
+  activeView?: "backlog" | "board" | "gantt" | "sprints" | "documents";
 };
 
 export default function ProjectLayout({
@@ -39,11 +50,40 @@ export default function ProjectLayout({
 }: ProjectLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { data: project } = useGetProject({ id: projectId, workspaceId });
+  const { t } = useTranslation();
+  const { data: project, isError: isProjectError } = useGetProject({
+    id: projectId,
+    workspaceId,
+  });
+  const { data: workspaces } = useGetWorkspaces();
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] =
     useState(false);
 
   useProjectWebSocket(projectId);
+  useTrackRecentVisits(workspaceId, projectId, Boolean(project));
+
+  // Stale/deleted project URLs used to leave the board on a permanent error
+  // state and re-poison "last project" memory. Bounce to a safe destination.
+  useEffect(() => {
+    if (!isProjectError) return;
+
+    clearLastProjectForWorkspace(workspaceId);
+
+    const workspaceStillExists = workspaces?.some(
+      (workspace) => workspace.id === workspaceId,
+    );
+
+    if (workspaceStillExists) {
+      navigate({
+        to: "/dashboard/workspace/$workspaceId",
+        params: { workspaceId },
+        replace: true,
+      });
+      return;
+    }
+
+    navigate({ to: "/dashboard", replace: true });
+  }, [isProjectError, navigate, workspaceId, workspaces]);
 
   const resolvedView =
     activeView ??
@@ -51,7 +91,11 @@ export default function ProjectLayout({
       ? "backlog"
       : location.pathname.includes("/gantt")
         ? "gantt"
-        : "board");
+        : location.pathname.includes("/sprints")
+          ? "sprints"
+          : location.pathname.includes("/documents")
+            ? "documents"
+            : "board");
 
   const handleNavigateToBacklog = () => {
     navigate({
@@ -74,6 +118,20 @@ export default function ProjectLayout({
     });
   };
 
+  const handleNavigateToSprints = () => {
+    navigate({
+      to: "/dashboard/workspace/$workspaceId/project/$projectId/sprints",
+      params: { workspaceId, projectId },
+    });
+  };
+
+  const handleNavigateToDocuments = () => {
+    navigate({
+      to: "/dashboard/workspace/$workspaceId/project/$projectId/documents",
+      params: { workspaceId, projectId },
+    });
+  };
+
   const handleProjectSwitch = (nextProjectId: string) => {
     navigate({
       to:
@@ -81,7 +139,11 @@ export default function ProjectLayout({
           ? "/dashboard/workspace/$workspaceId/project/$projectId/backlog"
           : resolvedView === "gantt"
             ? "/dashboard/workspace/$workspaceId/project/$projectId/gantt"
-            : "/dashboard/workspace/$workspaceId/project/$projectId/board",
+            : resolvedView === "sprints"
+              ? "/dashboard/workspace/$workspaceId/project/$projectId/sprints"
+              : resolvedView === "documents"
+                ? "/dashboard/workspace/$workspaceId/project/$projectId/documents"
+                : "/dashboard/workspace/$workspaceId/project/$projectId/board",
       params: {
         workspaceId,
         projectId: nextProjectId,
@@ -101,7 +163,7 @@ export default function ProjectLayout({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="flex items-center gap-2 text-[10px]">
-                    Toggle sidebar
+                    {t("common:a11y.toggleSidebar")}
                     <KbdSequence
                       keys={[
                         shortcuts.sidebar.prefix,
@@ -135,6 +197,8 @@ export default function ProjectLayout({
                 onSelectBacklog={handleNavigateToBacklog}
                 onSelectBoard={handleNavigateToBoard}
                 onSelectGantt={handleNavigateToGantt}
+                onSelectSprints={handleNavigateToSprints}
+                onSelectDocuments={handleNavigateToDocuments}
                 onSelectProject={handleProjectSwitch}
                 onAddProject={() => setIsCreateProjectModalOpen(true)}
               />
@@ -178,11 +242,36 @@ export default function ProjectLayout({
                   <CalendarDays className="size-3.5" />
                   Gantt
                 </Button>
+                <Button
+                  variant={resolvedView === "sprints" ? "secondary" : "ghost"}
+                  size="xs"
+                  onClick={handleNavigateToSprints}
+                  className={cn(
+                    "h-6 gap-1.5 rounded-md px-2 text-xs",
+                    resolvedView !== "sprints" && "text-muted-foreground",
+                  )}
+                >
+                  <Repeat className="size-3.5" />
+                  Sprints
+                </Button>
+                <Button
+                  variant={resolvedView === "documents" ? "secondary" : "ghost"}
+                  size="xs"
+                  onClick={handleNavigateToDocuments}
+                  className={cn(
+                    "h-6 gap-1.5 rounded-md px-2 text-xs",
+                    resolvedView !== "documents" && "text-muted-foreground",
+                  )}
+                >
+                  <Files className="size-3.5" />
+                  {t("documents:nav.title")}
+                </Button>
               </div>
             )}
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
+            <NotificationDropdown />
             {headerActions}
           </div>
         </div>

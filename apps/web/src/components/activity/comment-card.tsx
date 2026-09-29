@@ -171,7 +171,9 @@ export default function CommentCard({
                 title={fullTimestamp}
               >
                 <time dateTime={createdAt}>
-                  {formatRelativeTime(createdAt)}
+                  {formatRelativeTime(createdAt, undefined, undefined, {
+                    clampFuture: true,
+                  })}
                 </time>
               </button>
             </TooltipTrigger>

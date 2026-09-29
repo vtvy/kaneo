@@ -10,19 +10,22 @@ import {
   taskTable,
   workspaceTable,
 } from "../database/schema";
-import { taskSchema } from "../schemas";
+import { canInProject } from "../project-rbac/can-in-project";
+import { projectPermission } from "../project-rbac/require-project-permission";
+import { dateStringSchema, taskSchema } from "../schemas";
 import {
   assertTaskImageKeyMatchesContext,
   createTaskImageUploadUrl,
   isImageContentType,
   validateTaskAssetUploadInput,
 } from "../storage/s3";
-import { requireWorkspacePermission } from "../utils/require-workspace-permission";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import bulkUpdateTasks from "./controllers/bulk-update-tasks";
 import createTask from "./controllers/create-task";
 import deleteTask from "./controllers/delete-task";
 import exportTasks from "./controllers/export-tasks";
+import getAllProjectTasks from "./controllers/get-all-project-tasks";
+import getMyTasks from "./controllers/get-my-tasks";
 import getTask from "./controllers/get-task";
 import getTasks from "./controllers/get-tasks";
 import importTasks from "./controllers/import-tasks";
@@ -31,9 +34,11 @@ import updateTask from "./controllers/update-task";
 import updateTaskAssignee from "./controllers/update-task-assignee";
 import updateTaskDescription from "./controllers/update-task-description";
 import updateTaskDueDate from "./controllers/update-task-due-date";
+import updateTaskPoints from "./controllers/update-task-points";
 import updateTaskPriority from "./controllers/update-task-priority";
 import updateTaskStatus from "./controllers/update-task-status";
 import updateTaskTitle from "./controllers/update-task-title";
+import uploadTaskAsset from "./controllers/upload-task-asset";
 import { VALID_PRIORITIES } from "./validate-task-fields";
 
 const task = new Hono<{
@@ -83,6 +88,7 @@ const task = new Hono<{
       ),
     ),
     workspaceAccess.fromProject("projectId"),
+    projectPermission.fromParam({ item: ["read"] }, "projectId"),
     async (c) => {
       const { projectId } = c.req.valid("param");
       const filters = c.req.valid("query") || {};
@@ -158,6 +164,44 @@ const task = new Hono<{
       return c.json(result);
     },
   )
+  .get(
+    "/my/:workspaceId",
+    describeRoute({
+      operationId: "getMyTasks",
+      tags: ["Tasks"],
+      description:
+        "Get tasks for the current user in a workspace (assigned or involved)",
+      responses: {
+        200: {
+          description: "Tasks for the current user in the workspace",
+          content: {
+            "application/json": { schema: resolver(v.any()) },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ workspaceId: v.string() })),
+    validator(
+      "query",
+      v.object({
+        scope: v.optional(v.picklist(["assigned", "involved"] as const)),
+      }),
+    ),
+    workspaceAccess.fromParam("workspaceId"),
+    async (c) => {
+      const { workspaceId } = c.req.valid("param");
+      const { scope } = c.req.valid("query");
+      const userId = c.get("userId");
+
+      const tasks = await getMyTasks(
+        userId,
+        workspaceId,
+        scope === "involved" ? "involved" : "assigned",
+      );
+
+      return c.json(tasks);
+    },
+  )
   .post(
     "/:projectId",
     describeRoute({
@@ -178,15 +222,21 @@ const task = new Hono<{
       v.object({
         title: v.string(),
         description: v.string(),
-        startDate: v.optional(v.string()),
-        dueDate: v.optional(v.string()),
+        startDate: v.optional(dateStringSchema),
+        dueDate: v.optional(dateStringSchema),
         priority: v.picklist(VALID_PRIORITIES),
-        status: v.string(),
+        points: v.optional(
+          v.nullable(
+            v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(999)),
+          ),
+        ),
+        status: v.optional(v.nullable(v.string())),
+        sprintId: v.optional(v.nullable(v.string())),
         userId: v.optional(v.string()),
       }),
     ),
     workspaceAccess.fromProject("projectId"),
-    requireWorkspacePermission({ task: ["create"] }),
+    projectPermission.fromParam({ item: ["create"] }, "projectId"),
     async (c) => {
       const { projectId } = c.req.param();
       const {
@@ -195,7 +245,9 @@ const task = new Hono<{
         startDate,
         dueDate,
         priority,
+        points,
         status,
+        sprintId,
         userId,
       } = c.req.valid("json");
 
@@ -208,10 +260,38 @@ const task = new Hono<{
         startDate: startDate ? new Date(startDate) : undefined,
         dueDate: dueDate ? new Date(dueDate) : undefined,
         priority,
+        points,
         status,
+        sprintId,
       });
 
       return c.json(task);
+    },
+  )
+  .get(
+    "/all/:projectId",
+    describeRoute({
+      operationId: "getAllProjectTasks",
+      tags: ["Tasks"],
+      description:
+        "Get a flat list of every task in a project for the backlog table",
+      responses: {
+        200: {
+          description: "Flat list of all project tasks",
+          content: {
+            "application/json": { schema: resolver(v.any()) },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ projectId: v.string() })),
+    workspaceAccess.fromProject("projectId"),
+    async (c) => {
+      const { projectId } = c.req.valid("param");
+
+      const tasks = await getAllProjectTasks(projectId);
+
+      return c.json(tasks);
     },
   )
   .get(
@@ -271,7 +351,7 @@ const task = new Hono<{
       }),
     ),
     workspaceAccess.fromTask(),
-    requireWorkspacePermission({ task: ["update"] }),
+    projectPermission.fromTask({ item: ["transition"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const { destinationProjectId, destinationStatus } = c.req.valid("json");
@@ -308,17 +388,22 @@ const task = new Hono<{
       v.object({
         title: v.string(),
         description: v.string(),
-        startDate: v.optional(v.string()),
-        dueDate: v.optional(v.string()),
+        startDate: v.optional(dateStringSchema),
+        dueDate: v.optional(dateStringSchema),
         priority: v.picklist(VALID_PRIORITIES),
-        status: v.string(),
+        points: v.optional(
+          v.nullable(
+            v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(999)),
+          ),
+        ),
+        status: v.optional(v.nullable(v.string())),
         projectId: v.string(),
         position: v.number(),
         userId: v.optional(v.string()),
       }),
     ),
     workspaceAccess.fromTask(),
-    requireWorkspacePermission({ task: ["update"] }),
+    projectPermission.fromTask({ item: ["update"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const {
@@ -327,6 +412,7 @@ const task = new Hono<{
         startDate,
         dueDate,
         priority,
+        points,
         status,
         projectId,
         position,
@@ -347,6 +433,7 @@ const task = new Hono<{
         position,
         userId,
         currentUserId,
+        points,
       );
 
       return c.json(task);
@@ -402,15 +489,15 @@ const task = new Hono<{
             description: v.optional(v.string()),
             status: v.string(),
             priority: v.optional(v.string()),
-            startDate: v.optional(v.nullable(v.string())),
-            dueDate: v.optional(v.nullable(v.string())),
+            startDate: v.optional(v.nullable(dateStringSchema)),
+            dueDate: v.optional(v.nullable(dateStringSchema)),
             userId: v.optional(v.nullable(v.string())),
           }),
         ),
       }),
     ),
     workspaceAccess.fromProject("projectId"),
-    requireWorkspacePermission({ task: ["create"] }),
+    projectPermission.fromParam({ item: ["create"] }, "projectId"),
     async (c) => {
       const { projectId } = c.req.valid("param");
       const { tasks } = c.req.valid("json");
@@ -438,7 +525,7 @@ const task = new Hono<{
     }),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromTask(),
-    requireWorkspacePermission({ task: ["delete"] }),
+    projectPermission.fromTask({ item: ["delete"] }),
     async (c) => {
       const { id } = c.req.valid("param");
 
@@ -466,7 +553,7 @@ const task = new Hono<{
     validator("param", v.object({ id: v.string() })),
     validator("json", v.object({ status: v.string() })),
     workspaceAccess.fromTask(),
-    requireWorkspacePermission({ task: ["update"] }),
+    projectPermission.fromTask({ item: ["transition"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const { status } = c.req.valid("json");
@@ -495,13 +582,49 @@ const task = new Hono<{
     validator("param", v.object({ id: v.string() })),
     validator("json", v.object({ priority: v.picklist(VALID_PRIORITIES) })),
     workspaceAccess.fromTask(),
-    requireWorkspacePermission({ task: ["update"] }),
+    projectPermission.fromTask({ item: ["update"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const { priority } = c.req.valid("json");
       const currentUserId = c.get("userId");
 
       const task = await updateTaskPriority({ id, priority, currentUserId });
+
+      return c.json(task);
+    },
+  )
+  .put(
+    "/points/:id",
+    describeRoute({
+      operationId: "updateTaskPoints",
+      tags: ["Tasks"],
+      description: "Update only the story points / estimate of a task",
+      responses: {
+        200: {
+          description: "Task points updated successfully",
+          content: {
+            "application/json": { schema: resolver(taskSchema) },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    validator(
+      "json",
+      v.object({
+        points: v.nullable(
+          v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(999)),
+        ),
+      }),
+    ),
+    workspaceAccess.fromTask(),
+    projectPermission.fromTask({ item: ["update"] }),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const { points } = c.req.valid("json");
+      const currentUserId = c.get("userId");
+
+      const task = await updateTaskPoints({ id, points, currentUserId });
 
       return c.json(task);
     },
@@ -524,11 +647,32 @@ const task = new Hono<{
     validator("param", v.object({ id: v.string() })),
     validator("json", v.object({ userId: v.string() })),
     workspaceAccess.fromTask(),
-    requireWorkspacePermission({ task: ["assign"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const { userId } = c.req.valid("json");
       const currentUserId = c.get("userId");
+
+      const [taskRow] = await db
+        .select({
+          projectId: taskTable.projectId,
+          reporterId: taskTable.reporterId,
+        })
+        .from(taskTable)
+        .where(eq(taskTable.id, id))
+        .limit(1);
+
+      const isReporter = taskRow?.reporterId === currentUserId;
+      if (
+        !isReporter &&
+        !(await canInProject(
+          currentUserId,
+          taskRow?.projectId ?? "",
+          "item",
+          "assign",
+        ))
+      ) {
+        throw new HTTPException(403, { message: "Insufficient permissions" });
+      }
 
       const task = await updateTaskAssignee({ id, userId, currentUserId });
 
@@ -551,9 +695,9 @@ const task = new Hono<{
       },
     }),
     validator("param", v.object({ id: v.string() })),
-    validator("json", v.object({ dueDate: v.optional(v.string()) })),
+    validator("json", v.object({ dueDate: v.optional(dateStringSchema) })),
     workspaceAccess.fromTask(),
-    requireWorkspacePermission({ task: ["update"] }),
+    projectPermission.fromTask({ item: ["update"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const { dueDate = null } = c.req.valid("json");
@@ -587,7 +731,7 @@ const task = new Hono<{
     validator("param", v.object({ id: v.string() })),
     validator("json", v.object({ title: v.string() })),
     workspaceAccess.fromTask(),
-    requireWorkspacePermission({ task: ["update"] }),
+    projectPermission.fromTask({ item: ["update"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const { title } = c.req.valid("json");
@@ -626,7 +770,7 @@ const task = new Hono<{
       }),
     ),
     workspaceAccess.fromTask(),
-    requireWorkspacePermission({ task: ["update"] }),
+    projectPermission.fromTask({ item: ["update"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const { filename, contentType, size, surface } = c.req.valid("json");
@@ -710,7 +854,7 @@ const task = new Hono<{
       }),
     ),
     workspaceAccess.fromTask(),
-    requireWorkspacePermission({ task: ["update"] }),
+    projectPermission.fromTask({ item: ["update"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const { key, filename, contentType, size, surface } = c.req.valid("json");
@@ -804,7 +948,57 @@ const task = new Hono<{
 
       return c.json({
         id: asset.id,
-        url: new URL(`/api/asset/${asset.id}`, c.req.url).toString(),
+        url: `/api/asset/${asset.id}`,
+      });
+    },
+  )
+  .post(
+    "/asset/:id",
+    describeRoute({
+      operationId: "uploadTaskAsset",
+      tags: ["Tasks"],
+      description:
+        "Upload a task image or attachment directly (multipart/form-data) and create a private asset record",
+      responses: {
+        200: {
+          description: "Asset uploaded successfully",
+          content: {
+            "application/json": { schema: resolver(v.any()) },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    workspaceAccess.fromTask(),
+    projectPermission.fromTask({ item: ["update"] }),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const userId = c.get("userId");
+
+      const body = await c.req.parseBody();
+      const file = body.file;
+      const surface = body.surface;
+
+      if (!(file instanceof File)) {
+        throw new HTTPException(400, { message: "A file field is required" });
+      }
+
+      if (surface !== "description" && surface !== "comment") {
+        throw new HTTPException(400, {
+          message: "Surface must be either 'description' or 'comment'",
+        });
+      }
+
+      const asset = await uploadTaskAsset({
+        taskId: id,
+        surface,
+        file,
+        currentUserId: userId,
+      });
+
+      return c.json({
+        id: asset.id,
+        url: `/api/asset/${asset.id}`,
       });
     },
   )
@@ -826,7 +1020,7 @@ const task = new Hono<{
     validator("param", v.object({ id: v.string() })),
     validator("json", v.object({ description: v.string() })),
     workspaceAccess.fromTask(),
-    requireWorkspacePermission({ task: ["update"] }),
+    projectPermission.fromTask({ item: ["update"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const { description } = c.req.valid("json");

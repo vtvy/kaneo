@@ -5,7 +5,7 @@ import { describeRoute, resolver, validator } from "hono-openapi";
 import * as v from "valibot";
 import db from "../database";
 import { projectTable, taskRelationTable, taskTable } from "../database/schema";
-import { requireWorkspacePermission } from "../utils/require-workspace-permission";
+import { projectPermission } from "../project-rbac/require-project-permission";
 import { validateWorkspaceAccess } from "../utils/validate-workspace-access";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import createTaskRelation from "./controllers/create-task-relation";
@@ -69,7 +69,13 @@ const taskRelation = new Hono<{
       v.object({
         sourceTaskId: v.string(),
         targetTaskId: v.string(),
-        relationType: v.picklist(["subtask", "blocks", "related"]),
+        relationType: v.picklist([
+          "subtask",
+          "blocks",
+          "related",
+          "bug",
+          "cause",
+        ]),
       }),
     ),
     async (c, next) => {
@@ -91,7 +97,7 @@ const taskRelation = new Hono<{
       c.set("workspaceId", task.workspaceId);
       return next();
     },
-    requireWorkspacePermission({ task: ["update"] }),
+    projectPermission.fromTaskInBody({ item: ["update"] }, "sourceTaskId"),
     async (c) => {
       const userId = c.get("userId");
       const { sourceTaskId, targetTaskId, relationType } = c.req.valid("json");
@@ -147,7 +153,7 @@ const taskRelation = new Hono<{
       c.set("workspaceId", task.workspaceId);
       return next();
     },
-    requireWorkspacePermission({ task: ["update"] }),
+    projectPermission.fromTaskRelation({ item: ["update"] }),
     async (c) => {
       const userId = c.get("userId");
       const { id } = c.req.valid("param");

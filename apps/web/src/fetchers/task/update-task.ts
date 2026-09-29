@@ -1,5 +1,10 @@
 import { client } from "@kaneo/libs";
+import type { InferRequestType } from "hono/client";
 import type Task from "@/types/task";
+
+type UpdateTaskJson = InferRequestType<
+  (typeof client)["task"][":id"]["$put"]
+>["json"];
 
 async function updateTask(taskId: string, task: Task) {
   const response = await client.task[":id"].$put({
@@ -9,7 +14,8 @@ async function updateTask(taskId: string, task: Task) {
       title: task.title,
       description: task.description || "",
       status: task.status,
-      priority: task.priority || "",
+      priority: (task.priority || "no-priority") as UpdateTaskJson["priority"],
+      points: task.points ?? undefined,
       startDate: task.startDate?.toString(),
       dueDate: task.dueDate?.toString(),
       position: task.position ?? 0,

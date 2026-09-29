@@ -9,16 +9,20 @@ const DEFAULT_FILTERS: BoardFilters = {
   status: null,
   priority: null,
   assignee: null,
+  creator: null,
   dueDate: null,
   labels: null,
+  relatedToMe: null,
 };
 
 const FILTER_KEYS: Array<keyof BoardFilters> = [
   "status",
   "priority",
   "assignee",
+  "creator",
   "dueDate",
   "labels",
+  "relatedToMe",
 ];
 
 function normalizeFilters(raw: unknown): BoardFilters {
@@ -31,6 +35,10 @@ function normalizeFilters(raw: unknown): BoardFilters {
 
   for (const key of FILTER_KEYS) {
     const value = candidate[key];
+    if (key === "relatedToMe") {
+      normalized.relatedToMe = value === true ? true : null;
+      continue;
+    }
     if (Array.isArray(value)) {
       const values = value.filter((v): v is string => typeof v === "string");
       normalized[key] = values.length > 0 ? values : null;
@@ -44,6 +52,7 @@ export function useTaskFiltersWithLabelsSupport(
   project: ProjectWithTasks | null | undefined,
   projectId?: string,
   textQuery?: string,
+  currentUserId?: string | null,
 ) {
   const weekStartsOn = useUserPreferencesStore((state) => state.weekStartsOn);
   const storageKey = projectId ? `kaneo:board-filters:${projectId}` : null;
@@ -79,9 +88,18 @@ export function useTaskFiltersWithLabelsSupport(
         if (normalizedTextQuery) {
           const title = task.title?.toLowerCase() ?? "";
           const description = task.description?.toLowerCase() ?? "";
+          const taskNumber = task.number?.toString() ?? "";
+          const taskIdentifier =
+            taskNumber && project?.slug
+              ? `${project.slug}-${taskNumber}`.toLowerCase()
+              : "";
+          const taskShortIdentifier = taskNumber ? `#${taskNumber}` : "";
           const matchesText =
             title.includes(normalizedTextQuery) ||
-            description.includes(normalizedTextQuery);
+            description.includes(normalizedTextQuery) ||
+            taskNumber.includes(normalizedTextQuery) ||
+            taskIdentifier.includes(normalizedTextQuery) ||
+            taskShortIdentifier.includes(normalizedTextQuery);
 
           if (!matchesText) {
             return false;
@@ -91,7 +109,7 @@ export function useTaskFiltersWithLabelsSupport(
         if (
           filters.status &&
           filters.status.length > 0 &&
-          !filters.status.includes(task.status)
+          !filters.status.includes(task.status ?? "")
         ) {
           return false;
         }
@@ -110,6 +128,24 @@ export function useTaskFiltersWithLabelsSupport(
           !filters.assignee.includes(task.userId ?? "")
         ) {
           return false;
+        }
+
+        if (
+          filters.creator &&
+          filters.creator.length > 0 &&
+          !filters.creator.includes(task.reporterId ?? "")
+        ) {
+          return false;
+        }
+
+        if (filters.relatedToMe && currentUserId) {
+          const involved =
+            task.userId === currentUserId ||
+            task.reporterId === currentUserId ||
+            (task.involvedUserIds ?? []).includes(currentUserId);
+          if (!involved) {
+            return false;
+          }
         }
 
         if (filters.dueDate && filters.dueDate.length > 0) {
@@ -173,7 +209,7 @@ export function useTaskFiltersWithLabelsSupport(
         return true;
       });
     },
-    [filters, textQuery, weekStartsOn],
+    [filters, project?.slug, textQuery, weekStartsOn, currentUserId],
   );
 
   const filteredProject = useMemo(() => {

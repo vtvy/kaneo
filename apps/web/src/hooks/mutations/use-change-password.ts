@@ -15,6 +15,7 @@ function useChangePassword() {
       const { data, error } = await authClient.changePassword({
         currentPassword,
         newPassword,
+        revokeOtherSessions: true,
       });
 
       if (error) {

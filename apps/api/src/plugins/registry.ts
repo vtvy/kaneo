@@ -32,6 +32,7 @@ export function initializeEventSubscriptions(): void {
   subscribeToEvent<{
     taskId: string;
     userId: string;
+    currentUserId?: string;
     title: string;
     description: string;
     priority: string;
@@ -42,7 +43,8 @@ export function initializeEventSubscriptions(): void {
     await broadcastTaskCreated({
       taskId: data.taskId,
       projectId: data.projectId,
-      userId: data.userId,
+      // Prefer explicit actor (creator); fall back for older publishers.
+      userId: data.currentUserId || data.userId,
       title: data.title,
       description: data.description,
       priority: data.priority,

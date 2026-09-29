@@ -2,6 +2,7 @@ import { apiKey } from "@better-auth/api-key";
 import {
   sendMagicLinkEmail,
   sendOtpEmail,
+  sendPasswordResetEmail,
   sendWorkspaceInvitationEmail,
 } from "@kaneo/email";
 import {
@@ -113,10 +114,12 @@ function getAuthEmailCopy(locale?: string | null) {
     ? {
         magicLinkSubject: "Anmeldelink fuer Kaneo",
         otpSubject: "Bestaetigungscode fuer Kaneo",
+        passwordResetSubject: "Passwort zuruecksetzen fuer Kaneo",
       }
     : {
         magicLinkSubject: "Login for Kaneo",
         otpSubject: "Authentication code for Kaneo",
+        passwordResetSubject: "Reset your Kaneo password",
       };
 }
 
@@ -183,6 +186,26 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
+    revokeSessionsOnPasswordReset: true,
+    resetPasswordTokenExpiresIn: 60 * 60,
+    sendResetPassword: async ({ user, url }) => {
+      // Deliberately not awaited: Better Auth recommends detaching email
+      // delivery so response timing cannot reveal whether the account exists.
+      void (async () => {
+        const locale = await getUserLocale(user.email);
+        const copy = getAuthEmailCopy(locale);
+        await sendPasswordResetEmail(user.email, copy.passwordResetSubject, {
+          resetLink: url,
+          userName: user.name,
+          locale,
+        });
+      })().catch((error) => {
+        console.error(
+          `Password reset email delivery failed for ${user.email}`,
+          error,
+        );
+      });
+    },
     password: {
       hash: async (password) => {
         return await bcrypt.hash(password, 10);

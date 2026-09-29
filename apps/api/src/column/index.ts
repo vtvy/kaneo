@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import * as v from "valibot";
-import { requireWorkspacePermission } from "../utils/require-workspace-permission";
+import { projectPermission } from "../project-rbac/require-project-permission";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import createColumn from "./controllers/create-column";
 import deleteColumn from "./controllers/delete-column";
@@ -31,6 +31,7 @@ const column = new Hono<{
     }),
     validator("param", v.object({ projectId: v.string() })),
     workspaceAccess.fromProject("projectId"),
+    projectPermission.fromParam({ backlog: ["read"] }, "projectId"),
     async (c) => {
       const { projectId } = c.req.valid("param");
       const columns = await getColumns(projectId);
@@ -63,7 +64,7 @@ const column = new Hono<{
       }),
     ),
     workspaceAccess.fromProject("projectId"),
-    requireWorkspacePermission({ project: ["update"] }),
+    projectPermission.fromParam({ backlog: ["manage"] }, "projectId"),
     async (c) => {
       const { projectId } = c.req.valid("param");
       const { name, icon, color, isFinal } = c.req.valid("json");
@@ -105,7 +106,7 @@ const column = new Hono<{
       }),
     ),
     workspaceAccess.fromProject("projectId"),
-    requireWorkspacePermission({ project: ["update"] }),
+    projectPermission.fromParam({ backlog: ["manage"] }, "projectId"),
     async (c) => {
       const { projectId } = c.req.valid("param");
       const { columns } = c.req.valid("json");
@@ -139,7 +140,7 @@ const column = new Hono<{
       }),
     ),
     workspaceAccess.fromColumn("id"),
-    requireWorkspacePermission({ project: ["update"] }),
+    projectPermission.fromColumn({ backlog: ["manage"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const data = c.req.valid("json");
@@ -164,7 +165,7 @@ const column = new Hono<{
     }),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromColumn("id"),
-    requireWorkspacePermission({ project: ["update"] }),
+    projectPermission.fromColumn({ backlog: ["manage"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const result = await deleteColumn(id);

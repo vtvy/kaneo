@@ -21,7 +21,8 @@ type ActivityItem = {
   id: string;
   createdAt: string;
   userId: string | null;
-  taskId: string;
+  // Null for sprint-level events; always set for task activity feeds.
+  taskId: string | null;
   externalUserName?: string | null;
   externalUserAvatar?: string | null;
   externalSource?: string | null;
@@ -453,7 +454,7 @@ function Activity({
         <TimelineContent className="min-w-0 flex-1">
           <CommentCard
             commentId={activity.id}
-            taskId={activity.taskId}
+            taskId={activity.taskId ?? ""}
             content={activity.content || ""}
             user={commentUser}
             createdAt={activity.createdAt}
@@ -487,7 +488,9 @@ function Activity({
           t,
         })}{" "}
         <span className="whitespace-nowrap text-muted-foreground/70 text-xs">
-          {formatRelativeTime(activity.createdAt)}
+          {formatRelativeTime(activity.createdAt, undefined, undefined, {
+            clampFuture: true,
+          })}
         </span>
       </TimelineContent>
     </TimelineItem>

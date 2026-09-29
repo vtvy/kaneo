@@ -225,6 +225,83 @@
 			"when": 1778335540111,
 			"tag": "0031_strong_colleen_wing",
 			"breakpoints": true
+		},
+		{
+			"idx": 32,
+			"version": "7",
+			"when": 1779000000000,
+			"tag": "0032_sprint",
+			"breakpoints": true
+		},
+		{
+			"idx": 33,
+			"version": "7",
+			"when": 1779000000001,
+			"tag": "0033_activity_sprint",
+			"breakpoints": true
+		},
+		{
+			"idx": 34,
+			"version": "7",
+			"when": 1779000000002,
+			"tag": "0034_project_rbac",
+			"breakpoints": true
+		},
+		{
+			"idx": 35,
+			"version": "7",
+			"when": 1779000000003,
+			"tag": "0035_documents",
+			"breakpoints": true
+		},
+		{
+			"idx": 36,
+			"version": "7",
+			"when": 1779000000004,
+			"tag": "0036_task_points",
+			"breakpoints": true
+		},
+		{
+			"idx": 37,
+			"version": "7",
+			"when": 1779000000005,
+			"tag": "0037_nullable_task_status",
+			"breakpoints": true
+		},
+		{
+			"idx": 38,
+			"version": "7",
+			"when": 1779000000006,
+			"tag": "0038_sprint_cycle_weeks",
+			"breakpoints": true
+		},
+		{
+			"idx": 39,
+			"version": "7",
+			"when": 1779000000007,
+			"tag": "0039_date_driven_sprint_state",
+			"breakpoints": true
+		},
+		{
+			"idx": 40,
+			"version": "7",
+			"when": 1779000000008,
+			"tag": "0040_document_trash",
+			"breakpoints": true
+		},
+		{
+			"idx": 41,
+			"version": "7",
+			"when": 1779000000009,
+			"tag": "0041_task_involvement",
+			"breakpoints": true
+		},
+		{
+			"idx": 42,
+			"version": "7",
+			"when": 1779000000010,
+			"tag": "0042_task_deletion_audit",
+			"breakpoints": true
 		}
 	]
 }

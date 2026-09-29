@@ -1,8 +1,10 @@
-import { Filter, PanelsTopLeft, Rows3, X } from "lucide-react";
-import type { ReactNode } from "react";
+import { Filter, PanelsTopLeft, Rows3, Search } from "lucide-react";
+import type { ReactNode, Ref } from "react";
 import { useTranslation } from "react-i18next";
+import ActiveFilterChip from "@/components/common/active-filter-chip";
 import SortControl from "@/components/common/sort-control";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,12 +60,15 @@ type BoardToolbarProps = {
   setViewMode: (mode: "board" | "list") => void;
   sort: SortConfig;
   onSortChange: (sort: SortConfig) => void;
+  searchQuery: string;
+  onSearchQueryChange: (value: string) => void;
+  searchInputRef?: Ref<HTMLInputElement>;
 };
 
 function CheckSlot({ checked }: { checked: boolean }) {
   return (
     <span
-      className={`inline-flex size-4 shrink-0 items-center justify-center rounded-[4px] border ${
+      className={`inline-flex size-4 shrink-0 items-center justify-center rounded-lg border ${
         checked
           ? "border-primary bg-primary text-primary-foreground"
           : "border-input bg-background"
@@ -71,38 +76,6 @@ function CheckSlot({ checked }: { checked: boolean }) {
     >
       {checked ? "✓" : null}
     </span>
-  );
-}
-
-type ActiveFilterChipProps = {
-  subject: string;
-  operator: string;
-  value: ReactNode;
-  onClear: () => void;
-};
-
-function ActiveFilterChip({
-  subject,
-  operator,
-  value,
-  onClear,
-}: ActiveFilterChipProps) {
-  return (
-    <div className="inline-flex h-7 items-center rounded-md border border-border bg-background text-xs shadow-xs">
-      <span className="px-2 font-medium text-foreground">{subject}</span>
-      <span className="h-full w-px bg-border" />
-      <span className="px-2 text-foreground/80">{operator}</span>
-      <span className="h-full w-px bg-border" />
-      <span className="flex px-2 text-foreground">{value}</span>
-      <span className="h-full w-px bg-border" />
-      <button
-        className="inline-flex h-full w-7 items-center justify-center rounded-r-md text-foreground/70 hover:bg-accent/70 hover:text-foreground"
-        onClick={onClear}
-        type="button"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
-    </div>
   );
 }
 
@@ -142,11 +115,15 @@ export default function BoardToolbar({
   setViewMode,
   sort,
   onSortChange,
+  searchQuery,
+  onSearchQueryChange,
+  searchInputRef,
 }: BoardToolbarProps) {
   const { t } = useTranslation();
   const selectedStatusIds = filters.status ?? [];
   const selectedPriorityIds = filters.priority ?? [];
   const selectedAssigneeIds = filters.assignee ?? [];
+  const selectedCreatorIds = filters.creator ?? [];
   const selectedDueDateFilters = filters.dueDate ?? [];
 
   const getStatusDisplayName = (statusId: string) => {
@@ -221,6 +198,14 @@ export default function BoardToolbar({
     updateFilter("assignee", next.length > 0 ? next : null);
   };
 
+  const toggleCreatorFilter = (userId: string) => {
+    const exists = selectedCreatorIds.includes(userId);
+    const next = exists
+      ? selectedCreatorIds.filter((id) => id !== userId)
+      : [...selectedCreatorIds, userId];
+    updateFilter("creator", next.length > 0 ? next : null);
+  };
+
   const toggleDueDateFilter = (dueDate: string) => {
     const exists = selectedDueDateFilters.includes(dueDate);
     const next = exists
@@ -251,10 +236,21 @@ export default function BoardToolbar({
   };
 
   return (
-    <div className="border-border/80 border-b bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/70">
+    <div className="border-border/80 border-b bg-card/80 backdrop-blur supports-backdrop-filter:bg-card/70">
       <div className="flex min-h-10 items-center px-2 py-1.5 md:px-3">
         <div className="flex w-full flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
+            <div className="relative w-55 max-w-full">
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 z-10 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                ref={searchInputRef}
+                value={searchQuery}
+                onChange={(event) => onSearchQueryChange(event.target.value)}
+                placeholder={t("tasks:boardSearchPlaceholder")}
+                className="h-7 **:data-[slot=input]:h-7 **:data-[slot=input]:leading-7 **:data-[slot=input]:pl-8 **:data-[slot=input]:text-xs **:data-[slot=input]:placeholder:text-xs"
+                aria-label={t("tasks:boardSearchPlaceholder")}
+              />
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
@@ -274,6 +270,24 @@ export default function BoardToolbar({
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
+
+                <button
+                  className={`mx-1 mb-1 inline-flex h-8 w-[calc(100%-0.5rem)] items-center gap-1.5 rounded-md px-2 text-left text-sm ${
+                    filters.relatedToMe
+                      ? "bg-accent text-accent-foreground"
+                      : "text-foreground/90 hover:bg-accent/60 hover:text-foreground"
+                  }`}
+                  onClick={() =>
+                    updateFilter(
+                      "relatedToMe",
+                      filters.relatedToMe ? null : true,
+                    )
+                  }
+                  type="button"
+                >
+                  <CheckSlot checked={!!filters.relatedToMe} />
+                  {t("tasks:boardFilters.subjects.relatedToMe")}
+                </button>
 
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger className="h-8 rounded-md text-sm">
@@ -415,6 +429,56 @@ export default function BoardToolbar({
 
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger className="h-8 rounded-md text-sm">
+                    {t("tasks:boardFilters.subjects.creator")}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-64">
+                    <div className="grid grid-cols-1 gap-1 p-1">
+                      <button
+                        className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-left text-xs ${
+                          selectedCreatorIds.length === 0
+                            ? "bg-accent text-accent-foreground"
+                            : "text-foreground/90 hover:bg-accent/60 hover:text-foreground"
+                        }`}
+                        onClick={() => updateFilter("creator", null)}
+                        type="button"
+                      >
+                        <CheckSlot checked={selectedCreatorIds.length === 0} />
+                        {t("tasks:boardFilters.allCreators")}
+                      </button>
+                      {users?.members?.map((member) => (
+                        <button
+                          key={member.userId}
+                          className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-left text-xs ${
+                            selectedCreatorIds.includes(member.userId)
+                              ? "bg-accent text-accent-foreground"
+                              : "text-foreground/90 hover:bg-accent/60 hover:text-foreground"
+                          }`}
+                          onClick={() => toggleCreatorFilter(member.userId)}
+                          type="button"
+                        >
+                          <CheckSlot
+                            checked={selectedCreatorIds.includes(member.userId)}
+                          />
+                          <span className="inline-flex items-center gap-2">
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage
+                                src={member.user?.image ?? ""}
+                                alt={member.user?.name || ""}
+                              />
+                              <AvatarFallback className="border border-border/30 text-[10px] font-medium">
+                                {member.user?.name?.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span>{member.user?.name}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="h-8 rounded-md text-sm">
                     {t("tasks:boardFilters.subjects.dueDate")}
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent className="w-56">
@@ -529,6 +593,13 @@ export default function BoardToolbar({
 
             <SortControl sort={sort} onSortChange={onSortChange} />
 
+            {filters.relatedToMe && (
+              <ActiveFilterChip
+                subject={t("tasks:boardFilters.subjects.relatedToMe")}
+                onClear={() => updateFilter("relatedToMe", null)}
+              />
+            )}
+
             {selectedStatusIds.length > 0 && (
               <ActiveFilterChip
                 subject={t("tasks:boardFilters.subjects.status")}
@@ -602,6 +673,31 @@ export default function BoardToolbar({
                   </span>
                 }
                 onClear={() => updateFilter("assignee", null)}
+              />
+            )}
+
+            {selectedCreatorIds.length > 0 && (
+              <ActiveFilterChip
+                subject={t("tasks:boardFilters.subjects.creator")}
+                operator={t("tasks:boardFilters.operators.isAnyOf")}
+                value={
+                  <span className="inline-flex items-center gap-1.5">
+                    <StackedIcons
+                      items={selectedCreatorIds.map((userId) => ({
+                        id: userId,
+                        node: getAssigneeAvatar(userId),
+                      }))}
+                    />
+                    <span>
+                      {selectedCreatorIds.length === 1
+                        ? getAssigneeDisplayName(selectedCreatorIds[0])
+                        : t("tasks:boardFilters.selectedCount", {
+                            count: selectedCreatorIds.length,
+                          })}
+                    </span>
+                  </span>
+                }
+                onClear={() => updateFilter("creator", null)}
               />
             )}
 

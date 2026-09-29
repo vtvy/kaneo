@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import * as v from "valibot";
+import { projectPermission } from "../project-rbac/require-project-permission";
 import { timeEntrySchema } from "../schemas";
-import { requireWorkspacePermission } from "../utils/require-workspace-permission";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import createTimeEntry from "./controllers/create-time-entry";
 import getTimeEntriesByTaskId from "./controllers/get-time-entries";
@@ -85,7 +85,7 @@ const timeEntry = new Hono<{
       }),
     ),
     workspaceAccess.fromTaskId(),
-    requireWorkspacePermission({ task: ["update"] }),
+    projectPermission.fromTask({ item: ["update"] }),
     async (c) => {
       const { taskId, startTime, endTime, description } = c.req.valid("json");
       const userId = c.get("userId");
@@ -124,7 +124,7 @@ const timeEntry = new Hono<{
       }),
     ),
     workspaceAccess.fromTimeEntry(),
-    requireWorkspacePermission({ task: ["update"] }),
+    projectPermission.fromTask({ item: ["update"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const { startTime, endTime, description } = c.req.valid("json");

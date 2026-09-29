@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import { Bell } from "lucide-react";
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -27,6 +28,7 @@ import {
 import { shortcuts } from "@/constants/shortcuts";
 import useClearNotifications from "@/hooks/mutations/notification/use-clear-notifications";
 import useMarkAllNotificationsAsRead from "@/hooks/mutations/notification/use-mark-all-notifications-as-read";
+import useMarkNotificationAsRead from "@/hooks/mutations/notification/use-mark-notification-as-read";
 import useGetNotifications from "@/hooks/queries/notification/use-get-notifications";
 import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { cn } from "@/lib/cn";
@@ -75,6 +77,31 @@ function getNotificationTitle(
           ...eventData,
           defaultValue: notification.title ?? notification.type,
         });
+      case "mention":
+        return t("notifications:events.mention.title", {
+          ...eventData,
+          defaultValue: notification.title ?? notification.type,
+        });
+      case "invitation":
+        return t("notifications:events.invitation.title", {
+          ...eventData,
+          defaultValue: notification.title ?? notification.type,
+        });
+      case "due_date_reminder":
+        return t("notifications:events.due_date_reminder.title", {
+          ...eventData,
+          defaultValue: notification.title ?? notification.type,
+        });
+      case "task_overdue":
+        return t("notifications:events.task_overdue.title", {
+          ...eventData,
+          defaultValue: notification.title ?? notification.type,
+        });
+      case "task_deleted":
+        return t("notifications:events.task_deleted.title", {
+          ...eventData,
+          defaultValue: notification.title ?? notification.type,
+        });
       case "time_entry_created":
         return t("notifications:events.time_entry_created.title", {
           ...eventData,
@@ -117,6 +144,31 @@ function getNotificationContent(
           ...eventData,
           defaultValue: notification.content ?? "",
         });
+      case "mention":
+        return t("notifications:events.mention.content", {
+          ...eventData,
+          defaultValue: notification.content ?? "",
+        });
+      case "invitation":
+        return t("notifications:events.invitation.content", {
+          ...eventData,
+          defaultValue: notification.content ?? "",
+        });
+      case "due_date_reminder":
+        return t("notifications:events.due_date_reminder.content", {
+          ...eventData,
+          defaultValue: notification.content ?? "",
+        });
+      case "task_overdue":
+        return t("notifications:events.task_overdue.content", {
+          ...eventData,
+          defaultValue: notification.content ?? "",
+        });
+      case "task_deleted":
+        return t("notifications:events.task_deleted.content", {
+          ...eventData,
+          defaultValue: notification.content ?? "",
+        });
       case "time_entry_created":
         return eventData.taskTitle
           ? t("notifications:events.time_entry_created.contentWithTask", {
@@ -138,12 +190,56 @@ function getNotificationContent(
 const NotificationDropdown = forwardRef<NotificationDropdownRef>(
   (_props, ref) => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const { data: notifications } = useGetNotifications();
     const [isOpen, setIsOpen] = useState(false);
     const [showClearDialog, setShowClearDialog] = useState(false);
 
     const { mutate: markAllAsRead } = useMarkAllNotificationsAsRead();
+    const { mutate: markAsRead } = useMarkNotificationAsRead();
     const { mutate: clearAll } = useClearNotifications();
+
+    const handleNotificationClick = (notification: Notification) => {
+      if (!notification.isRead) {
+        markAsRead(notification.id);
+      }
+
+      const eventData = getEventDataRecord(notification.eventData);
+      const workspaceId = eventData?.workspaceId;
+      const projectId = eventData?.projectId;
+
+      if (
+        notification.resourceType === "task" &&
+        typeof workspaceId === "string" &&
+        typeof projectId === "string" &&
+        typeof notification.resourceId === "string"
+      ) {
+        navigate({
+          to: "/dashboard/workspace/$workspaceId/project/$projectId/task/$taskId",
+          params: {
+            workspaceId,
+            projectId,
+            taskId: notification.resourceId,
+          },
+        });
+      } else if (
+        notification.resourceType === "project" &&
+        typeof workspaceId === "string" &&
+        typeof notification.resourceId === "string"
+      ) {
+        navigate({
+          to: "/dashboard/workspace/$workspaceId/project/$projectId",
+          params: {
+            workspaceId,
+            projectId: notification.resourceId,
+          },
+        });
+      } else if (notification.resourceType === "workspace") {
+        navigate({ to: "/dashboard/invitations" });
+      }
+
+      setIsOpen(false);
+    };
 
     const unreadNotifications = notifications?.filter((n) => !n.isRead) || [];
     const hasNotifications = notifications && notifications.length > 0;
@@ -236,10 +332,12 @@ const NotificationDropdown = forwardRef<NotificationDropdownRef>(
                 </div>
               ) : (
                 notifications.map((notification) => (
-                  <div
+                  <button
+                    type="button"
                     key={notification.id}
+                    onClick={() => handleNotificationClick(notification)}
                     className={cn(
-                      "px-3 py-3 border-b border-border/50 hover:bg-accent/50 transition-colors",
+                      "w-full cursor-pointer px-3 py-3 text-left border-b border-border/50 hover:bg-accent/50 transition-colors focus-visible:outline-none focus-visible:bg-accent/50",
                       !notification.isRead && "bg-accent/20",
                     )}
                   >
@@ -263,7 +361,7 @@ const NotificationDropdown = forwardRef<NotificationDropdownRef>(
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
             </div>

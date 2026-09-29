@@ -98,14 +98,15 @@ const activity = new Hono<{
       v.object({
         taskId: v.string(),
         comment: v.string(),
+        mentions: v.optional(v.array(v.string())),
       }),
     ),
     workspaceAccess.fromTaskId(),
     requireWorkspacePermission({ task: ["update"] }),
     async (c) => {
-      const { taskId, comment } = c.req.valid("json");
+      const { taskId, comment, mentions } = c.req.valid("json");
       const userId = c.get("userId");
-      const newComment = await createComment(taskId, userId, comment);
+      const newComment = await createComment(taskId, userId, comment, mentions);
 
       return c.json(newComment);
     },
@@ -299,6 +300,91 @@ subscribeToEvent<{
     oldTitle: data.oldTitle,
     newTitle: data.newTitle,
   });
+});
+
+subscribeToEvent<{
+  taskId: string;
+  userId: string;
+  sprintId: string | null;
+  sprintName?: string;
+  previousSprintId?: string | null;
+  type: string;
+}>("task.sprint_changed", async (data) => {
+  if (!data.taskId || !data.userId) {
+    return;
+  }
+  await createActivity(data.taskId, "sprint_changed", data.userId, null, {
+    sprintId: data.sprintId,
+    sprintName: data.sprintName ?? null,
+    previousSprintId: data.previousSprintId ?? null,
+  });
+});
+
+subscribeToEvent<{
+  sprintId: string;
+  projectId: string;
+  userId: string;
+  name?: string;
+  type: string;
+}>("sprint.created", async (data) => {
+  if (!data.sprintId || !data.userId) {
+    return;
+  }
+  await createActivity(
+    null,
+    "sprint_created",
+    data.userId,
+    null,
+    { projectId: data.projectId, name: data.name },
+    data.sprintId,
+  );
+});
+
+subscribeToEvent<{
+  sprintId: string;
+  projectId: string;
+  userId: string;
+  name?: string;
+  type: string;
+}>("sprint.started", async (data) => {
+  if (!data.sprintId || !data.userId) {
+    return;
+  }
+  await createActivity(
+    null,
+    "sprint_started",
+    data.userId,
+    null,
+    { projectId: data.projectId, name: data.name },
+    data.sprintId,
+  );
+});
+
+subscribeToEvent<{
+  sprintId: string;
+  projectId: string;
+  userId: string;
+  name?: string;
+  targetSprintId: string | null;
+  carriedOverTaskIds: string[];
+  type: string;
+}>("sprint.completed", async (data) => {
+  if (!data.sprintId || !data.userId) {
+    return;
+  }
+  await createActivity(
+    null,
+    "sprint_completed",
+    data.userId,
+    null,
+    {
+      projectId: data.projectId,
+      name: data.name,
+      targetSprintId: data.targetSprintId,
+      carriedOverTaskIds: data.carriedOverTaskIds,
+    },
+    data.sprintId,
+  );
 });
 
 export default activity;

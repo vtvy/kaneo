@@ -5,6 +5,7 @@ import { taskRelationTable, taskTable } from "../../database/schema";
 import { publishEvent } from "../../events";
 import { deleteS3Keys, getTaskAssetKeys } from "../../storage/cleanup-assets";
 import getTask from "./get-task";
+import recordTaskDeletion from "./record-task-deletion";
 
 async function deleteTask(taskId: string, currentUserId: string) {
   const task = await getTask(taskId);
@@ -22,6 +23,18 @@ async function deleteTask(taskId: string, currentUserId: string) {
 
   const assetKeys = await getTaskAssetKeys(taskId);
 
+  const deletion = await recordTaskDeletion(
+    {
+      taskId: task.id,
+      projectId: task.projectId,
+      title: task.title,
+      number: task.number,
+      reporterId: task.reporterId,
+      assigneeId: task.userId,
+    },
+    currentUserId,
+  );
+
   const [deletedTask] = await db
     .delete(taskTable)
     .where(eq(taskTable.id, taskId))
@@ -38,6 +51,12 @@ async function deleteTask(taskId: string, currentUserId: string) {
     taskId: task.id,
     projectId: task.projectId,
     userId: currentUserId,
+    title: task.title,
+    number: task.number,
+    reporterId: task.reporterId,
+    assigneeId: task.userId,
+    workspaceId: deletion?.workspaceId,
+    deletedByName: deletion?.deletedByName,
   });
 
   for (const relation of relations) {

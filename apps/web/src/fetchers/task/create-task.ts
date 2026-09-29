@@ -11,10 +11,12 @@ async function createTask(
   description: string,
   projectId: string,
   userId: string,
-  status: string,
+  status: CreateTaskRequest["status"],
   startDate: Date | undefined,
   dueDate: Date | undefined,
-  priority: string,
+  priority: CreateTaskRequest["priority"],
+  points?: number | null,
+  sprintId?: string | null,
 ) {
   if (!projectId) {
     throw new Error("No project selected for task creation");
@@ -29,6 +31,8 @@ async function createTask(
       startDate: startDate?.toISOString() || undefined,
       dueDate: dueDate?.toISOString() || undefined,
       priority,
+      points: points ?? undefined,
+      ...(sprintId !== undefined ? { sprintId } : {}),
     },
     param: { projectId },
   });

@@ -8,8 +8,10 @@ export type BoardFilters = {
   status: string[] | null;
   priority: string[] | null;
   assignee: string[] | null;
+  creator: string[] | null;
   dueDate: string[] | null;
   labels: string[] | null;
+  relatedToMe: boolean | null;
 };
 
 export const DUE_DATE_FILTER_VALUES = {
@@ -22,16 +24,20 @@ const DEFAULT_FILTERS: BoardFilters = {
   status: null,
   priority: null,
   assignee: null,
+  creator: null,
   dueDate: null,
   labels: null,
+  relatedToMe: null,
 };
 
 const FILTER_KEYS: Array<keyof BoardFilters> = [
   "status",
   "priority",
   "assignee",
+  "creator",
   "dueDate",
   "labels",
+  "relatedToMe",
 ];
 
 function normalizeFilters(raw: unknown): BoardFilters {
@@ -44,6 +50,10 @@ function normalizeFilters(raw: unknown): BoardFilters {
 
   for (const key of FILTER_KEYS) {
     const value = candidate[key];
+    if (key === "relatedToMe") {
+      normalized.relatedToMe = value === true ? true : null;
+      continue;
+    }
     if (Array.isArray(value)) {
       const values = value.filter((v): v is string => typeof v === "string");
       normalized[key] = values.length > 0 ? values : null;
@@ -56,6 +66,7 @@ function normalizeFilters(raw: unknown): BoardFilters {
 export function useTaskFilters(
   project: ProjectWithTasks | null | undefined,
   projectId?: string,
+  currentUserId?: string | null,
 ) {
   const weekStartsOn = useUserPreferencesStore((state) => state.weekStartsOn);
   const storageKey = projectId ? `kaneo:board-filters:${projectId}` : null;
@@ -88,7 +99,7 @@ export function useTaskFilters(
       if (
         filters.status &&
         filters.status.length > 0 &&
-        !filters.status.includes(task.status)
+        !filters.status.includes(task.status ?? "")
       ) {
         return false;
       }
@@ -107,6 +118,24 @@ export function useTaskFilters(
         !filters.assignee.includes(task.userId ?? "")
       ) {
         return false;
+      }
+
+      if (
+        filters.creator &&
+        filters.creator.length > 0 &&
+        !filters.creator.includes(task.reporterId ?? "")
+      ) {
+        return false;
+      }
+
+      if (filters.relatedToMe && currentUserId) {
+        const involved =
+          task.userId === currentUserId ||
+          task.reporterId === currentUserId ||
+          (task.involvedUserIds ?? []).includes(currentUserId);
+        if (!involved) {
+          return false;
+        }
       }
 
       if (filters.dueDate && filters.dueDate.length > 0) {
@@ -168,8 +197,8 @@ export function useTaskFilters(
       }
     : null;
 
-  const hasActiveFilters = Object.values(filters).some(
-    (filter) => filter !== null,
+  const hasActiveFilters = Object.values(filters).some((filter) =>
+    Array.isArray(filter) ? filter.length > 0 : filter !== null,
   );
 
   const clearFilters = () => {

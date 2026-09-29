@@ -1,6 +1,8 @@
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import * as v from "valibot";
+import db, { schema } from "../database";
 import { subscribeToEvent } from "../events";
 import { notificationSchema } from "../schemas";
 import clearNotifications from "./controllers/clear-notifications";
@@ -156,23 +158,47 @@ const notification = new Hono<{
     },
   );
 
+async function resolveTaskLocation(taskId: string) {
+  const [row] = await db
+    .select({
+      projectId: schema.taskTable.projectId,
+      workspaceId: schema.projectTable.workspaceId,
+    })
+    .from(schema.taskTable)
+    .innerJoin(
+      schema.projectTable,
+      eq(schema.taskTable.projectId, schema.projectTable.id),
+    )
+    .where(eq(schema.taskTable.id, taskId))
+    .limit(1);
+  return row ?? null;
+}
+
 subscribeToEvent<{
   taskId: string;
+  /** Actor who created the task (webhook/activity). */
   userId: string;
+  /** Assignee to notify, when present and not the creator. */
+  assigneeId?: string | null;
   title: string;
   projectId: string;
 }>("task.created", async (data) => {
-  if (data.userId) {
-    await createNotification({
-      userId: data.userId,
-      type: "task_created",
-      eventData: {
-        taskTitle: data.title,
-      },
-      resourceId: data.taskId,
-      resourceType: "task",
-    });
-  }
+  const notifyUserId =
+    data.assigneeId && data.assigneeId !== data.userId ? data.assigneeId : null;
+  if (!notifyUserId) return;
+
+  const loc = await resolveTaskLocation(data.taskId);
+  await createNotification({
+    userId: notifyUserId,
+    type: "task_created",
+    eventData: {
+      taskTitle: data.title,
+      projectId: loc?.projectId,
+      workspaceId: loc?.workspaceId,
+    },
+    resourceId: data.taskId,
+    resourceType: "task",
+  });
 });
 
 subscribeToEvent<{
@@ -203,6 +229,7 @@ subscribeToEvent<{
   assigneeId?: string;
 }>("task.status_changed", async (data) => {
   if (data.assigneeId && data.assigneeId !== data.userId) {
+    const loc = await resolveTaskLocation(data.taskId);
     await createNotification({
       userId: data.assigneeId,
       type: "task_status_changed",
@@ -210,6 +237,8 @@ subscribeToEvent<{
         taskTitle: data.title,
         oldStatus: data.oldStatus,
         newStatus: data.newStatus,
+        projectId: loc?.projectId,
+        workspaceId: loc?.workspaceId,
       },
       resourceId: data.taskId,
       resourceType: "task",
@@ -226,14 +255,123 @@ subscribeToEvent<{
   title: string;
 }>("task.assignee_changed", async (data) => {
   if (data.newAssigneeId) {
+    const loc = await resolveTaskLocation(data.taskId);
     await createNotification({
       userId: data.newAssigneeId,
       type: "task_assignee_changed",
       eventData: {
         taskTitle: data.title,
+        projectId: loc?.projectId,
+        workspaceId: loc?.workspaceId,
       },
       resourceId: data.taskId,
       resourceType: "task",
+    });
+  }
+});
+
+subscribeToEvent<{
+  taskId: string;
+  userId: string;
+  mentions?: string[];
+  taskTitle?: string;
+  actorName?: string;
+}>("task.comment_created", async (data) => {
+  if (!Array.isArray(data.mentions) || data.mentions.length === 0) {
+    return;
+  }
+  const loc = await resolveTaskLocation(data.taskId);
+  for (const id of data.mentions) {
+    await createNotification({
+      userId: id,
+      type: "mention",
+      eventData: {
+        taskTitle: data.taskTitle,
+        actorName: data.actorName,
+        projectId: loc?.projectId,
+        workspaceId: loc?.workspaceId,
+      },
+      resourceId: data.taskId,
+      resourceType: "task",
+    });
+  }
+});
+
+subscribeToEvent<{
+  email: string;
+  invitationId: string;
+  workspaceId: string;
+  workspaceName: string;
+  inviterName: string;
+}>("invitation.created", async (data) => {
+  const [user] = await db
+    .select({ id: schema.userTable.id })
+    .from(schema.userTable)
+    .where(eq(schema.userTable.email, data.email))
+    .limit(1);
+  if (!user) return; // invited email has no account yet -> only the email invite applies
+  await createNotification({
+    userId: user.id,
+    type: "invitation",
+    eventData: {
+      workspaceName: data.workspaceName,
+      inviterName: data.inviterName,
+    },
+    resourceId: data.workspaceId,
+    resourceType: "workspace",
+  });
+});
+
+subscribeToEvent<{
+  taskId: string;
+  projectId: string;
+  userId: string;
+  title?: string;
+  number?: number | null;
+  reporterId?: string | null;
+  assigneeId?: string | null;
+  workspaceId?: string;
+  deletedByName?: string;
+}>("task.deleted", async (data) => {
+  const workspaceId =
+    data.workspaceId ??
+    (await resolveTaskLocation(data.taskId))?.workspaceId ??
+    null;
+
+  let deletedByName = data.deletedByName;
+  if (!deletedByName) {
+    const [actor] = await db
+      .select({ name: schema.userTable.name })
+      .from(schema.userTable)
+      .where(eq(schema.userTable.id, data.userId))
+      .limit(1);
+    deletedByName = actor?.name ?? data.userId;
+  }
+
+  const eventData = {
+    taskTitle: data.title,
+    taskNumber: data.number ?? null,
+    taskId: data.taskId,
+    projectId: data.projectId,
+    workspaceId,
+    deletedById: data.userId,
+    deletedByName,
+  };
+
+  const recipientIds = new Set<string>();
+  // Always keep a notification on the deleter so the action is visible in-app.
+  recipientIds.add(data.userId);
+  if (data.reporterId) recipientIds.add(data.reporterId);
+  if (data.assigneeId) recipientIds.add(data.assigneeId);
+
+  for (const userId of recipientIds) {
+    await createNotification({
+      userId,
+      type: "task_deleted",
+      eventData,
+      // Task row is gone — link to the project instead.
+      resourceId: data.projectId,
+      resourceType: "project",
     });
   }
 });
@@ -246,11 +384,14 @@ subscribeToEvent<{
   taskTitle?: string;
 }>("time-entry.created", async (data) => {
   if (data.taskOwnerId && data.taskOwnerId !== data.userId) {
+    const loc = await resolveTaskLocation(data.taskId);
     await createNotification({
       userId: data.taskOwnerId,
       type: "time_entry_created",
       eventData: {
         taskTitle: data.taskTitle ?? null,
+        projectId: loc?.projectId,
+        workspaceId: loc?.workspaceId,
       },
       resourceId: data.taskId,
       resourceType: "task",

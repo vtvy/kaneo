@@ -20,10 +20,12 @@ import { auth } from "./auth";
 import column from "./column";
 import comment from "./comment";
 import config from "./config";
+import dashboard from "./dashboard";
 import db, { getDatabase, schema } from "./database";
 import { prepareDatabaseStartup } from "./database/prepare-database-startup";
 import { waitForDatabase } from "./database/wait-for-database";
 import discordIntegration from "./discord-integration";
+import document from "./document";
 import { eventContext } from "./events";
 import externalLink from "./external-link";
 import genericWebhookIntegration from "./generic-webhook-integration";
@@ -43,9 +45,12 @@ import { initializePlugins } from "./plugins";
 import { migrateGitHubIntegration } from "./plugins/github/migration";
 import project from "./project";
 import { getPublicProject } from "./project/controllers/get-public-project";
+import projectRbac from "./project-rbac";
+import { seedDefaultProjectRoles } from "./project-rbac/seed-default-project-roles";
 import { initializeScheduler, shutdownScheduler } from "./scheduler";
 import search from "./search";
 import slackIntegration from "./slack-integration";
+import sprint from "./sprint";
 import { getPrivateObject } from "./storage/s3";
 import task from "./task";
 import taskRelation from "./task-relation";
@@ -500,7 +505,10 @@ export function createApp() {
 
   const projectApi = api.route("/project", project);
   const taskApi = api.route("/task", task);
+  const dashboardApi = api.route("/dashboard", dashboard);
+  const sprintApi = api.route("/sprint", sprint);
   const columnApi = api.route("/column", column);
+  const documentApi = api.route("/document", document);
   const activityApi = api.route("/activity", activity);
   const commentApi = api.route("/comment", comment);
   const timeEntryApi = api.route("/time-entry", timeEntry);
@@ -534,6 +542,7 @@ export function createApp() {
   const workflowRuleApi = api.route("/workflow-rule", workflowRule);
   const invitationApi = api.route("/invitation", invitation);
   const workspaceApi = api.route("/workspace", workspace);
+  const projectRbacApi = api.route("/project-rbac", projectRbac);
 
   app.route(
     "/",
@@ -605,7 +614,9 @@ export function createApp() {
     columnApi,
     commentApi,
     configApi,
+    dashboardApi,
     discordIntegrationApi,
+    documentApi,
     externalLinkApi,
     genericWebhookIntegrationApi,
     githubIntegrationApi,
@@ -616,9 +627,11 @@ export function createApp() {
     notificationApi,
     notificationPreferencesApi,
     projectApi,
+    projectRbacApi,
     publicProjectApi,
     searchApi,
     slackIntegrationApi,
+    sprintApi,
     taskApi,
     taskRelationApi,
     telegramIntegrationApi,
@@ -660,6 +673,7 @@ export async function runStartupTasks() {
   await migrateGitHubIntegration();
   await migrateColumns();
   await seedDefaultWorkspaceRoles();
+  await seedDefaultProjectRoles();
 
   initializePlugins();
   initializeScheduler();
@@ -721,7 +735,9 @@ const {
   columnApi,
   commentApi,
   configApi,
+  dashboardApi,
   discordIntegrationApi,
+  documentApi,
   externalLinkApi,
   genericWebhookIntegrationApi,
   githubIntegrationApi,
@@ -732,9 +748,11 @@ const {
   notificationApi,
   notificationPreferencesApi,
   projectApi,
+  projectRbacApi,
   publicProjectApi,
   searchApi,
   slackIntegrationApi,
+  sprintApi,
   taskApi,
   taskRelationApi,
   telegramIntegrationApi,
@@ -756,7 +774,10 @@ export type AppType =
   | typeof configApi
   | typeof projectApi
   | typeof taskApi
+  | typeof dashboardApi
+  | typeof sprintApi
   | typeof columnApi
+  | typeof documentApi
   | typeof activityApi
   | typeof commentApi
   | typeof timeEntryApi
@@ -775,6 +796,7 @@ export type AppType =
   | typeof workflowRuleApi
   | typeof invitationApi
   | typeof workspaceApi
+  | typeof projectRbacApi
   | typeof publicProjectApi
   | typeof invitationPublicApi
   | typeof oauthApi;

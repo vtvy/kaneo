@@ -248,6 +248,7 @@ export const projectTable = pgTable(
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     isPublic: boolean("is_public").default(false),
     archivedAt: timestamp("archived_at", { mode: "date" }),
+    sprintCycleWeeks: integer("sprint_cycle_weeks").default(2).notNull(),
   },
   (table) => [
     unique("project_workspace_id_id_unique").on(table.workspaceId, table.id),
@@ -313,6 +314,141 @@ export const workflowRuleTable = pgTable(
   ],
 );
 
+export const sprintTable = pgTable(
+  "sprint",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    name: text("name").notNull(),
+    goal: text("goal"),
+    startDate: timestamp("start_date", { mode: "date" }),
+    endDate: timestamp("end_date", { mode: "date" }),
+    state: text("state").notNull().default("future"),
+    completedAt: timestamp("completed_at", { mode: "date" }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("sprint_projectId_idx").on(table.projectId)],
+);
+
+export const projectMemberTable = pgTable(
+  "project_member",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    unique("project_member_project_user_unique").on(
+      table.projectId,
+      table.userId,
+    ),
+    index("project_member_projectId_idx").on(table.projectId),
+    index("project_member_userId_idx").on(table.userId),
+  ],
+);
+
+export const projectRoleTable = pgTable(
+  "project_role",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    name: text("name").notNull(),
+    isSystem: boolean("is_system").default(false).notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("project_role_projectId_idx").on(table.projectId)],
+);
+
+export const projectMemberRoleTable = pgTable(
+  "project_member_role",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    projectMemberId: text("project_member_id")
+      .notNull()
+      .references(() => projectMemberTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    projectRoleId: text("project_role_id")
+      .notNull()
+      .references(() => projectRoleTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("project_member_role_member_role_unique").on(
+      table.projectMemberId,
+      table.projectRoleId,
+    ),
+    index("project_member_role_memberId_idx").on(table.projectMemberId),
+    index("project_member_role_roleId_idx").on(table.projectRoleId),
+  ],
+);
+
+export const projectRolePermissionTable = pgTable(
+  "project_role_permission",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    projectRoleId: text("project_role_id")
+      .notNull()
+      .references(() => projectRoleTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    resource: text("resource").notNull(),
+    action: text("action").notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("project_role_permission_roleId_idx").on(table.projectRoleId),
+  ],
+);
+
 export const taskTable = pgTable(
   "task",
   {
@@ -333,12 +469,21 @@ export const taskTable = pgTable(
     }),
     title: text("title").notNull(),
     description: text("description"),
-    status: text("status").notNull().default("to-do"),
+    status: text("status"),
     columnId: text("column_id").references(() => columnTable.id, {
       onDelete: "set null",
       onUpdate: "cascade",
     }),
+    sprintId: text("sprint_id").references(() => sprintTable.id, {
+      onDelete: "set null",
+      onUpdate: "cascade",
+    }),
+    reporterId: text("reporter_id").references(() => userTable.id, {
+      onDelete: "set null",
+      onUpdate: "cascade",
+    }),
     priority: text("priority").default("low"),
+    points: integer("points"),
     startDate: timestamp("start_date", { mode: "date" }),
     dueDate: timestamp("due_date", { mode: "date" }),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
@@ -352,6 +497,7 @@ export const taskTable = pgTable(
     index("task_dueDate_idx").on(table.dueDate),
     index("task_assigneeId_idx").on(table.userId),
     index("task_columnId_idx").on(table.columnId),
+    index("task_sprintId_idx").on(table.sprintId),
     unique("task_project_number_unique").on(table.projectId, table.number),
   ],
 );
@@ -381,6 +527,77 @@ export const taskReminderSentTable = pgTable(
       table.taskId,
       table.reminderType,
     ),
+  ],
+);
+
+/** People linked to a task for discovery (My Tasks Involved / Related to me). */
+export const taskInvolvementTable = pgTable(
+  "task_involvement",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => taskTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    reason: text("reason").notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("task_involvement_taskId_idx").on(table.taskId),
+    index("task_involvement_userId_idx").on(table.userId),
+    unique("task_involvement_task_user_unique").on(table.taskId, table.userId),
+  ],
+);
+
+/** Survives hard-delete of task rows so we can audit who removed a task. */
+export const taskDeletionTable = pgTable(
+  "task_deletion",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    taskId: text("task_id").notNull(),
+    taskNumber: integer("task_number"),
+    taskTitle: text("task_title").notNull(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaceTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    deletedBy: text("deleted_by")
+      .notNull()
+      .references(() => userTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("task_deletion_projectId_idx").on(table.projectId),
+    index("task_deletion_workspaceId_idx").on(table.workspaceId),
+    index("task_deletion_deletedBy_idx").on(table.deletedBy),
+    index("task_deletion_taskId_idx").on(table.taskId),
   ],
 );
 
@@ -422,12 +639,14 @@ export const activityTable = pgTable(
     id: text("id")
       .$defaultFn(() => createId())
       .primaryKey(),
-    taskId: text("task_id")
-      .notNull()
-      .references(() => taskTable.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
-      }),
+    taskId: text("task_id").references(() => taskTable.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+    sprintId: text("sprint_id").references(() => sprintTable.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
     type: text("type").notNull(),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" })
@@ -447,6 +666,7 @@ export const activityTable = pgTable(
   },
   (table) => [
     index("activity_task_id_idx").on(table.taskId),
+    index("activity_sprint_id_idx").on(table.sprintId),
     index("activity_userId_idx").on(table.userId),
     unique("activity_task_external_source_external_url_unique").on(
       table.taskId,
@@ -914,6 +1134,88 @@ export const deviceCodeTable = pgTable(
     uniqueIndex("device_code_device_code_uidx").on(table.deviceCode),
     uniqueIndex("device_code_user_code_uidx").on(table.userCode),
     index("device_code_user_id_idx").on(table.userId),
+  ],
+);
+
+export const folderTable = pgTable(
+  "folder",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    parentId: text("parent_id"),
+    name: text("name").notNull(),
+    createdBy: text("created_by").references(() => userTable.id, {
+      onDelete: "set null",
+      onUpdate: "cascade",
+    }),
+    deletedAt: timestamp("deleted_at", { mode: "date" }),
+    deletedBy: text("deleted_by").references(() => userTable.id, {
+      onDelete: "set null",
+      onUpdate: "cascade",
+    }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("folder_projectId_idx").on(table.projectId),
+    index("folder_parentId_idx").on(table.parentId),
+    foreignKey({
+      columns: [table.parentId],
+      foreignColumns: [table.id],
+    })
+      .onDelete("cascade")
+      .onUpdate("cascade"),
+  ],
+);
+
+export const documentTable = pgTable(
+  "document",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    folderId: text("folder_id").references(() => folderTable.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+    name: text("name").notNull(),
+    storageKey: text("storage_key").notNull(),
+    size: integer("size").notNull(),
+    contentType: text("content_type").notNull(),
+    createdBy: text("created_by").references(() => userTable.id, {
+      onDelete: "set null",
+      onUpdate: "cascade",
+    }),
+    deletedAt: timestamp("deleted_at", { mode: "date" }),
+    deletedBy: text("deleted_by").references(() => userTable.id, {
+      onDelete: "set null",
+      onUpdate: "cascade",
+    }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("document_projectId_idx").on(table.projectId),
+    index("document_folderId_idx").on(table.folderId),
   ],
 );
 

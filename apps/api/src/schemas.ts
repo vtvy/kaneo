@@ -1,5 +1,16 @@
 import * as v from "valibot";
 
+// A date input that must be parseable (clients send ISO 8601). Rejecting a
+// garbage string here returns a clean 400 instead of letting `new Date("x")`
+// become an Invalid Date that reaches the DB and surfaces as an unhandled 500.
+export const dateStringSchema = v.pipe(
+  v.string(),
+  v.check(
+    (value) => !Number.isNaN(new Date(value).getTime()),
+    "Invalid date: expected an ISO date string",
+  ),
+);
+
 export const labelSchema = v.object({
   id: v.string(),
   name: v.string(),
@@ -7,6 +18,23 @@ export const labelSchema = v.object({
   createdAt: v.date(),
   taskId: v.nullable(v.string()),
   workspaceId: v.nullable(v.string()),
+});
+
+export const sprintSchema = v.object({
+  id: v.string(),
+  projectId: v.string(),
+  name: v.string(),
+  goal: v.nullable(v.string()),
+  startDate: v.nullable(v.date()),
+  endDate: v.nullable(v.date()),
+  state: v.picklist(["future", "active", "completed"] as const),
+  completedAt: v.nullable(v.date()),
+  createdAt: v.date(),
+  updatedAt: v.date(),
+  totalTasks: v.optional(v.number()),
+  completedTasks: v.optional(v.number()),
+  totalPoints: v.optional(v.number()),
+  completedPoints: v.optional(v.number()),
 });
 
 export const projectSchema = v.object({
@@ -19,6 +47,7 @@ export const projectSchema = v.object({
   createdAt: v.date(),
   isPublic: v.nullable(v.boolean()),
   archivedAt: v.nullable(v.date()),
+  sprintCycleWeeks: v.optional(v.number()),
 });
 
 export const taskSchema = v.object({
@@ -37,14 +66,20 @@ export const taskSchema = v.object({
     "high",
     "urgent",
   ] as const),
+  points: v.optional(v.nullable(v.number())),
   startDate: v.optional(v.date()),
   dueDate: v.optional(v.date()),
   createdAt: v.date(),
+  columnId: v.optional(v.nullable(v.string())),
+  sprintId: v.optional(v.nullable(v.string())),
+  assigneeId: v.optional(v.nullable(v.string())),
+  assigneeName: v.optional(v.nullable(v.string())),
 });
 
 export const activitySchema = v.object({
   id: v.string(),
-  taskId: v.string(),
+  taskId: v.nullable(v.string()),
+  sprintId: v.nullable(v.string()),
   type: v.picklist([
     "comment",
     "task",
@@ -56,6 +91,10 @@ export const activitySchema = v.object({
     "title_changed",
     "description_changed",
     "create",
+    "sprint_created",
+    "sprint_started",
+    "sprint_completed",
+    "sprint_changed",
   ] as const),
   createdAt: v.date(),
   userId: v.nullable(v.string()),
@@ -65,18 +104,6 @@ export const activitySchema = v.object({
   externalUserAvatar: v.nullable(v.string()),
   externalSource: v.nullable(v.string()),
   externalUrl: v.nullable(v.string()),
-});
-
-export const timeEntrySchema = v.object({
-  id: v.string(),
-  taskId: v.string(),
-  userId: v.nullable(v.string()),
-  description: v.nullable(v.string()),
-  startTime: v.date(),
-  endTime: v.optional(v.date()),
-  duration: v.nullable(v.number()),
-  createdAt: v.date(),
-  updatedAt: v.date(),
 });
 
 export const notificationSchema = v.object({
@@ -91,13 +118,18 @@ export const notificationSchema = v.object({
     "task_status_changed",
     "task_assignee_changed",
     "time_entry_created",
+    "mention",
+    "invitation",
     "due_date_reminder",
     "task_overdue",
+    "task_deleted",
   ] as const),
   eventData: v.nullable(v.record(v.string(), v.unknown())),
   isRead: v.optional(v.boolean()),
   resourceId: v.optional(v.string()),
-  resourceType: v.optional(v.picklist(["task", "workspace"] as const)),
+  resourceType: v.optional(
+    v.picklist(["task", "workspace", "project"] as const),
+  ),
   createdAt: v.date(),
   updatedAt: v.date(),
 });
@@ -179,30 +211,6 @@ export const integrationEventsSchema = v.object({
   taskCommentCreated: v.boolean(),
 });
 
-export const slackIntegrationSchema = v.object({
-  id: v.string(),
-  projectId: v.string(),
-  channelName: v.nullable(v.string()),
-  webhookConfigured: v.boolean(),
-  maskedWebhookUrl: v.string(),
-  events: integrationEventsSchema,
-  isActive: v.nullable(v.boolean()),
-  createdAt: v.date(),
-  updatedAt: v.date(),
-});
-
-export const discordIntegrationSchema = v.object({
-  id: v.string(),
-  projectId: v.string(),
-  channelName: v.nullable(v.string()),
-  webhookConfigured: v.boolean(),
-  maskedWebhookUrl: v.string(),
-  events: integrationEventsSchema,
-  isActive: v.nullable(v.boolean()),
-  createdAt: v.date(),
-  updatedAt: v.date(),
-});
-
 export const genericWebhookIntegrationSchema = v.object({
   id: v.string(),
   projectId: v.string(),
@@ -210,20 +218,6 @@ export const genericWebhookIntegrationSchema = v.object({
   maskedWebhookUrl: v.nullable(v.string()),
   secretConfigured: v.boolean(),
   maskedSecret: v.nullable(v.string()),
-  events: integrationEventsSchema,
-  isActive: v.nullable(v.boolean()),
-  createdAt: v.date(),
-  updatedAt: v.date(),
-});
-
-export const telegramIntegrationSchema = v.object({
-  id: v.string(),
-  projectId: v.string(),
-  chatId: v.string(),
-  threadId: v.nullable(v.number()),
-  chatLabel: v.nullable(v.string()),
-  botTokenConfigured: v.boolean(),
-  maskedBotToken: v.string(),
   events: integrationEventsSchema,
   isActive: v.nullable(v.boolean()),
   createdAt: v.date(),
@@ -252,8 +246,96 @@ export const configSchema = v.object({
   hasSmtp: v.boolean(),
   hasGithubSignIn: v.nullable(v.boolean()),
   hasGoogleSignIn: v.nullable(v.boolean()),
-  hasDiscordSignIn: v.nullable(v.boolean()),
   hasCustomOAuth: v.nullable(v.boolean()),
   hasGuestAccess: v.nullable(v.boolean()),
   customOAuthLogoutUrl: v.nullable(v.string()),
+});
+
+export const workspaceDashboardSchema = v.object({
+  stats: v.object({
+    total: v.number(),
+    open: v.number(),
+    completed: v.number(),
+    overdue: v.number(),
+  }),
+  members: v.array(
+    v.object({
+      userId: v.string(),
+      name: v.string(),
+      open: v.number(),
+      overdue: v.number(),
+      completed: v.number(),
+      total: v.number(),
+    }),
+  ),
+  activeSprints: v.array(
+    v.object({
+      id: v.string(),
+      name: v.string(),
+      endDate: v.nullable(v.date()),
+      totalTasks: v.number(),
+      completedTasks: v.number(),
+      totalPoints: v.number(),
+      completedPoints: v.number(),
+    }),
+  ),
+  projects: v.array(
+    v.object({
+      id: v.string(),
+      name: v.string(),
+      slug: v.string(),
+      totalTasks: v.number(),
+      completedTasks: v.number(),
+    }),
+  ),
+});
+
+export const timeEntrySchema = v.object({
+  id: v.string(),
+  taskId: v.string(),
+  userId: v.nullable(v.string()),
+  description: v.nullable(v.string()),
+  startTime: v.date(),
+  endTime: v.optional(v.date()),
+  duration: v.nullable(v.number()),
+  createdAt: v.date(),
+  updatedAt: v.date(),
+});
+
+export const discordIntegrationSchema = v.object({
+  id: v.string(),
+  projectId: v.string(),
+  channelName: v.nullable(v.string()),
+  webhookConfigured: v.boolean(),
+  maskedWebhookUrl: v.string(),
+  events: integrationEventsSchema,
+  isActive: v.nullable(v.boolean()),
+  createdAt: v.date(),
+  updatedAt: v.date(),
+});
+
+export const slackIntegrationSchema = v.object({
+  id: v.string(),
+  projectId: v.string(),
+  channelName: v.nullable(v.string()),
+  webhookConfigured: v.boolean(),
+  maskedWebhookUrl: v.string(),
+  events: integrationEventsSchema,
+  isActive: v.nullable(v.boolean()),
+  createdAt: v.date(),
+  updatedAt: v.date(),
+});
+
+export const telegramIntegrationSchema = v.object({
+  id: v.string(),
+  projectId: v.string(),
+  chatId: v.string(),
+  threadId: v.nullable(v.number()),
+  chatLabel: v.nullable(v.string()),
+  botTokenConfigured: v.boolean(),
+  maskedBotToken: v.string(),
+  events: integrationEventsSchema,
+  isActive: v.nullable(v.boolean()),
+  createdAt: v.date(),
+  updatedAt: v.date(),
 });

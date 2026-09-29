@@ -9,6 +9,7 @@ import {
   getValidTaskStatuses,
 } from "../validate-task-fields";
 import getNextTaskNumber from "./get-next-task-number";
+import { recordTaskInvolvement } from "./record-task-involvement";
 
 export type ImportTask = {
   title: string;
@@ -51,12 +52,14 @@ async function importTasks(
       );
       const warnings = [statusWarning, priorityWarning].filter(Boolean);
 
-      const column = await db.query.columnTable.findFirst({
-        where: and(
-          eq(columnTable.projectId, projectId),
-          eq(columnTable.slug, status),
-        ),
-      });
+      const column = status
+        ? await db.query.columnTable.findFirst({
+            where: and(
+              eq(columnTable.projectId, projectId),
+              eq(columnTable.slug, status),
+            ),
+          })
+        : undefined;
 
       const [createdTask] = await db
         .insert(taskTable)
@@ -75,10 +78,18 @@ async function importTasks(
         .returning();
 
       if (createdTask) {
+        await recordTaskInvolvement(createdTask.id, currentUserId, "reporter");
+        await recordTaskInvolvement(
+          createdTask.id,
+          taskData.userId,
+          "assignee",
+        );
+
         await publishEvent("task.created", {
           ...createdTask,
           taskId: createdTask.id,
-          userId: createdTask.userId ?? "",
+          userId: currentUserId ?? "",
+          assigneeId: createdTask.userId ?? null,
           currentUserId: currentUserId ?? "",
           type: "create",
           content: "imported the task",

@@ -1,3 +1,4 @@
+import { assertPublicDestination } from "../../../utils/assert-public-destination";
 import type { GiteaConfig } from "../config";
 import { normalizeGiteaBaseUrl } from "../config";
 
@@ -67,6 +68,10 @@ export async function giteaFetch<T>(
 ): Promise<T | undefined> {
   const root = normalizeGiteaBaseUrl(baseUrl);
   const url = `${root}/api/v1${path.startsWith("/") ? path : `/${path}`}`;
+
+  // Block requests to non-routable hosts: the Gitea base URL is user-supplied,
+  // so without this an attacker could point it at internal services (SSRF).
+  await assertPublicDestination(root, "Gitea");
 
   const controller = new AbortController();
   let timedOut = false;

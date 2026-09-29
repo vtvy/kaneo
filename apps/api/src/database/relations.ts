@@ -6,14 +6,22 @@ import {
   assetTable,
   columnTable,
   commentTable,
+  documentTable,
   externalLinkTable,
+  folderTable,
   githubIntegrationTable,
   integrationTable,
   invitationTable,
   labelTable,
   notificationTable,
+  projectMemberRoleTable,
+  projectMemberTable,
+  projectRolePermissionTable,
+  projectRoleTable,
   projectTable,
   sessionTable,
+  sprintTable,
+  taskInvolvementTable,
   taskRelationTable,
   taskReminderSentTable,
   taskTable,
@@ -37,8 +45,11 @@ export const userTableRelations = relations(userTable, ({ many, one }) => ({
   teamMembers: many(teamMemberTable),
   workspaces: many(workspaceTable),
   workspaceMemberships: many(workspaceUserTable),
-  assignedTasks: many(taskTable),
+  projectMemberships: many(projectMemberTable),
+  assignedTasks: many(taskTable, { relationName: "assignee" }),
   timeEntries: many(timeEntryTable),
+  reportedTasks: many(taskTable, { relationName: "reporter" }),
+  taskInvolvements: many(taskInvolvementTable),
   activities: many(activityTable),
   comments: many(commentTable),
   assets: many(assetTable),
@@ -104,10 +115,13 @@ export const projectTableRelations = relations(
     tasks: many(taskTable),
     assets: many(assetTable),
     columns: many(columnTable),
+    sprints: many(sprintTable),
     workflowRules: many(workflowRuleTable),
     githubIntegration: many(githubIntegrationTable),
     integrations: many(integrationTable),
     notificationWorkspaceProjects: many(userNotificationWorkspaceProjectTable),
+    members: many(projectMemberTable),
+    roles: many(projectRoleTable),
   }),
 );
 
@@ -142,10 +156,20 @@ export const taskTableRelations = relations(taskTable, ({ one, many }) => ({
   assignee: one(userTable, {
     fields: [taskTable.userId],
     references: [userTable.id],
+    relationName: "assignee",
+  }),
+  reporter: one(userTable, {
+    fields: [taskTable.reporterId],
+    references: [userTable.id],
+    relationName: "reporter",
   }),
   column: one(columnTable, {
     fields: [taskTable.columnId],
     references: [columnTable.id],
+  }),
+  sprint: one(sprintTable, {
+    fields: [taskTable.sprintId],
+    references: [sprintTable.id],
   }),
   timeEntries: many(timeEntryTable),
   activities: many(activityTable),
@@ -156,6 +180,7 @@ export const taskTableRelations = relations(taskTable, ({ one, many }) => ({
   sourceRelations: many(taskRelationTable, { relationName: "sourceTask" }),
   targetRelations: many(taskRelationTable, { relationName: "targetTask" }),
   remindersSent: many(taskReminderSentTable),
+  involvements: many(taskInvolvementTable),
 }));
 
 export const timeEntryTableRelations = relations(timeEntryTable, ({ one }) => ({
@@ -169,10 +194,37 @@ export const timeEntryTableRelations = relations(timeEntryTable, ({ one }) => ({
   }),
 }));
 
+export const taskInvolvementTableRelations = relations(
+  taskInvolvementTable,
+  ({ one }) => ({
+    task: one(taskTable, {
+      fields: [taskInvolvementTable.taskId],
+      references: [taskTable.id],
+    }),
+    user: one(userTable, {
+      fields: [taskInvolvementTable.userId],
+      references: [userTable.id],
+    }),
+  }),
+);
+
+export const sprintTableRelations = relations(sprintTable, ({ one, many }) => ({
+  project: one(projectTable, {
+    fields: [sprintTable.projectId],
+    references: [projectTable.id],
+  }),
+  tasks: many(taskTable),
+  activities: many(activityTable),
+}));
+
 export const activityTableRelations = relations(activityTable, ({ one }) => ({
   task: one(taskTable, {
     fields: [activityTable.taskId],
     references: [taskTable.id],
+  }),
+  sprint: one(sprintTable, {
+    fields: [activityTable.sprintId],
+    references: [sprintTable.id],
   }),
   user: one(userTable, {
     fields: [activityTable.userId],
@@ -389,6 +441,90 @@ export const commentTableRelations = relations(commentTable, ({ one }) => ({
   }),
   user: one(userTable, {
     fields: [commentTable.userId],
+    references: [userTable.id],
+  }),
+}));
+
+export const projectMemberTableRelations = relations(
+  projectMemberTable,
+  ({ one, many }) => ({
+    project: one(projectTable, {
+      fields: [projectMemberTable.projectId],
+      references: [projectTable.id],
+    }),
+    user: one(userTable, {
+      fields: [projectMemberTable.userId],
+      references: [userTable.id],
+    }),
+    memberRoles: many(projectMemberRoleTable),
+  }),
+);
+
+export const projectRoleTableRelations = relations(
+  projectRoleTable,
+  ({ one, many }) => ({
+    project: one(projectTable, {
+      fields: [projectRoleTable.projectId],
+      references: [projectTable.id],
+    }),
+    memberRoles: many(projectMemberRoleTable),
+    permissions: many(projectRolePermissionTable),
+  }),
+);
+
+export const projectMemberRoleTableRelations = relations(
+  projectMemberRoleTable,
+  ({ one }) => ({
+    member: one(projectMemberTable, {
+      fields: [projectMemberRoleTable.projectMemberId],
+      references: [projectMemberTable.id],
+    }),
+    role: one(projectRoleTable, {
+      fields: [projectMemberRoleTable.projectRoleId],
+      references: [projectRoleTable.id],
+    }),
+  }),
+);
+
+export const projectRolePermissionTableRelations = relations(
+  projectRolePermissionTable,
+  ({ one }) => ({
+    role: one(projectRoleTable, {
+      fields: [projectRolePermissionTable.projectRoleId],
+      references: [projectRoleTable.id],
+    }),
+  }),
+);
+
+export const folderTableRelations = relations(folderTable, ({ one, many }) => ({
+  project: one(projectTable, {
+    fields: [folderTable.projectId],
+    references: [projectTable.id],
+  }),
+  parent: one(folderTable, {
+    fields: [folderTable.parentId],
+    references: [folderTable.id],
+    relationName: "folderParent",
+  }),
+  children: many(folderTable, { relationName: "folderParent" }),
+  creator: one(userTable, {
+    fields: [folderTable.createdBy],
+    references: [userTable.id],
+  }),
+  documents: many(documentTable),
+}));
+
+export const documentTableRelations = relations(documentTable, ({ one }) => ({
+  project: one(projectTable, {
+    fields: [documentTable.projectId],
+    references: [projectTable.id],
+  }),
+  folder: one(folderTable, {
+    fields: [documentTable.folderId],
+    references: [folderTable.id],
+  }),
+  creator: one(userTable, {
+    fields: [documentTable.createdBy],
     references: [userTable.id],
   }),
 }));

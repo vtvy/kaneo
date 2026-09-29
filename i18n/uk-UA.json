@@ -18,7 +18,23 @@
 		},
 		"sidebar": {
 			"title": "Бічна панель",
-			"mobileDescription": "Відображає мобільну бічну панель."
+			"mobileDescription": "Відображає мобільну бічну панель.",
+			"encouragements": [
+				"You've done a lot today — take care of yourself.",
+				"Your effort matters. Wishing you success ahead.",
+				"Remember to drink some water.",
+				"Stay healthy — you're doing great.",
+				"Small steps still count. Keep going.",
+				"Rest when you need to. You've earned it.",
+				"Be kind to yourself today.",
+				"One task at a time — you've got this.",
+				"Progress isn't always loud. Quiet wins count too.",
+				"Your future self will thank you for today's focus.",
+				"It's okay to move slowly — just don't stop.",
+				"A deep breath is also progress.",
+				"You're allowed to celebrate small wins.",
+				"Clarity comes one decision at a time."
+			]
 		},
 		"empty": {
 			"loading": "Завантаження..."
@@ -124,8 +140,84 @@
 					"terracotta": "Теракота",
 					"rose": "Троянда",
 					"crimson": "Багряний"
-				}
+				},
+				"status": "Status",
+				"noStatus": "No status",
+				"sprint": "Sprint",
+				"noSprint": "No sprint"
+			},
+			"sprint": {
+				"breadcrumbProjectFallback": "PROJECT",
+				"createTitle": "New sprint",
+				"editTitle": "Edit sprint",
+				"description": "Sprints group tasks into a time-boxed iteration. A goal is required before a sprint can be started.",
+				"nameLabel": "Name",
+				"namePlaceholder": "e.g. Sprint 1",
+				"nameRequired": "Sprint name is required",
+				"goalLabel": "Goal",
+				"goalPlaceholder": "What do you want to achieve in this sprint?",
+				"startDateLabel": "Start date",
+				"endDateLabel": "End date",
+				"createButton": "Create sprint",
+				"saveButton": "Save changes",
+				"createdToast": "Sprint created",
+				"updatedToast": "Sprint updated",
+				"saveError": "Failed to save sprint"
+			},
+			"completeSprint": {
+				"title": "Complete “{{name}}”",
+				"description": "Tasks in an unfinished column will be carried over. Tasks in a final column stay in this sprint as history.",
+				"carryOverLabel": "Move unfinished tasks to",
+				"backlogOption": "Backlog",
+				"completeButton": "Complete sprint",
+				"completedToast": "Sprint completed",
+				"completeError": "Failed to complete sprint"
 			}
+		},
+		"sprints": {
+			"title": "Sprints",
+			"subtitle": "Time-boxed iterations for this project.",
+			"newSprint": "New sprint",
+			"emptyTitle": "No sprints yet.",
+			"createFirst": "Create your first sprint",
+			"backlog": "Backlog",
+			"loading": "Loading…",
+			"backlogEmpty": "No tasks in the backlog. Tasks without a sprint appear here.",
+			"sprintTasksEmpty": "No tasks in this sprint yet.",
+			"noGoal": "No goal set",
+			"start": "Start",
+			"complete": "Complete",
+			"editSprintTitle": "Edit sprint",
+			"deleteSprintTitle": "Delete sprint",
+			"deleteSprintDescription": "This will delete “{{name}}”. Tasks in this sprint will return to the backlog. This cannot be undone.",
+			"stateActive": "Active",
+			"allSprints": "All sprints",
+			"active": "Active",
+			"current": "Current",
+			"filterBySprint": "Filter by sprint",
+			"statePlanned": "Planned",
+			"stateCompleted": "Completed",
+			"stateFuture": "Future",
+			"taskAssigned": "Task assigned to sprint",
+			"taskAssignError": "Failed to assign task",
+			"taskMoved": "Task moved to sprint",
+			"taskMoveError": "Failed to move task",
+			"taskMovedToBacklog": "Task moved to backlog",
+			"taskRemoveError": "Failed to remove task",
+			"sprintStarted": "Sprint started",
+			"sprintStartError": "Failed to start sprint",
+			"sprintDeleted": "Sprint deleted",
+			"sprintDeleteError": "Failed to delete sprint",
+			"moveToBacklog": "Move to backlog",
+			"moveToSprint": "Move to sprint",
+			"assignToSprint": "Assign to sprint",
+			"noSprintsAvailable": "No sprints available",
+			"noSprintBacklog": "No sprint (Backlog)",
+			"noSprintsYetCreate": "No sprints yet. Create one in Backlog & Sprints.",
+			"taskCount_one": "{{count}} task",
+			"taskCount_other": "{{count}} tasks",
+			"showingActiveSprint": "Showing active sprint",
+			"filterToActiveSprint": "Filter to active sprint"
 		}
 	},
 	"auth": {
@@ -150,7 +242,10 @@
 			"oidcError": "Не вдалося увійти через OIDC",
 			"googleError": "Не вдалося увійти через Google",
 			"githubError": "Не вдалося увійти через GitHub",
-			"discordError": "Не вдалося увійти через Discord"
+			"discordError": "Не вдалося увійти через Discord",
+			"useOtpInstead": "Email me a sign-in code instead",
+			"usePasswordInstead": "Use password instead",
+			"instanceStatusError": "Couldn't reach the server. Please retry in a moment."
 		},
 		"providers": {
 			"google": "Google",
@@ -185,7 +280,10 @@
 			"signingIn": "Вхід...",
 			"continueAsGuest": "Продовжити як гість",
 			"toggleMessage": "Вже маєте обліковий запис?",
-			"toggleLink": "Увійти"
+			"toggleLink": "Увійти",
+			"instanceStatusError": "Couldn't reach the server. Please retry in a moment.",
+			"instanceAdminTitle": "Set up your Hailey instance",
+			"instanceAdminSubtitle": "This account becomes the instance administrator with full access."
 		},
 		"verifyOtp": {
 			"pageTitle": "Підтвердження коду",
@@ -218,7 +316,8 @@
 			"failedSignIn": "Не вдалося увійти",
 			"signedInSuccess": "Вхід виконано успішно",
 			"signingIn": "Вхід...",
-			"signIn": "Увійти"
+			"signIn": "Увійти",
+			"forgotPassword": "Forgot password?"
 		},
 		"signUpForm": {
 			"fullName": "Повне ім'я",
@@ -295,6 +394,35 @@
 				"nameRequired": "Ім'я є обов'язковим",
 				"nameShort": "Ім'я має містити щонайменше 2 символи"
 			}
+		},
+		"forgotPassword": {
+			"pageTitle": "Forgot password",
+			"title": "Forgot password",
+			"subtitle": "Enter your email and we will send you a reset link.",
+			"sending": "Sending...",
+			"sendLink": "Send reset link",
+			"emailSent": "If that email exists, a reset link is on the way.",
+			"sendFailed": "Failed to send reset email",
+			"backToSignIn": "Back to sign in",
+			"sentTitle": "Check your email",
+			"sentMessage": "If an account exists for <email>{{email}}</email>, we sent a password reset link. The link expires in 1 hour.",
+			"sendAgain": "Use a different email",
+			"smtpUnavailable": "Password reset is unavailable because this server has no email delivery configured. Please contact your administrator."
+		},
+		"resetPassword": {
+			"pageTitle": "Reset password",
+			"title": "Set a new password",
+			"subtitle": "Choose a new password for your account.",
+			"newPassword": "New password",
+			"confirmPassword": "Confirm password",
+			"passwordTooShort": "Password must be at least 8 characters",
+			"passwordMismatch": "Passwords do not match",
+			"submitting": "Updating...",
+			"submit": "Update password",
+			"success": "Password updated. You can sign in now.",
+			"failed": "Failed to reset password",
+			"invalidToken": "This reset link is invalid or has expired.",
+			"requestNewLink": "Request a new reset link"
 		}
 	},
 	"settings": {
@@ -543,6 +671,21 @@
 			"validation": {
 				"nameRequired": "Назва робочого простору є обов'язковою",
 				"nameShort": "Назва робочого простору має містити щонайменше 2 символи"
+			},
+			"transferOwnership": {
+				"title": "Transfer ownership",
+				"subtitle": "Hand this workspace over to another member. You'll be demoted to admin and lose owner-only abilities.",
+				"pickerLabel": "New owner",
+				"noEligibleMembers": "Invite at least one other member before you can transfer ownership.",
+				"pickerHint": "They become the sole owner of this workspace.",
+				"pickerPlaceholder": "Select a member",
+				"button": "Transfer",
+				"dialogTitle": "Transfer ownership?",
+				"dialogDescription": "{{name}} will become the sole owner of {{workspace}}. You'll keep admin access but lose owner-only abilities like deleting the workspace or transferring it again.",
+				"transferring": "Transferring…",
+				"confirm": "Transfer ownership",
+				"toastSuccess": "Ownership transferred",
+				"toastError": "Failed to transfer ownership"
 			}
 		},
 		"projectGeneral": {
@@ -582,7 +725,11 @@
 				"keyShort": "Ключ має містити щонайменше 2 символи",
 				"keyMax": "Ключ може містити не більше 8 символів",
 				"iconRequired": "Іконка є обов'язковою"
-			}
+			},
+			"importExportTasks": "Import/Export",
+			"importExportTasksDescription": "Import and export tasks.",
+			"sprintCycleLabel": "Sprint cycle (weeks)",
+			"sprintCycleHint": "Default length used when suggesting dates for new sprints."
 		},
 		"projectIntegrations": {
 			"pageTitle": "Інтеґрації проєкту",
@@ -599,7 +746,11 @@
 			"slackSectionTitle": "Інтеґрація зі Slack",
 			"slackSectionSubtitle": "Надсилайте оновлення завдань проєкту до каналу Slack за допомогою вхідного вебхука.",
 			"telegramSectionTitle": "Інтеґрація з Telegram",
-			"telegramSectionSubtitle": "Надсилайте оновлення завдань проєкту до чату або теми Telegram за допомогою бота."
+			"telegramSectionSubtitle": "Надсилайте оновлення завдань проєкту до чату або теми Telegram за допомогою бота.",
+			"googleChatSectionTitle": "Google Chat",
+			"googleChatSectionSubtitle": "Post task updates to a Google Chat Space via an incoming webhook.",
+			"blueprintSectionTitle": "Blueprint Integration",
+			"blueprintSectionSubtitle": "Map this Kaneo project to a Blueprint project/process for Push to Blueprint."
 		},
 		"projectVisibility": {
 			"pageTitle": "Видимість проєкту",
@@ -649,7 +800,11 @@
 			"on": "Увімк.",
 			"off": "Вимк.",
 			"newColumnPlaceholder": "Назва нової колонки...",
-			"add": "Додати"
+			"add": "Додати",
+			"pickColorTitle": "Pick column color",
+			"chooseColor": "Choose color",
+			"noColor": "No color",
+			"toastColorUpdated": "Column color updated"
 		},
 		"githubIntegration": {
 			"validation": {
@@ -1009,6 +1164,424 @@
 			"merged": "Змерджено",
 			"draft": "Чернетка",
 			"open": "Відкрито"
+		},
+		"blueprint": "Blueprint",
+		"blueprintPage": {
+			"pageTitle": "Blueprint",
+			"heading": "Blueprint account",
+			"subtitle": "Connect your Blueprint login. Kaneo calls Blueprint only from the server (no browser CORS).",
+			"title": "Blueprint credentials",
+			"description": "Username and password are encrypted at rest and used only when you push a task.",
+			"env": "Environment",
+			"envDev": "Dev — blueprint-dev.cyberlogitec.com.vn",
+			"envProd": "Prod — blueprint.cyberlogitec.com.vn",
+			"envLockedHint": "Fixed for this Kaneo server — dev Kaneo uses Blueprint dev; prod Kaneo uses Blueprint prod.",
+			"username": "Username",
+			"password": "Password",
+			"passwordPlaceholder": "Enter Blueprint password",
+			"passwordKeepPlaceholder": "Leave blank to keep ({{masked}})",
+			"verify": "Verify connection",
+			"save": "Save",
+			"disconnect": "Disconnect",
+			"saveSuccess": "Blueprint settings saved",
+			"saveError": "Failed to save Blueprint settings",
+			"verifySuccess": "Connected as {{name}}",
+			"verifyError": "Could not verify Blueprint credentials",
+			"disconnectSuccess": "Blueprint account disconnected",
+			"disconnectError": "Failed to disconnect Blueprint account"
+		},
+		"blueprintProject": {
+			"description": "Default Blueprint project/process/reviewer/iteration used when pushing tasks from this Kaneo project.",
+			"needAccount": "Connect your Blueprint account under Account → Blueprint before configuring the map.",
+			"pjtId": "Blueprint project",
+			"pickProject": "Select a project",
+			"pickProjectFirst": "Select a Blueprint project first",
+			"cateId": "Category",
+			"pickCategory": "Select a category",
+			"bizProcId": "Business process",
+			"pickProcess": "Select a process",
+			"noProcesses": "No processes found for this project",
+			"loadingLookups": "Loading Blueprint options…",
+			"pmUserId": "Kaneo project PM",
+			"pickPm": "Select Blueprint reviewer (Confirm / Finish)",
+			"pmHint": "Pick the Blueprint user that should be assigned by default for Confirm/Finish.",
+			"pmUsernamePlaceholder": "Blueprint reviewer username",
+			"legacyPm": "Legacy Blueprint username: {{username}}. Pick a Kaneo member to replace it.",
+			"recipntId": "Blueprint reviewer (Confirm / Finish)",
+			"lookupErrorTitle": "Could not load Blueprint options",
+			"lookupErrorHint": "Verify the Blueprint account first, then check that this account can access the project on Blueprint.",
+			"lookupUnknownError": "Unknown lookup error",
+			"noProjectsTitle": "No Blueprint projects were returned",
+			"noProjectsHint": "This Blueprint account may not be a member of any visible project in the selected environment. Switch account or ask a Blueprint manager to add it.",
+			"jbTpCd": "Job type",
+			"pickJobType": "Select job type",
+			"imptTpCd": "Importance",
+			"pickImportance": "Select importance",
+			"itrtnMode": "Iteration",
+			"itrtnCurrent": "Current sprint",
+			"itrtnFixed": "Fixed iteration",
+			"itrtnId": "Blueprint iteration",
+			"itrtnHint": "Same as picking iteration when creating a requirement in Blueprint.",
+			"pickIteration": "Select a Blueprint iteration",
+			"noIterations": "No iterations found for this project",
+			"itrtnRequired": "Pick a Blueprint iteration before saving the map",
+			"itrtnFixedRequired": "Pick a Blueprint iteration before saving the map",
+			"save": "Save map",
+			"disconnect": "Remove map",
+			"saveSuccess": "Blueprint project map saved",
+			"saveError": "Failed to save Blueprint map",
+			"disconnectSuccess": "Blueprint map removed",
+			"disconnectError": "Failed to remove Blueprint map",
+			"snapshotsTitle": "Saved setups (this browser)",
+			"snapshotsHint": "Keep a few known-good maps so you can restore if you change something by mistake.",
+			"snapshotNamePlaceholder": "Snapshot name (optional)",
+			"snapshotDefaultName": "Blueprint map",
+			"saveSnapshot": "Save snapshot",
+			"restoreSnapshot": "Restore",
+			"deleteSnapshot": "Delete",
+			"snapshotSaved": "Snapshot saved in this browser",
+			"snapshotRestored": "Restored “{{name}}” into the form — click Save map to apply",
+			"noSnapshots": "No snapshots yet."
+		},
+		"googleChatIntegration": {
+			"validation": {
+				"webhookInvalid": "Enter a valid Google Chat incoming webhook URL (https://chat.googleapis.com/.../messages?...)"
+			},
+			"toast": {
+				"saved": "Google Chat integration saved successfully",
+				"saveError": "Failed to save Google Chat integration",
+				"enabled": "Google Chat notifications enabled",
+				"disabled": "Google Chat notifications paused",
+				"updateError": "Failed to update Google Chat integration",
+				"removed": "Google Chat integration removed successfully",
+				"removeError": "Failed to remove Google Chat integration"
+			},
+			"connectionTitle": "Google Chat Space",
+			"connectionHint": "Paste the incoming webhook URL from your Google Chat Space. Kaneo formats task events as Chat messages.",
+			"connected": "Connected",
+			"paused": "Paused",
+			"webhookLabel": "Incoming webhook URL",
+			"webhookPlaceholder": "https://chat.googleapis.com/v1/spaces/.../messages?key=...&token=...",
+			"webhookHint": "In Google Chat: Space → Apps & integrations → Manage webhooks → copy URL.",
+			"webhookHintConfigured": "Webhook configured ({{url}}). Paste a new URL to replace it.",
+			"eventsTitle": "Event notifications",
+			"eventsHint": "Choose which project changes should post to the Space.",
+			"events": {
+				"taskCreated": "New tasks",
+				"taskStatusChanged": "Status changes",
+				"taskPriorityChanged": "Priority changes",
+				"taskTitleChanged": "Title changes",
+				"taskDescriptionChanged": "Description changes",
+				"taskCommentCreated": "New comments"
+			},
+			"connect": "Connect Google Chat",
+			"saveChanges": "Save changes",
+			"disconnect": "Disconnect"
+		},
+		"projectMembers": {
+			"title": "Members",
+			"pageTitle": "Project Members",
+			"subtitle": "Manage who has access to this project and their roles.",
+			"addMember": "Add Member",
+			"memberColumn": "Member",
+			"roleColumn": "Role",
+			"loading": "Loading members…",
+			"noMembers": "No members yet",
+			"noMembersHint": "Invite people by email to give them project access.",
+			"you": "(You)",
+			"noRole": "No role",
+			"addDialog": {
+				"title": "Add Member",
+				"description": "Enter the email of someone with an account. They are added to this project only — not every project in the workspace. If needed they are also joined to the workspace so they can sign in.",
+				"emailLabel": "Email address",
+				"emailPlaceholder": "Type a name or email",
+				"emailInvalid": "Please enter a valid email address.",
+				"roleLabel": "Project Role",
+				"rolePlaceholder": "Select a role…",
+				"cancel": "Cancel",
+				"adding": "Adding…",
+				"submit": "Add Member",
+				"searchHint": "Type a name or email to find people",
+				"searchEmpty": "No matching accounts",
+				"searchLoading": "Searching…"
+			},
+			"removeMenu": "Remove from project",
+			"removeDialog": {
+				"title": "Remove Member",
+				"description": "Remove {{name}} from this project? They will lose all project-level access.",
+				"cancel": "Cancel",
+				"removing": "Removing…",
+				"confirm": "Remove"
+			},
+			"toast": {
+				"added": "Member added to project.",
+				"addError": "Failed to add member.",
+				"roleUpdated": "Role updated.",
+				"roleUpdateError": "Failed to update role.",
+				"removed": "Member removed from project.",
+				"removeError": "Failed to remove member."
+			}
+		},
+		"projectRoles": {
+			"title": "Roles",
+			"pageTitle": "Project Roles",
+			"subtitle": "Define which actions members can perform in this project. Owner is a system role and cannot be modified.",
+			"newRole": "New role",
+			"loading": "Loading…",
+			"loadError": "Failed to load roles.",
+			"noRoles": "No roles yet",
+			"noRolesHint": "Default roles (Owner / Member / Viewer) will appear here once seeded for this project.",
+			"systemBadge": "System",
+			"permissionsCount": "{{count}} permissions",
+			"draftTitle": "New role",
+			"nameLabel": "Name",
+			"nameHint": "Will appear in the role selector for members.",
+			"namePlaceholder": "e.g. Reviewer",
+			"discard": "Discard",
+			"createRole": "Create role",
+			"systemLocked": "System role — permissions and name are locked.",
+			"deleteRoleBtn": "Delete role",
+			"unsavedChanges": "You have unsaved changes",
+			"allSaved": "All changes saved",
+			"saveChanges": "Save changes",
+			"noPermission": "You need the role:manage permission (Owner) to manage project roles.",
+			"deleteDialog": {
+				"title": "Delete role",
+				"description": "Permanently delete “{{name}}”? Members assigned to this role will lose its permissions.",
+				"cancel": "Cancel",
+				"confirm": "Delete"
+			},
+			"toast": {
+				"created": "Role created.",
+				"createError": "Failed to create role.",
+				"updated": "Role updated.",
+				"updateError": "Failed to update role.",
+				"deleted": "Role deleted.",
+				"deleteError": "Failed to delete role.",
+				"nameRequired": "Name is required.",
+				"nameExists": "A role with that name already exists.",
+				"permissionRequired": "Select at least one permission."
+			},
+			"resources": {
+				"item": "Tasks",
+				"sprint": "Sprints",
+				"backlog": "Backlog",
+				"doc": "Documents",
+				"role": "Roles",
+				"member": "Members"
+			},
+			"permissions": {
+				"item": {
+					"create": {
+						"label": "Create tasks",
+						"description": "Create new tasks in this project."
+					},
+					"read": {
+						"label": "View tasks",
+						"description": "View tasks and their details."
+					},
+					"update": {
+						"label": "Edit tasks",
+						"description": "Edit task content, priority, due date, and labels."
+					},
+					"delete": {
+						"label": "Delete tasks",
+						"description": "Permanently delete tasks."
+					},
+					"transition": {
+						"label": "Move tasks",
+						"description": "Change task status or move between columns."
+					},
+					"assign": {
+						"label": "Assign tasks",
+						"description": "Assign tasks to project members."
+					}
+				},
+				"sprint": {
+					"create": {
+						"label": "Create sprints",
+						"description": "Create new sprints in this project."
+					},
+					"start": {
+						"label": "Start sprints",
+						"description": "Start a sprint."
+					},
+					"complete": {
+						"label": "Complete sprints",
+						"description": "Mark a sprint as complete."
+					},
+					"manage": {
+						"label": "Manage sprints",
+						"description": "Edit and delete sprints."
+					}
+				},
+				"backlog": {
+					"read": {
+						"label": "View backlog",
+						"description": "View the project backlog and columns."
+					},
+					"manage": {
+						"label": "Manage backlog",
+						"description": "Create, reorder, rename, and delete columns."
+					}
+				},
+				"doc": {
+					"view": {
+						"label": "View documents",
+						"description": "View project documents."
+					},
+					"upload": {
+						"label": "Upload documents",
+						"description": "Upload files to this project."
+					},
+					"manage": {
+						"label": "Manage documents",
+						"description": "Rename, move, and delete documents."
+					},
+					"empty_trash": {
+						"label": "Empty trash",
+						"description": "Permanently delete items in the project Documents trash."
+					}
+				},
+				"role": {
+					"manage": {
+						"label": "Manage roles",
+						"description": "Create, edit, and delete project roles."
+					}
+				},
+				"member": {
+					"manage": {
+						"label": "Manage members",
+						"description": "Add, remove, and assign roles to project members."
+					}
+				}
+			}
+		},
+		"security": "Security",
+		"securityPage": {
+			"pageTitle": "Security",
+			"title": "Security",
+			"subtitle": "Manage your password and account security.",
+			"sectionTitle": "Change password",
+			"sectionSubtitle": "Use a strong password you do not reuse elsewhere.",
+			"currentPassword": "Current password",
+			"newPassword": "New password",
+			"confirmPassword": "Confirm new password",
+			"saving": "Saving...",
+			"save": "Update password",
+			"updateSuccess": "Password updated successfully",
+			"updateError": "Failed to update password",
+			"validation": {
+				"currentRequired": "Current password is required",
+				"passwordTooShort": "Password must be at least 8 characters",
+				"passwordMismatch": "Passwords do not match",
+				"passwordSame": "New password must be different from the current password"
+			},
+			"oauthOnly": "Your account signs in with an external provider (such as Google or GitHub), so there is no password to change here."
+		},
+		"workspaceRoles": {
+			"title": "Workspace roles",
+			"subtitle": "Manage roles for {{name}}.",
+			"description": "Define which workspace actions members can perform. Owner is a system role and cannot be modified here.",
+			"noPermission": "You need admin or owner access to manage workspace roles.",
+			"noRolesHint": "Create a custom role to grant a specific set of permissions.",
+			"nameHint": "Lowercase letters only. Reserved names: viewer, member, admin, owner.",
+			"defaultBadge": "Default",
+			"defaultLocked": "Default role — name is locked. You can still adjust permissions.",
+			"workspaceFallback": "this workspace",
+			"defaultDescriptions": {
+				"viewer": "Read-only access to projects, tasks, and workspace.",
+				"member": "Can create and update projects and tasks.",
+				"admin": "Full project and task management plus workspace settings."
+			},
+			"resources": {
+				"project": "Projects",
+				"task": "Tasks",
+				"label": "Labels",
+				"workspace": "Workspace"
+			},
+			"permissions": {
+				"project": {
+					"create": {
+						"label": "Create projects",
+						"description": "Create new projects in this workspace."
+					},
+					"read": {
+						"label": "View projects",
+						"description": "View projects and their details."
+					},
+					"update": {
+						"label": "Edit projects",
+						"description": "Update project name, icon, description, and settings."
+					},
+					"delete": {
+						"label": "Delete projects",
+						"description": "Permanently delete projects in this workspace."
+					},
+					"share": {
+						"label": "Share projects",
+						"description": "Make projects publicly accessible via share links."
+					}
+				},
+				"task": {
+					"create": {
+						"label": "Create tasks",
+						"description": "Create new tasks in any project."
+					},
+					"read": {
+						"label": "View tasks",
+						"description": "View tasks across projects."
+					},
+					"update": {
+						"label": "Edit tasks",
+						"description": "Edit task content, status, priority, due date, and labels."
+					},
+					"delete": {
+						"label": "Delete tasks",
+						"description": "Permanently delete tasks."
+					},
+					"assign": {
+						"label": "Assign tasks",
+						"description": "Assign tasks to other workspace members."
+					}
+				},
+				"label": {
+					"create": {
+						"label": "Create labels",
+						"description": "Add new labels to tasks in this workspace."
+					},
+					"read": {
+						"label": "View labels",
+						"description": "View labels attached to tasks."
+					},
+					"update": {
+						"label": "Edit labels",
+						"description": "Rename, recolor, and reassign labels."
+					},
+					"delete": {
+						"label": "Delete labels",
+						"description": "Permanently delete labels from this workspace."
+					}
+				},
+				"workspace": {
+					"read": {
+						"label": "Access workspace",
+						"description": "Read workspace metadata and members."
+					},
+					"update": {
+						"label": "Edit workspace",
+						"description": "Edit workspace name and description."
+					},
+					"delete": {
+						"label": "Delete workspace",
+						"description": "Permanently delete this workspace."
+					},
+					"manage_settings": {
+						"label": "Manage settings",
+						"description": "Configure integrations, notification rules, and workspace preferences."
+					}
+				}
+			}
 		}
 	},
 	"navigation": {
@@ -1039,7 +1612,8 @@
 			"projects": "Проєкти",
 			"members": "Учасники",
 			"invitations": "Запрошення",
-			"more": "Більше"
+			"more": "Більше",
+			"backToBoard": "Back to board"
 		},
 		"projectList": {
 			"viewProject": "Переглянути проєкт",
@@ -1050,7 +1624,9 @@
 			"deleteConfirmTitle": "Видалити проєкт?",
 			"deleteConfirmDescription": "Це назавжди видалить проєкт та всі його дані. Цю дію неможливо скасувати.",
 			"deletedToast": "Проєкт видалено",
-			"deleteProject": "Видалити проєкт"
+			"deleteProject": "Видалити проєкт",
+			"pinProject": "Pin project",
+			"unpinProject": "Unpin project"
 		},
 		"search": {
 			"inputPlaceholder": "Пошук завдань, проєктів, коментарів...",
@@ -1157,6 +1733,26 @@
 				"title": "Відлік часу розпочато",
 				"contentWithTask": "Відлік часу розпочато для завдання: {{taskTitle}}",
 				"contentWithoutTask": "Відлік часу розпочато для завдання"
+			},
+			"mention": {
+				"title": "You were mentioned",
+				"content": "{{actorName}} mentioned you on \"{{taskTitle}}\""
+			},
+			"invitation": {
+				"title": "Workspace invitation",
+				"content": "{{inviterName}} invited you to \"{{workspaceName}}\""
+			},
+			"due_date_reminder": {
+				"title": "Task due soon",
+				"content": "Task \"{{taskTitle}}\" is due soon"
+			},
+			"task_overdue": {
+				"title": "Task overdue",
+				"content": "Task \"{{taskTitle}}\" is overdue"
+			},
+			"task_deleted": {
+				"title": "Task deleted",
+				"content": "{{deletedByName}} deleted task \"{{taskTitle}}\""
 			}
 		}
 	},
@@ -1254,9 +1850,12 @@
 					"swift": "Swift",
 					"typescript": "TypeScript",
 					"yaml": "YAML"
-				}
+				},
+				"mentionEmpty": "No people found"
 			}
-		}
+		},
+		"moved": "moved task from \"{{from}}\" to \"{{to}}\"",
+		"created": "created this task"
 	},
 	"tasks": {
 		"status": {
@@ -1266,7 +1865,14 @@
 			"in-review": "На перевірці",
 			"done": "Готово",
 			"archived": "Архівовано",
-			"planned": "Заплановано"
+			"planned": "Заплановано",
+			"new": "New",
+			"approved": "Approved",
+			"rejected": "Rejected",
+			"commit": "Commit",
+			"qa": "QA",
+			"staging": "Staging",
+			"released": "Released"
 		},
 		"priority": {
 			"label": "Пріоритет",
@@ -1283,7 +1889,9 @@
 		},
 		"common": {
 			"selectTask": "Обрати завдання",
-			"loadingTask": "Завантаження завдання..."
+			"loadingTask": "Завантаження завдання...",
+			"taskNotFound": "Task not found",
+			"taskNotFoundDescription": "The task you are looking for does not exist or has been deleted."
 		},
 		"detail": {
 			"subtaskOf": "Підзавдання",
@@ -1404,8 +2012,12 @@
 			"selectTask": "Обрати завдання для зв'язування",
 			"types": {
 				"blocks": "блокує",
-				"related": "пов'язано з"
-			}
+				"related": "пов'язано з",
+				"bug": "is a bug for",
+				"cause": "is caused by"
+			},
+			"bug": "Bug",
+			"cause": "Cause"
 		},
 		"subtasks": {
 			"title": "Підзавдання",
@@ -1426,7 +2038,9 @@
 			"copyTaskBranch": "Копіювати гілку завдання",
 			"start": "Початок",
 			"startDate": "Дата початку",
-			"noDate": "Немає дати"
+			"noDate": "Немає дати",
+			"reporter": "Reporter",
+			"estimate": "Estimate"
 		},
 		"move": {
 			"title": "Перемістити завдання",
@@ -1481,6 +2095,9 @@
 					"rose": "Троянда",
 					"crimson": "Багряний"
 				}
+			},
+			"points": {
+				"updateError": "Failed to update estimate"
 			}
 		},
 		"backlog": {
@@ -1537,12 +2154,17 @@
 				"priority": "Пріоритет",
 				"assignee": "Виконавець",
 				"dueDate": "Дата завершення",
-				"labels": "Мітки"
+				"labels": "Мітки",
+				"creator": "Creator",
+				"relatedToMe": "Related to me"
 			},
 			"operators": {
 				"isAnyOf": "є будь-яким з",
-				"includeAnyOf": "включає будь-який з"
-			}
+				"includeAnyOf": "включає будь-який з",
+				"is": "is"
+			},
+			"allCreators": "All creators",
+			"relatedToMeValue": "me"
 		},
 		"gantt": {
 			"pageTitle": "{{name}} — Ґант",
@@ -1576,7 +2198,8 @@
 			"noTasks": "Немає завдань"
 		},
 		"kanban": {
-			"addTask": "Додати завдання"
+			"addTask": "Додати завдання",
+			"newTask": "New task"
 		},
 		"pr": {
 			"merged": "Змерджено",
@@ -1648,6 +2271,34 @@
 			"searchActions": "Пошук дій...",
 			"noActionsFound": "Дій не знайдено.",
 			"changeStatus": "Змінити статус"
+		},
+		"blueprint": {
+			"pushToBlueprint": "Push to Blueprint",
+			"syncToBlueprint": "Sync to Blueprint",
+			"customize": "Customize…",
+			"customizeTitle": "Push to Blueprint (customize)",
+			"connectAccount": "Connect Blueprint account",
+			"configureMap": "Configure Blueprint map",
+			"pushSuccess": "Created Blueprint {{key}}",
+			"syncSuccess": "Updated Blueprint {{key}}",
+			"pushError": "Failed to sync task to Blueprint",
+			"noProjectAccess": "Blueprint account \"{{username}}\" is not a member of this project's Blueprint project. Ask a Blueprint PM to add you, or switch account.",
+			"switchAccount": "Blueprint account settings",
+			"openIssue": "Open in Blueprint",
+			"cancel": "Cancel",
+			"overridePlaceholder": "Leave blank to use project default",
+			"noLookupOptions": "No options loaded — use project defaults or reopen Customize after map is set.",
+			"fieldPjtId": "Project ID",
+			"fieldBizProcId": "Process",
+			"fieldCateId": "Category",
+			"fieldRecipntId": "PM username",
+			"fieldItrtnId": "Iteration"
+		},
+		"points": {
+			"label": "Estimate",
+			"none": "No estimate",
+			"unit": "{{n}} pts",
+			"value": "{{n}} points"
 		}
 	},
 	"invitations": {
@@ -1686,7 +2337,8 @@
 				"complete": "Завершено",
 				"inProgress": "В роботі"
 			},
-			"noDueDate": "Без дати завершення"
+			"noDueDate": "Без дати завершення",
+			"emptyDescriptionReadOnly": "There are no projects in this workspace yet. Ask an admin to create one."
 		},
 		"search": {
 			"pageTitle": "Пошук",
@@ -1721,18 +2373,21 @@
 			"creating": "Створення...",
 			"submit": "Створити робочий простір",
 			"success": "Робочий простір успішно створено",
-			"error": "Не вдалося створити робочий простір"
+			"error": "Не вдалося створити робочий простір",
+			"alreadyExists": "A workspace with this name (or URL) already exists. Try a different name."
 		}
 	},
 	"team": {
 		"roles": {
 			"owner": "Власник",
 			"admin": "Адміністратор",
-			"member": "Учасник"
+			"member": "Учасник",
+			"viewer": "Viewer"
 		},
 		"members": {
 			"pageTitle": "Учасники",
-			"inviteMember": "Запросити учасника"
+			"inviteMember": "Запросити учасника",
+			"you": "You"
 		},
 		"inviteModal": {
 			"title": "Запросити учасника команди",
@@ -1740,7 +2395,10 @@
 			"emailPlaceholder": "colleague@company.com",
 			"sendInvitation": "Надіслати запрошення",
 			"success": "Запрошення успішно надіслано",
-			"error": "Не вдалося запросити учасника команди"
+			"error": "Не вдалося запросити учасника команди",
+			"searchHint": "Type a name or email to find people",
+			"searchEmpty": "No matching accounts",
+			"searchLoading": "Searching…"
 		},
 		"membersTable": {
 			"emptyTitle": "Учасників команди ще немає",
@@ -1763,7 +2421,13 @@
 			"removeSuccess": "Учасника команди успішно видалено",
 			"removeError": "Не вдалося видалити учасника команди",
 			"cancelInviteSuccess": "Запрошення успішно скасовано",
-			"cancelInviteError": "Не вдалося скасувати запрошення"
+			"cancelInviteError": "Не вдалося скасувати запрошення",
+			"roleUpdateSuccess": "Role updated",
+			"roleUpdateError": "Failed to update role"
+		},
+		"invitations": {
+			"expires": "Expires {{date}}",
+			"pendingBadge": "pending"
 		}
 	},
 	"publicProject": {
@@ -1802,5 +2466,192 @@
 		"branding": {
 			"poweredBy": "Працює на"
 		}
+	},
+	"documents": {
+		"nav": {
+			"title": "Documents"
+		},
+		"folders": {
+			"title": "Folders",
+			"root": "All documents",
+			"new": "New folder",
+			"newSubfolder": "New subfolder",
+			"rename": "Rename folder",
+			"namePlaceholder": "Folder name",
+			"actions": "Folder actions",
+			"hidePanel": "Hide folders",
+			"showPanel": "Show folders",
+			"deleteTitle": "Delete folder?",
+			"deleteDescription": "This moves “{{name}}”, its subfolders and all documents inside to the Trash. You can restore them later."
+		},
+		"columns": {
+			"name": "Name",
+			"uploadedBy": "Uploaded by",
+			"date": "Date"
+		},
+		"list": {
+			"emptyTitle": "No documents",
+			"emptyDescription": "Upload files or drag and drop them here.",
+			"folderLabel": "Folder"
+		},
+		"breadcrumb": {
+			"root": "Documents"
+		},
+		"upload": {
+			"title": "Uploads",
+			"uploading": "Uploading {{count}} file(s)…",
+			"failed": "Failed"
+		},
+		"actions": {
+			"upload": "Upload",
+			"newFolder": "New folder",
+			"download": "Download",
+			"rename": "Rename",
+			"move": "Move",
+			"delete": "Delete",
+			"create": "Create",
+			"save": "Save",
+			"more": "More",
+			"open": "Open",
+			"close": "Close",
+			"preview": "Preview"
+		},
+		"preview": {
+			"loading": "Loading preview…",
+			"error": "Couldn't load preview",
+			"cannotPreview": "This file can't be previewed",
+			"cannotPreviewHint": "Download the file to open it."
+		},
+		"move": {
+			"title": "Move to folder",
+			"root": "Root (no folder)"
+		},
+		"rename": {
+			"title": "Rename document",
+			"placeholder": "Document name"
+		},
+		"delete": {
+			"title": "Delete document?",
+			"description": "This moves “{{name}}” to the Trash. You can restore it later."
+		},
+		"selection": {
+			"count": "{{count}} selected",
+			"selectAll": "Select all"
+		},
+		"bulkDelete": {
+			"title": "Delete {{count}} item(s)?",
+			"description": "This moves the selected items to the Trash. Selected folders and everything inside them go too. You can restore them later."
+		},
+		"toast": {
+			"uploaded": "Uploaded {{count}} file(s)",
+			"uploadError": "Upload failed",
+			"downloadError": "Download failed",
+			"folderCreated": "Folder created",
+			"folderRenamed": "Folder renamed",
+			"folderDeleted": "Folder deleted",
+			"renamed": "Document renamed",
+			"moved": "Document moved",
+			"deleted": "Document deleted",
+			"bulkMoved": "Moved {{count}} item(s)",
+			"bulkDeleted": "Deleted {{count}} item(s)",
+			"bulkError": "{{count}} item(s) could not be processed"
+		},
+		"trash": {
+			"title": "Trash",
+			"back": "Back to documents",
+			"empty": "Empty trash",
+			"restore": "Restore",
+			"deleteForever": "Delete forever",
+			"deletedBy": "Deleted by",
+			"deletedAt": "Deleted",
+			"emptyStateTitle": "Trash is empty",
+			"emptyStateDescription": "Deleted documents and folders show up here. Restore them or delete them for good.",
+			"confirmPurgeTitle": "Delete forever?",
+			"confirmPurgeDescription": "This permanently deletes “{{name}}”. This can't be undone.",
+			"confirmEmptyTitle": "Empty trash?",
+			"confirmEmptyDescription": "This permanently deletes everything in this project's Trash. This can't be undone.",
+			"toast": {
+				"restored": "Restored",
+				"restoreError": "Restore failed",
+				"purged": "Permanently deleted",
+				"purgeError": "Delete failed",
+				"emptied": "Trash emptied",
+				"emptyError": "Failed to empty trash"
+			}
+		}
+	},
+	"myTasks": {
+		"title": "My Tasks",
+		"empty": "No tasks assigned to you",
+		"emptyInvolved": "No tasks related to you",
+		"showCompleted": "Show completed",
+		"loadError": "Could not load your tasks. Please try again.",
+		"scopeAssigned": "Assigned",
+		"scopeInvolved": "Involved"
+	},
+	"dashboard": {
+		"title": "Overview",
+		"stats": {
+			"total": "Total",
+			"open": "Open",
+			"completed": "Completed",
+			"overdue": "Overdue"
+		},
+		"sections": {
+			"activeSprints": "Active sprints",
+			"memberWorkload": "Member workload",
+			"projectProgress": "Project progress"
+		},
+		"member": {
+			"name": "Member",
+			"workload": "Workload"
+		},
+		"units": {
+			"tasks": "Tasks",
+			"points": "Points"
+		},
+		"daysLeft_one": "{{count}} day left",
+		"daysLeft_other": "{{count}} days left",
+		"overdueBy_one": "{{count}} day overdue",
+		"overdueBy_other": "{{count}} days overdue",
+		"noActiveSprint": "No active sprint",
+		"empty": "No data yet",
+		"emptyDescription": "Create a project and add tasks to see workspace insights here.",
+		"error": "Could not load the dashboard. Please try again."
+	},
+	"backlog": {
+		"newTask": "New task",
+		"open": "Open",
+		"noStatus": "No status",
+		"none": "—",
+		"unknownCreator": "Unknown",
+		"searchTitle": "Search by title…",
+		"noMatch": "No tasks match the current filters.",
+		"activeFilters_one": "{{count}} filter active",
+		"activeFilters_other": "{{count}} filters active",
+		"columns": {
+			"id": "ID",
+			"title": "Title",
+			"status": "Status",
+			"priority": "Priority",
+			"sprint": "Sprint",
+			"assignee": "Assignee",
+			"creator": "Created by"
+		},
+		"sort": {
+			"asc": "Sort ascending",
+			"desc": "Sort descending",
+			"clear": "Clear sort"
+		},
+		"filter": {
+			"byValue": "Filter by value",
+			"clear": "Clear filter",
+			"allValues": "All values"
+		},
+		"empty": {
+			"title": "No tasks yet",
+			"description": "Create a task to start building your backlog."
+		},
+		"error": "Could not load tasks. Please try again."
 	}
 }

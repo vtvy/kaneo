@@ -1,23 +1,32 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Search } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertCircleIcon, Plus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import BoardToolbar from "@/components/board/board-toolbar";
 import ProjectLayout from "@/components/common/project-layout";
 import KanbanBoard from "@/components/kanban-board";
 import ListView from "@/components/list-view";
 import PageTitle from "@/components/page-title";
+import useAuth from "@/components/providers/auth-provider/hooks/use-auth";
 import CreateTaskModal from "@/components/shared/modals/create-task-modal";
+import BoardSprintFilter, {
+  ALL_SPRINTS_VALUE,
+} from "@/components/sprint/board-sprint-filter";
 import TaskDetailsSheet from "@/components/task/task-details-sheet";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { shortcuts } from "@/constants/shortcuts";
 import useGetLabelsByWorkspace from "@/hooks/queries/label/use-get-labels-by-workspace";
+import useGetSprintTasks from "@/hooks/queries/sprint/use-get-sprint-tasks";
+import useGetSprintsByProject from "@/hooks/queries/sprint/use-get-sprints-by-project";
 import { useGetTasks } from "@/hooks/queries/task/use-get-tasks";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useTaskFiltersWithLabelsSupport } from "@/hooks/use-task-filters-with-labels-support";
 import type { SortConfig } from "@/lib/sort-tasks";
 import { sortTasks } from "@/lib/sort-tasks";
+import { getCurrentSprint } from "@/lib/sprint";
+import useActiveSprintStore from "@/store/active-sprint";
 import useProjectStore from "@/store/project";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 
@@ -79,15 +88,13 @@ function RouteComponent() {
   const { projectId, workspaceId } = Route.useParams();
   const { taskId } = Route.useSearch();
   const navigate = useNavigate();
-  const { data } = useGetTasks(projectId);
+  const { user } = useAuth();
+  const { data, isError, refetch } = useGetTasks(projectId);
   const { project, setProject } = useProjectStore();
   const { viewMode, setViewMode } = useUserPreferencesStore();
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [boardSearchQuery, setBoardSearchQuery] = useState("");
-  const [isBoardSearchMounted, setIsBoardSearchMounted] = useState(false);
-  const [isBoardSearchVisible, setIsBoardSearchVisible] = useState(false);
-  const [boardSearchInput, setBoardSearchInput] =
-    useState<HTMLInputElement | null>(null);
+  const boardSearchInputRef = useRef<HTMLInputElement>(null);
   const [sort, setSort] = useState<SortConfig>({
     field: "position",
     direction: "asc",
@@ -95,6 +102,65 @@ function RouteComponent() {
 
   const { data: users } = useGetActiveWorkspaceUsers(workspaceId);
   const { data: workspaceLabels = [] } = useGetLabelsByWorkspace(workspaceId);
+  const { can: canProject } = useProjectPermission(projectId);
+  const canCreateTask = canProject("item", "create");
+
+  const { data: sprints } = useGetSprintsByProject(projectId);
+  // The "current" sprint is derived from the date (today within [start, end]),
+  // not a stored/manual state.
+  const currentSprint = useMemo(() => getCurrentSprint(sprints), [sprints]);
+  const { data: currentSprintTasks } = useGetSprintTasks(
+    currentSprint?.id ?? "",
+  );
+  const currentSprintTaskIds = useMemo(
+    () => new Set((currentSprintTasks ?? []).map((task) => task.id)),
+    [currentSprintTasks],
+  );
+
+  // The board filters to a single sprint. ALL_SPRINTS_VALUE = show everything.
+  // Defaults to the current sprint once sprints load (see effect below).
+  const [selectedSprintId, setSelectedSprintId] =
+    useState<string>(ALL_SPRINTS_VALUE);
+  const [hasInitializedSprintFilter, setHasInitializedSprintFilter] =
+    useState(false);
+  const { setActiveSprint } = useActiveSprintStore();
+
+  // Once sprints are loaded, default the filter to the current sprint (once).
+  useEffect(() => {
+    if (hasInitializedSprintFilter || !sprints) return;
+    setSelectedSprintId(currentSprint?.id ?? ALL_SPRINTS_VALUE);
+    setHasInitializedSprintFilter(true);
+  }, [sprints, currentSprint, hasInitializedSprintFilter]);
+
+  // If the selected sprint no longer exists (e.g. deleted), fall back to "all".
+  useEffect(() => {
+    if (selectedSprintId === ALL_SPRINTS_VALUE || !sprints) return;
+    if (!sprints.some((sprint) => sprint.id === selectedSprintId)) {
+      setSelectedSprintId(ALL_SPRINTS_VALUE);
+    }
+  }, [sprints, selectedSprintId]);
+
+  const filteredSprintId =
+    selectedSprintId === ALL_SPRINTS_VALUE ? "" : selectedSprintId;
+  const { data: selectedSprintTasks } = useGetSprintTasks(filteredSprintId);
+  const selectedSprintTaskIds = useMemo(
+    () => new Set((selectedSprintTasks ?? []).map((task) => task.id)),
+    [selectedSprintTasks],
+  );
+
+  // Publish the current sprint's task set so task cards can render a badge.
+  useEffect(() => {
+    if (currentSprint) {
+      setActiveSprint({
+        projectId,
+        sprintName: currentSprint.name,
+        taskIds: currentSprintTaskIds,
+      });
+    } else {
+      setActiveSprint(null);
+    }
+    return () => setActiveSprint(null);
+  }, [currentSprint, currentSprintTaskIds, projectId, setActiveSprint]);
 
   const handleCloseTaskSheet = useCallback(() => {
     navigate({
@@ -129,16 +195,6 @@ function RouteComponent() {
     }
   }, [data, setProject]);
 
-  const openBoardSearch = useCallback(() => {
-    setIsBoardSearchMounted(true);
-    window.requestAnimationFrame(() => setIsBoardSearchVisible(true));
-  }, []);
-
-  const closeBoardSearch = useCallback(() => {
-    setIsBoardSearchVisible(false);
-    window.setTimeout(() => setIsBoardSearchMounted(false), 180);
-  }, []);
-
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const isFindShortcut =
@@ -147,17 +203,13 @@ function RouteComponent() {
       if (!isFindShortcut) return;
 
       event.preventDefault();
-      openBoardSearch();
+      boardSearchInputRef.current?.focus();
+      boardSearchInputRef.current?.select();
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [openBoardSearch]);
-
-  useEffect(() => {
-    if (!isBoardSearchMounted) return;
-    window.requestAnimationFrame(() => boardSearchInput?.focus());
-  }, [isBoardSearchMounted, boardSearchInput]);
+  }, []);
 
   const {
     filters,
@@ -166,7 +218,12 @@ function RouteComponent() {
     filteredProject,
     hasActiveFilters,
     clearFilters,
-  } = useTaskFiltersWithLabelsSupport(project, projectId, boardSearchQuery);
+  } = useTaskFiltersWithLabelsSupport(
+    project,
+    projectId,
+    boardSearchQuery,
+    user?.id,
+  );
 
   const sortedProject = useMemo(() => {
     if (!filteredProject || sort.field === "position") return filteredProject;
@@ -179,41 +236,49 @@ function RouteComponent() {
     };
   }, [filteredProject, sort]);
 
-  const boardHeaderSearch = isBoardSearchMounted ? (
-    <div
-      className={`relative w-[240px] origin-top transition-all duration-180 ease-out ${
-        isBoardSearchVisible
-          ? "translate-y-0 scale-y-100 opacity-100"
-          : "pointer-events-none -translate-y-1 scale-y-95 opacity-0"
-      }`}
-    >
-      <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 text-muted-foreground" />
-      <Input
-        ref={setBoardSearchInput}
-        value={boardSearchQuery}
-        onChange={(event) => setBoardSearchQuery(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Escape" && !boardSearchQuery.trim()) {
-            closeBoardSearch();
-          }
-        }}
-        onBlur={() => {
-          if (!boardSearchQuery.trim()) {
-            closeBoardSearch();
-          }
-        }}
-        placeholder={t("tasks:boardSearchPlaceholder")}
-        className="h-7.5 [&_[data-slot=input]]:h-7 [&_[data-slot=input]]:leading-7 [&_[data-slot=input]]:pl-8 [&_[data-slot=input]]:text-xs [&_[data-slot=input]]:placeholder:text-xs [&_[data-slot=input]]:placeholder:leading-7"
-      />
+  const displayedProject = useMemo(() => {
+    if (!sortedProject || selectedSprintId === ALL_SPRINTS_VALUE)
+      return sortedProject;
+    return {
+      ...sortedProject,
+      columns: sortedProject.columns.map((column) => ({
+        ...column,
+        tasks: column.tasks.filter((task) =>
+          selectedSprintTaskIds.has(task.id),
+        ),
+      })),
+    };
+  }, [sortedProject, selectedSprintId, selectedSprintTaskIds]);
+
+  const boardHeaderActions = (
+    <div className="flex items-center gap-2">
+      {sprints && sprints.length > 0 && (
+        <BoardSprintFilter
+          sprints={sprints}
+          currentSprintId={currentSprint?.id ?? null}
+          value={selectedSprintId}
+          onValueChange={setSelectedSprintId}
+        />
+      )}
+      {canCreateTask && (
+        <Button
+          size="sm"
+          className="h-7.5"
+          onClick={() => setIsTaskModalOpen(true)}
+        >
+          <Plus className="mr-1 h-3.5 w-3.5" />
+          {t("tasks:kanban.newTask")}
+        </Button>
+      )}
     </div>
-  ) : null;
+  );
 
   return (
     <ProjectLayout
       projectId={projectId}
       workspaceId={workspaceId}
       activeView="board"
-      headerActions={boardHeaderSearch}
+      headerActions={boardHeaderActions}
     >
       <PageTitle
         title={`${project?.name} — ${viewMode === "board" ? t("tasks:view.board") : t("tasks:view.list")}`}
@@ -233,21 +298,34 @@ function RouteComponent() {
           setViewMode={setViewMode}
           sort={sort}
           onSortChange={setSort}
+          searchQuery={boardSearchQuery}
+          onSearchQueryChange={setBoardSearchQuery}
+          searchInputRef={boardSearchInputRef}
         />
 
         <div className="flex h-full flex-1 overflow-hidden bg-background">
-          {sortedProject ? (
+          {displayedProject ? (
             viewMode === "board" ? (
               <KanbanBoard
-                project={sortedProject}
+                project={displayedProject}
                 disableDragDrop={sort.field !== "position"}
               />
             ) : (
               <ListView
-                project={sortedProject}
+                project={displayedProject}
                 disableDragDrop={sort.field !== "position"}
               />
             )
+          ) : isError ? (
+            <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center">
+              <AlertCircleIcon className="h-8 w-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                {t("common:error.title")}
+              </p>
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                {t("common:error.tryAgain")}
+              </Button>
+            </div>
           ) : (
             <BoardSkeleton />
           )}

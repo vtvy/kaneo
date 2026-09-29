@@ -3,6 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { taskTable, userTable } from "../../database/schema";
 import { publishEvent } from "../../events";
+import { recordAssigneeHandoff } from "./record-task-involvement";
 
 async function updateTaskAssignee({
   id,
@@ -28,6 +29,20 @@ async function updateTaskAssignee({
     return existingTask;
   }
 
+  // A provided assignee must exist, otherwise the FK update throws a 500.
+  if (nextAssigneeId) {
+    const [exists] = await db
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(eq(userTable.id, nextAssigneeId))
+      .limit(1);
+    if (!exists) {
+      throw new HTTPException(400, {
+        message: "Assignee user not found",
+      });
+    }
+  }
+
   const [updatedTask] = await db
     .update(taskTable)
     .set({ userId: nextAssigneeId || null })
@@ -39,6 +54,12 @@ async function updateTaskAssignee({
       message: "Failed to update task assignee",
     });
   }
+
+  await recordAssigneeHandoff({
+    taskId: updatedTask.id,
+    previousAssigneeId: existingTask.userId,
+    nextAssigneeId: nextAssigneeId,
+  });
 
   const newAssigneeName = userId
     ? (

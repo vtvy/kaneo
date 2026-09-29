@@ -69,7 +69,7 @@ export const sendPasswordResetEmail = async (
   to: string,
   subject: string,
   data: PasswordResetEmailProps,
-) => {
+): Promise<void> => {
   const emailTemplate = await render(PasswordResetEmail(data));
   try {
     await transporter.sendMail({
@@ -80,6 +80,9 @@ export const sendPasswordResetEmail = async (
     });
   } catch (error) {
     console.error("Error sending password reset email", error);
+    // Rethrow so callers can record delivery failures instead of
+    // treating an unsent reset link as success.
+    throw error;
   }
 };
 
@@ -88,12 +91,22 @@ export type EmailResult = {
   reason?: "SMTP_NOT_CONFIGURED";
 };
 
+// Matches the API's `hasSmtp` gate (plus SMTP_FROM, which sending needs):
+// a partially filled .env (e.g. host/user defaults without a password)
+// must be treated as unconfigured, not attempted and failed.
+const isSmtpConfigured = () =>
+  Boolean(process.env.SMTP_HOST) &&
+  Boolean(process.env.SMTP_PORT) &&
+  Boolean(process.env.SMTP_USER) &&
+  Boolean(process.env.SMTP_PASSWORD) &&
+  Boolean(process.env.SMTP_FROM);
+
 export const sendWorkspaceInvitationEmail = async (
   to: string,
   subject: string,
   data: WorkspaceInvitationEmailProps,
 ): Promise<EmailResult> => {
-  if (!process.env.SMTP_HOST || !process.env.SMTP_FROM) {
+  if (!isSmtpConfigured()) {
     return { success: false, reason: "SMTP_NOT_CONFIGURED" };
   }
 
@@ -119,7 +132,7 @@ export const sendNotificationEmail = async (
   subject: string,
   data: NotificationEmailProps,
 ): Promise<EmailResult> => {
-  if (!process.env.SMTP_HOST || !process.env.SMTP_FROM) {
+  if (!isSmtpConfigured()) {
     return { success: false, reason: "SMTP_NOT_CONFIGURED" };
   }
 
