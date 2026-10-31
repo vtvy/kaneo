@@ -1,4 +1,5 @@
 import { createHmac } from "node:crypto";
+import { publicFetch } from "../../utils/public-fetch";
 import { assertPublicWebhookDestination } from "./config";
 
 type GenericWebhookPayload = Record<string, unknown>;
@@ -30,7 +31,7 @@ export async function postToGenericWebhook(
   );
 
   try {
-    const response = await fetch(webhookUrl, {
+    const response = await publicFetch(webhookUrl, {
       method: "POST",
       headers,
       body,

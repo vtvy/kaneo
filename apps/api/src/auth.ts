@@ -457,15 +457,18 @@ export const auth = betterAuth({
     },
   },
   rateLimit: {
-    // Enable in cloud; self-hosted instances opt in by setting KANEO_CLOUD.
-    // Default better-auth rate-limit only kicks in for production; we keep the
-    // global limits conservative and tighten signup/invite via customRules.
-    enabled: isCloud(),
+    // Always on so self-hosted instances also get Better Auth's built-in
+    // limits on sign-in, sign-up and password-reset/OTP emails. Outside cloud
+    // the global limit stays loose: a proxy that hides client IPs puts every
+    // user in one bucket.
+    enabled: true,
     window: 10,
-    max: 100,
+    max: isCloud() ? 100 : 1000,
     customRules: {
-      "/sign-up/email": { window: 60, max: 3 },
-      "/organization/invite-member": { window: 60, max: 5 },
+      ...(isCloud() && {
+        "/sign-up/email": { window: 60, max: 3 },
+        "/organization/invite-member": { window: 60, max: 5 },
+      }),
     },
   },
   databaseHooks: {
@@ -668,9 +671,9 @@ export const auth = betterAuth({
   advanced: {
     defaultCookieAttributes: {
       // For cross-subdomain auth with HTTPS, use sameSite: "none" with secure: true
-      // For same-domain or HTTP deployments, use sameSite: "lax" with secure: false
+      // For same-domain deployments use sameSite: "lax"; Secure whenever HTTPS
       sameSite: isCrossSubdomain && isHttps ? "none" : "lax",
-      secure: isCrossSubdomain && isHttps, // must be true when sameSite is "none"
+      secure: isHttps,
       partitioned: isCrossSubdomain && isHttps,
       domain: process.env.COOKIE_DOMAIN || undefined, // Optional: e.g., ".andrej.com" for explicit cross-subdomain cookies
     },

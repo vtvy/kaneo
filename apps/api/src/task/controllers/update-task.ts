@@ -31,6 +31,14 @@ async function updateTask(
     });
   }
 
+  // Moving between projects goes through /task/move, which checks access to
+  // the destination. This route only checks the task's current project.
+  if (projectId !== existingTask.projectId) {
+    throw new HTTPException(400, {
+      message: "Use the move endpoint to change a task's project",
+    });
+  }
+
   // A task may have no status ("No status" / backlog). Normalize empty to null.
   const resolvedStatus = status ? status : null;
 

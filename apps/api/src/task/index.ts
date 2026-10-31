@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute, resolver, validator } from "hono-openapi";
@@ -19,6 +19,7 @@ import {
   isImageContentType,
   validateTaskAssetUploadInput,
 } from "../storage/s3";
+import { isInstanceAdmin } from "../utils/is-instance-admin";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import bulkUpdateTasks from "./controllers/bulk-update-tasks";
 import createTask from "./controllers/create-task";
@@ -152,6 +153,33 @@ const task = new Hono<{
         throw new HTTPException(400, {
           message: "Value is required for this operation",
         });
+      }
+
+      // Same project permission the single-task route for this operation needs.
+      const requiredAction =
+        operation === "delete"
+          ? "delete"
+          : operation === "updateStatus"
+            ? "transition"
+            : operation === "updateAssignee"
+              ? "assign"
+              : "update";
+
+      if (!(await isInstanceAdmin(c))) {
+        const projectRows = await db
+          .selectDistinct({ projectId: taskTable.projectId })
+          .from(taskTable)
+          .where(inArray(taskTable.id, taskIds));
+
+        for (const { projectId } of projectRows) {
+          if (
+            !(await canInProject(userId, projectId, "item", requiredAction))
+          ) {
+            throw new HTTPException(403, {
+              message: "Insufficient permissions",
+            });
+          }
+        }
       }
 
       const result = await bulkUpdateTasks({

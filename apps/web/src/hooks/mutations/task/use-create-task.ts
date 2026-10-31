@@ -31,6 +31,10 @@ function useCreateTask() {
       void queryClient.invalidateQueries({
         queryKey: ["tasks", variables.projectId],
       });
+      // The backlog table reads a separate flat list of the project's tasks.
+      void queryClient.invalidateQueries({
+        queryKey: ["all-project-tasks", variables.projectId],
+      });
     },
   });
 }

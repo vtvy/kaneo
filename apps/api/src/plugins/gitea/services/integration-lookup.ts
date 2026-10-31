@@ -4,14 +4,18 @@ import { integrationTable } from "../../../database/schema";
 import type { GiteaConfig } from "../config";
 import { normalizeGiteaBaseUrl } from "../config";
 
+// Only the integration whose webhook secret signed the request is eligible:
+// another workspace linking the same repo must not receive forged events.
 export async function findAllIntegrationsByGiteaRepo(
   baseUrl: string,
   owner: string,
   repo: string,
+  integrationId: string,
 ) {
   const normalized = normalizeGiteaBaseUrl(baseUrl);
   const integrations = await db.query.integrationTable.findMany({
     where: and(
+      eq(integrationTable.id, integrationId),
       eq(integrationTable.type, "gitea"),
       eq(integrationTable.isActive, true),
     ),

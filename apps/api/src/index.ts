@@ -46,6 +46,7 @@ import { migrateGitHubIntegration } from "./plugins/github/migration";
 import project from "./project";
 import { getPublicProject } from "./project/controllers/get-public-project";
 import projectRbac from "./project-rbac";
+import { canInProject } from "./project-rbac/can-in-project";
 import { seedDefaultProjectRoles } from "./project-rbac/seed-default-project-roles";
 import { initializeScheduler, shutdownScheduler } from "./scheduler";
 import search from "./search";
@@ -157,9 +158,27 @@ function buildContentDisposition(filename: string, inline: boolean) {
   return `${disposition}; filename="${asciiFallback}"; filename*=UTF-8''${encodedFilename}`;
 }
 
+function resolveWebsocketBaseUrl() {
+  const raw =
+    process.env.KANEO_API_URL ||
+    process.env.KANEO_CLIENT_URL ||
+    "http://localhost:1337";
+  try {
+    const url = new URL(raw);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return "http://localhost:1337";
+  }
+}
+
 export function createApp() {
   const app = new Hono<AppVariables>();
-  const nodeWs = createNodeWebSocket({ app });
+  const nodeWs = createNodeWebSocket({
+    app,
+    // @hono/node-ws otherwise builds the upgrade request as http://localhost,
+    // which drops the public host and port before session cookies are read.
+    baseUrl: resolveWebsocketBaseUrl(),
+  });
   const { upgradeWebSocket, injectWebSocket } = nodeWs;
   const corsOriginSource = [
     process.env.CORS_ORIGINS,
@@ -587,6 +606,14 @@ export function createApp() {
     upgradeWebSocket(async (c) => {
       const projectId = c.req.param("projectId");
 
+      // Browsers attach cookies to cross-site WebSocket handshakes, so only
+      // the app's own origins may open one. Clients without an Origin header
+      // (CLI, API keys) are not exposed to that.
+      const origin = c.req.header("origin");
+      if (origin && corsOrigins && !corsOrigins.includes(origin)) {
+        throw new HTTPException(403, { message: "Origin not allowed" });
+      }
+
       try {
         await authenticateApiRequest(c);
       } catch (error) {
@@ -611,6 +638,10 @@ export function createApp() {
         }
 
         await validateWorkspaceAccess(userId, project.workspaceId);
+
+        if (!(await canInProject(userId, projectId, "item", "read"))) {
+          throw new HTTPException(403, { message: "Insufficient permissions" });
+        }
       }
 
       const windowId = c.req.query("windowId");

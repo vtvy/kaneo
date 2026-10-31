@@ -1,8 +1,13 @@
 import { and, eq, or } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import db from "../../database";
-import { taskRelationTable, taskTable } from "../../database/schema";
+import {
+  projectTable,
+  taskRelationTable,
+  taskTable,
+} from "../../database/schema";
 import { publishEvent } from "../../events";
+import { canInProject } from "../../project-rbac/can-in-project";
 
 async function createTaskRelation({
   sourceTaskId,
@@ -22,8 +27,13 @@ async function createTaskRelation({
   }
 
   const [sourceTask] = await db
-    .select({ id: taskTable.id, projectId: taskTable.projectId })
+    .select({
+      id: taskTable.id,
+      projectId: taskTable.projectId,
+      workspaceId: projectTable.workspaceId,
+    })
     .from(taskTable)
+    .innerJoin(projectTable, eq(taskTable.projectId, projectTable.id))
     .where(eq(taskTable.id, sourceTaskId))
     .limit(1);
 
@@ -32,12 +42,23 @@ async function createTaskRelation({
   }
 
   const [targetTask] = await db
-    .select({ id: taskTable.id, projectId: taskTable.projectId })
+    .select({
+      id: taskTable.id,
+      projectId: taskTable.projectId,
+      workspaceId: projectTable.workspaceId,
+    })
     .from(taskTable)
+    .innerJoin(projectTable, eq(taskTable.projectId, projectTable.id))
     .where(eq(taskTable.id, targetTaskId))
     .limit(1);
 
-  if (!targetTask) {
+  // The target is shown back to the caller, so it must be a task they could
+  // already read: same workspace and readable project.
+  if (
+    !targetTask ||
+    targetTask.workspaceId !== sourceTask.workspaceId ||
+    !(await canInProject(userId, targetTask.projectId, "item", "read"))
+  ) {
     throw new HTTPException(404, { message: "Target task not found" });
   }
 
