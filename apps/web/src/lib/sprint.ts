@@ -113,3 +113,18 @@ export function getSprintCompletionReport(
       totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0,
   };
 }
+
+type SnapshotCounts = { total: number; done: number };
+
+/** Completion report from a stored snapshot (see GET /sprint/:id/report). */
+export function getSnapshotCompletionReport(snapshot: {
+  tasks: SnapshotCounts;
+  points: SnapshotCounts;
+}): SprintCompletionReport {
+  return getSprintCompletionReport({
+    totalTasks: snapshot.tasks.total,
+    completedTasks: snapshot.tasks.done,
+    totalPoints: snapshot.points.total,
+    completedPoints: snapshot.points.done,
+  });
+}

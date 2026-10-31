@@ -115,21 +115,33 @@ async function getUserLocale(email: string) {
 }
 
 function getLocaleKey(locale?: string | null) {
-  return locale?.toLowerCase().startsWith("de") ? "de" : "en";
+  const language = locale?.toLowerCase();
+  if (language?.startsWith("de")) return "de";
+  if (language?.startsWith("vi")) return "vi";
+  return "en";
 }
 
 function getAuthEmailCopy(locale?: string | null) {
-  return getLocaleKey(locale) === "de"
-    ? {
-        magicLinkSubject: "Anmeldelink fuer Kaneo",
-        otpSubject: "Bestaetigungscode fuer Kaneo",
-        passwordResetSubject: "Passwort zuruecksetzen fuer Kaneo",
-      }
-    : {
-        magicLinkSubject: "Login for Kaneo",
-        otpSubject: "Authentication code for Kaneo",
-        passwordResetSubject: "Reset your Kaneo password",
-      };
+  const key = getLocaleKey(locale);
+  if (key === "de") {
+    return {
+      magicLinkSubject: "Anmeldelink fuer Kaneo",
+      otpSubject: "Bestaetigungscode fuer Kaneo",
+      passwordResetSubject: "Passwort zuruecksetzen fuer Kaneo",
+    };
+  }
+  if (key === "vi") {
+    return {
+      magicLinkSubject: "Đăng nhập vào Kaneo",
+      otpSubject: "Mã xác minh Kaneo của bạn",
+      passwordResetSubject: "Đặt lại mật khẩu Kaneo của bạn",
+    };
+  }
+  return {
+    magicLinkSubject: "Login for Kaneo",
+    otpSubject: "Authentication code for Kaneo",
+    passwordResetSubject: "Reset your Kaneo password",
+  };
 }
 
 function getDeviceAuthClientIds(): Set<string> {
@@ -155,9 +167,14 @@ function getInvitationEmailSubject(
   inviterName: string,
   workspaceName: string,
 ) {
-  return getLocaleKey(locale) === "de"
-    ? `${inviterName} hat dich eingeladen, ${workspaceName} auf Kaneo beizutreten`
-    : `${inviterName} invited you to join ${workspaceName} on Kaneo`;
+  const key = getLocaleKey(locale);
+  if (key === "de") {
+    return `${inviterName} hat dich eingeladen, ${workspaceName} auf Kaneo beizutreten`;
+  }
+  if (key === "vi") {
+    return `${inviterName} đã mời bạn tham gia ${workspaceName} trên Kaneo`;
+  }
+  return `${inviterName} invited you to join ${workspaceName} on Kaneo`;
 }
 
 export const auth = betterAuth({
@@ -491,7 +508,14 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        before: async (user) => {
+        before: async (user, ctx) => {
+          // Accounts created by an instance admin (server-side only; the
+          // HTTP admin endpoints are blocked below) bypass registration
+          // restrictions.
+          if (ctx?.path === "/admin/create-user" && !ctx.request) {
+            return;
+          }
+
           // Allow the very first signup through even when registration
           // is disabled — that's the instance-admin bootstrap flow.
           // Otherwise a fresh instance with DISABLE_REGISTRATION=true
@@ -564,6 +588,16 @@ export const auth = betterAuth({
   },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
+      // Instance administration goes through /api/admin, which audits every
+      // action and protects the last admin. The admin plugin's own HTTP
+      // endpoints would bypass both (and expose session tokens), so only
+      // server-side calls may reach them.
+      if (ctx.path.startsWith("/admin/") && ctx.request) {
+        throw new APIError("FORBIDDEN", {
+          message: "Use the /api/admin endpoints for instance administration.",
+        });
+      }
+
       // Block invite-member calls on cloud from anonymous users or to
       // disposable-email addresses. The 2026-05-28 incident saw ~14k phishing
       // invites sent from throwaway disposable-email signups; gating here

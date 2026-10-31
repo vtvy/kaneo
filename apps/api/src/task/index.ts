@@ -299,7 +299,8 @@ const task = new Hono<{
     describeRoute({
       operationId: "createTask",
       tags: ["Tasks"],
-      description: "Create a new task in a project",
+      description:
+        "Create a new task in a project. `customFields` sets values on create (item:create is enough); once sent, required fields without a default must be included.",
       responses: {
         200: {
           description: "Task created successfully",
@@ -326,6 +327,12 @@ const task = new Hono<{
         sprintId: v.optional(v.nullable(v.string())),
         userId: v.optional(v.string()),
         createGitlabIssue: v.optional(v.boolean()),
+        customFields: v.optional(
+          v.pipe(
+            v.array(v.object({ fieldId: v.string(), value: v.string() })),
+            v.maxLength(200),
+          ),
+        ),
       }),
     ),
     workspaceAccess.fromProject("projectId"),
@@ -343,6 +350,7 @@ const task = new Hono<{
         sprintId,
         userId,
         createGitlabIssue,
+        customFields,
       } = c.req.valid("json");
 
       const task = await createTask({
@@ -358,6 +366,7 @@ const task = new Hono<{
         status,
         sprintId,
         createGitlabIssue,
+        customFields,
       });
 
       return c.json(task);

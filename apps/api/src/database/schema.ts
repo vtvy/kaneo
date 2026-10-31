@@ -13,6 +13,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import type { SprintCompletionSnapshot } from "../sprint/completion-snapshot";
 import type { TaskRecurrence } from "../task/recurrence/schema";
 export const userTable = pgTable("user", {
   id: text("id")
@@ -333,6 +334,11 @@ export const sprintTable = pgTable(
     endDate: timestamp("end_date", { mode: "date" }),
     state: text("state").notNull().default("future"),
     completedAt: timestamp("completed_at", { mode: "date" }),
+    // Report captured when the sprint is completed; null for sprints
+    // completed before snapshots existed.
+    completionSnapshot: jsonb(
+      "completion_snapshot",
+    ).$type<SprintCompletionSnapshot>(),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" })
       .defaultNow()
@@ -1146,6 +1152,40 @@ export const apikeyTable = pgTable(
   ],
 );
 
+// Append-only instance administration history (no updatedAt: entries are
+// never edited). Actor and target details are snapshots so entries stay
+// readable after the people or records involved are deleted.
+export const adminAuditLogTable = pgTable(
+  "admin_audit_log",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    actorUserId: text("actor_user_id").references(() => userTable.id, {
+      onDelete: "set null",
+      onUpdate: "cascade",
+    }),
+    actorName: text("actor_name"),
+    actorEmail: text("actor_email"),
+    action: text("action").notNull(),
+    targetType: text("target_type").notNull(),
+    targetId: text("target_id"),
+    targetLabel: text("target_label"),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("admin_audit_log_createdAt_idx").on(
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
+    index("admin_audit_log_actorUserId_idx").on(table.actorUserId),
+    index("admin_audit_log_target_idx").on(table.targetType, table.targetId),
+  ],
+);
+
 export const deviceCodeTable = pgTable(
   "device_code",
   {
@@ -1324,6 +1364,42 @@ export const customFieldValueTable = pgTable(
       table.taskId,
       table.fieldId,
     ),
+  ],
+);
+
+// Secret iCal subscription links. Only the SHA-256 of the token is stored; the
+// owner's project access is re-checked on every fetch.
+export const calendarFeedTable = pgTable(
+  "calendar_feed",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    tokenHash: text("token_hash").notNull(),
+    labelNames: text("label_names").array().notNull().default([]),
+    timeZone: text("time_zone").notNull().default("UTC"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("calendar_feed_token_hash_unique").on(table.tokenHash),
+    index("calendar_feed_project_user_idx").on(table.projectId, table.userId),
+    index("calendar_feed_userId_idx").on(table.userId),
   ],
 );
 

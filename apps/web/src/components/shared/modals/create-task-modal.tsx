@@ -15,6 +15,12 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import CreateTaskCustomFields from "@/components/task/custom-fields/create-task-custom-fields";
+import {
+  type CreateTaskFieldValues,
+  missingRequiredFields,
+  toCustomFieldPayload,
+} from "@/components/task/custom-fields/create-task-field-values";
 import TaskDescriptionEditor from "@/components/task/task-description-editor";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -41,12 +47,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import pushTaskToGitlab from "@/fetchers/task/push-task-to-gitlab";
+import useSetCustomFieldValue from "@/hooks/mutations/custom-field/use-set-custom-field-value";
 import useCreateLabel from "@/hooks/mutations/label/use-create-label";
 import useAssignTaskToSprint from "@/hooks/mutations/sprint/use-assign-task-to-sprint";
 import useCreateTask from "@/hooks/mutations/task/use-create-task";
 import { useDeleteTask } from "@/hooks/mutations/task/use-delete-task";
 import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
 import { useGetColumns } from "@/hooks/queries/column/use-get-columns";
+import useGetCustomFieldsByProject from "@/hooks/queries/custom-field/use-get-custom-fields-by-project";
 import useGetGitlabIntegration from "@/hooks/queries/gitlab-integration/use-get-gitlab-integration";
 import useGetLabelsByWorkspace from "@/hooks/queries/label/use-get-labels-by-workspace";
 import useGetSprintsByProject from "@/hooks/queries/sprint/use-get-sprints-by-project";
@@ -214,6 +222,8 @@ function CreateTaskModal({
   const [pushToGitlab, setPushToGitlab] = useState(false);
   const [labels, setLabels] = useState<Label[]>([]);
   const [draftTask, setDraftTask] = useState<Task | null>(null);
+  const [customFieldValues, setCustomFieldValues] =
+    useState<CreateTaskFieldValues>({});
 
   const [labelsOpen, setLabelsOpen] = useState(false);
   const [labelsStep, setLabelsStep] = useState<PopoverStep>("select");
@@ -234,6 +244,8 @@ function CreateTaskModal({
 
   const { data: projectColumns = [] } = useGetColumns(resolvedProjectId);
   const { data: sprints = [] } = useGetSprintsByProject(resolvedProjectId);
+  const { data: customFields = [] } =
+    useGetCustomFieldsByProject(resolvedProjectId);
   const { data: gitlabIntegration } =
     useGetGitlabIntegration(resolvedProjectId);
   // Creating a GitLab issue is opt-in, and only offered when connected.
@@ -270,6 +282,7 @@ function CreateTaskModal({
   const { mutateAsync: assignTaskToSprint } = useAssignTaskToSprint();
   const { mutateAsync: updateTask } = useUpdateTask();
   const { mutateAsync: deleteTask } = useDeleteTask();
+  const { mutateAsync: setCustomFieldValue } = useSetCustomFieldValue();
 
   const filteredLabels = (() => {
     const searchFiltered = workspaceLabels.filter((label) =>
@@ -325,6 +338,7 @@ function CreateTaskModal({
     setCreateMore(false);
     setPushToGitlab(showGitlabToggle ? getCreateTaskPushGitlabPref() : false);
     setLabels([]);
+    setCustomFieldValues({});
     setLabelsStep("select");
     setSearchValue("");
     setSelectedColor("gray");
@@ -456,6 +470,23 @@ function CreateTaskModal({
     e.preventDefault();
     if (!title.trim() || !resolvedProjectId || !workspace?.id) return;
 
+    const missingFields = missingRequiredFields(
+      customFields,
+      customFieldValues,
+    );
+    if (missingFields.length > 0) {
+      toast.error(
+        t("common:modals.createTask.requiredFieldsMissing", {
+          fields: missingFields.join(", "),
+        }),
+      );
+      return;
+    }
+    const customFieldPayload = toCustomFieldPayload(
+      customFields,
+      customFieldValues,
+    );
+
     try {
       const taskStatus = selectedStatus || null;
       didSubmitRef.current = true;
@@ -489,8 +520,24 @@ function CreateTaskModal({
               points,
               sprintId,
               createGitlabIssue: shouldPushGitlab,
+              customFields: customFieldPayload,
             }),
           );
+
+      // A draft was created without field values; set them now.
+      if (draftTask) {
+        for (const entry of customFieldPayload) {
+          try {
+            await setCustomFieldValue({ taskId: savedTask.id, ...entry });
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : t("tasks:customFields.updateError"),
+            );
+          }
+        }
+      }
 
       // A draft task already exists, so the create-time flag never applied.
       if (shouldPushGitlab && draftTask) {
@@ -547,6 +594,7 @@ function CreateTaskModal({
         setStartDate(undefined);
         setDueDate(undefined);
         setLabels([]);
+        setCustomFieldValues({});
         setLabelsStep("select");
         setSearchValue("");
         setSelectedColor("gray");
@@ -1299,6 +1347,14 @@ function CreateTaskModal({
                 </PopoverContent>
               </Popover>
             </div>
+
+            <CreateTaskCustomFields
+              fields={customFields}
+              values={customFieldValues}
+              onChange={(fieldId, value) =>
+                setCustomFieldValues((prev) => ({ ...prev, [fieldId]: value }))
+              }
+            />
           </div>
 
           <DialogFooter className="flex-shrink-0 border-t border-border bg-background px-6 py-4">

@@ -146,7 +146,8 @@
 				"sprint": "Sprint",
 				"noSprint": "No sprint",
 				"pushToGitlab": "Also create GitLab issue",
-				"pushGitlabError": "Task created, but creating the GitLab issue failed"
+				"pushGitlabError": "Task created, but creating the GitLab issue failed",
+				"requiredFieldsMissing": "Fill in required fields: {{fields}}"
 			},
 			"sprint": {
 				"breadcrumbProjectFallback": "PROJECT",
@@ -184,7 +185,16 @@
 				"tasks_one": "{{count}} task",
 				"tasks_other": "{{count}} tasks",
 				"points_one": "{{count}} point",
-				"points_other": "{{count}} points"
+				"points_other": "{{count}} points",
+				"historyDescription": "Snapshot taken when the sprint was completed.",
+				"completedOn": "Completed {{date}}",
+				"completedOnBy": "Completed {{date}} by {{name}}",
+				"doneTasksHeading": "Done tasks",
+				"carriedOverTasksHeading": "Carried-over tasks",
+				"listTruncated": "Showing the first {{shown}} of {{total}}",
+				"noReport": "No report available",
+				"noReportDescription": "This sprint was completed before sprint reports were stored.",
+				"loadError": "Could not load the sprint report."
 			}
 		},
 		"sprints": {
@@ -240,7 +250,8 @@
 			"overdue": "Overdue",
 			"endsToday": "Ends today",
 			"endsInDays_one": "Ends in {{count}} day",
-			"endsInDays_other": "Ends in {{count}} days"
+			"endsInDays_other": "Ends in {{count}} days",
+			"viewReport": "View report"
 		},
 		"notFound": {
 			"title": "Page not found",
@@ -311,7 +322,7 @@
 			"toggleMessage": "¿Ya tienes cuenta?",
 			"toggleLink": "Iniciar sesión",
 			"instanceStatusError": "Couldn't reach the server. Please retry in a moment.",
-			"instanceAdminTitle": "Set up your Hailey instance",
+			"instanceAdminTitle": "Set up your Kaneo instance",
 			"instanceAdminSubtitle": "This account becomes the instance administrator with full access."
 		},
 		"verifyOtp": {
@@ -669,7 +680,25 @@
 			"importExportTasks": "Importar/Exportar",
 			"importExportTasksDescription": "Importar/Exportar Tareas",
 			"sprintCycleLabel": "Sprint cycle (weeks)",
-			"sprintCycleHint": "Default length used when suggesting dates for new sprints."
+			"sprintCycleHint": "Default length used when suggesting dates for new sprints.",
+			"move": {
+				"title": "Move to workspace",
+				"description": "Move this project and its tasks to another workspace you can create projects in.",
+				"action": "Move",
+				"targetsError": "Couldn't load the workspaces you can move this project to.",
+				"dialogTitle": "Move \"{{name}}\" to another workspace?",
+				"dialogDescription": "The project, its tasks, sprints, documents and settings move with it. Before you confirm:",
+				"consequenceMembers": "Project members who aren't in the target workspace lose access to the project.",
+				"consequenceAssignees": "Tasks assigned to or reported by people outside the target workspace become unassigned. Their history is kept.",
+				"consequenceLabels": "Task labels are matched to the target workspace's labels by name; missing labels are created there.",
+				"consequenceIntegrations": "Integrations (Git, chat, webhooks) are turned off and must be reviewed and re-enabled in the target workspace.",
+				"targetLabel": "Target workspace",
+				"targetPlaceholder": "Select a workspace",
+				"confirm": "Move project",
+				"moving": "Moving...",
+				"toastMoved": "Project moved to {{workspace}} ({{taskCount}} tasks unassigned, {{memberCount}} members removed)",
+				"toastError": "Failed to move project"
+			}
 		},
 		"projectIntegrations": {
 			"pageTitle": "Integraciones del Proyecto",
@@ -1755,6 +1784,114 @@
 				"deleteError": "Failed to delete the custom field",
 				"reorderError": "Failed to reorder custom fields"
 			}
+		},
+		"adminPanel": {
+			"title": "Administration",
+			"notAuthorized": "Only instance administrators can view this page.",
+			"loading": "Loading...",
+			"users": "Users",
+			"usersSubtitle": "Create, manage and restrict the accounts on this instance.",
+			"noUsers": "No users match these filters.",
+			"totalUsers_one": "{{count}} user",
+			"totalUsers_other": "{{count}} users",
+			"pageOf": "Page {{page}} of {{count}}",
+			"previous": "Previous",
+			"next": "Next",
+			"roles": {
+				"admin": "Admin",
+				"user": "User"
+			},
+			"status": {
+				"active": "Active",
+				"banned": "Banned"
+			},
+			"filters": {
+				"searchPlaceholder": "Search by name or email",
+				"allRoles": "All roles",
+				"allStatuses": "All statuses"
+			},
+			"columns": {
+				"user": "User",
+				"role": "Role",
+				"status": "Status",
+				"lastActive": "Last active",
+				"created": "Created"
+			},
+			"createUser": {
+				"title": "Create user",
+				"description": "Add an account to this instance. Leave the password empty to let the user sign in with SSO or a magic link, or to email them a setup link.",
+				"name": "Name",
+				"email": "Email",
+				"password": "Password (optional)",
+				"passwordHintSmtp": "At least 8 characters. Leave empty to email a link where the user sets their own password.",
+				"passwordHintNoSmtp": "At least 8 characters. Leave empty if the user signs in with SSO; email is not configured, so no setup link can be sent.",
+				"sendSetupEmail": "Email a password setup link",
+				"role": "Role",
+				"submit": "Create user",
+				"created": "User created",
+				"createdWithEmail": "User created and setup email sent",
+				"failed": "Failed to create user"
+			},
+			"manage": {
+				"open": "Manage",
+				"failed": "Action failed",
+				"selfNotice": "You cannot change the role of, ban or delete your own account.",
+				"role": "Instance role",
+				"roleUpdated": "Role updated",
+				"access": "Access",
+				"ban": "Ban",
+				"banReasonPlaceholder": "Reason (optional)",
+				"bannedToast": "User banned and signed out",
+				"banned": "This user is banned.",
+				"bannedWithReason": "This user is banned: {{reason}}",
+				"unban": "Lift ban",
+				"unbanned": "Ban lifted",
+				"sessions": "Active sessions",
+				"noSessions": "No active sessions.",
+				"unknownDevice": "Unknown device",
+				"currentSession": "Your session",
+				"lastActive": "Last active {{date}}",
+				"revoke": "Revoke",
+				"revokeAll": "Revoke all",
+				"sessionRevoked": "Session revoked",
+				"sessionsRevoked": "All sessions revoked",
+				"apiKeys": "API keys",
+				"noApiKeys": "No API keys.",
+				"unnamedKey": "Unnamed key",
+				"lastUsed": "Last used {{date}}",
+				"apiKeyRevoked": "API key revoked",
+				"apiKeysRevoked": "All API keys revoked",
+				"dangerZone": "Danger zone",
+				"deleteUser": "Delete user",
+				"deleteConfirmTitle": "Delete this user?",
+				"deleteConfirmDescription": "{{email}} and everything that belongs only to them will be permanently deleted. This cannot be undone.",
+				"deleted": "User deleted"
+			},
+			"auditLog": {
+				"title": "Audit log",
+				"subtitle": "A permanent record of administrative actions on this instance.",
+				"allActions": "All actions",
+				"empty": "No administrative actions recorded yet.",
+				"deletedActor": "Deleted user",
+				"columns": {
+					"time": "Time",
+					"actor": "Administrator",
+					"action": "Action",
+					"target": "Target",
+					"details": "Details"
+				},
+				"actions": {
+					"user_created": "Created user",
+					"user_role_changed": "Changed role",
+					"user_banned": "Banned user",
+					"user_unbanned": "Lifted ban",
+					"user_deleted": "Deleted user",
+					"user_session_revoked": "Revoked session",
+					"user_sessions_revoked": "Revoked all sessions",
+					"user_api_key_revoked": "Revoked API key",
+					"user_api_keys_revoked": "Revoked all API keys"
+				}
+			}
 		}
 	},
 	"navigation": {
@@ -2554,6 +2691,48 @@
 			"title": "Custom fields",
 			"empty": "Empty",
 			"updateError": "Failed to update the field"
+		},
+		"calendar": {
+			"title": "Calendar",
+			"previousMonth": "Previous month",
+			"nextMonth": "Next month",
+			"today": "Today",
+			"noTasks": "No scheduled tasks",
+			"noTasksSubtitle": "Add a start date, due date, or both to tasks to place them on the calendar.",
+			"noTasksThisMonth": "Nothing scheduled this month",
+			"moreTasks": "+{{count}} more",
+			"dayTasksAriaLabel": "Show all tasks for {{date}}",
+			"taskAriaLabel": "{{title}}, {{range}}: open task",
+			"loadError": "Failed to load tasks.",
+			"feeds": {
+				"subscribe": "Subscribe",
+				"title": "Subscribe to calendar",
+				"description": "Create a private iCal link for your calendar app. It shows the titles and dates of scheduled tasks you can read in this project, and stops working if you lose access.",
+				"linkReady": "Your calendar link",
+				"linkLabel": "Calendar feed link",
+				"linkOnce": "Copy this link now. For your security it won't be shown again; regenerate the feed if you lose it. Anyone with the link can see these task titles and dates.",
+				"copy": "Copy link",
+				"copiedLabel": "Copied",
+				"copied": "Link copied to clipboard.",
+				"copyError": "Could not copy the link. Select the URL and copy it manually.",
+				"labels": "Only include labels",
+				"noLabels": "No labels in this workspace.",
+				"labelsHint": "Leave empty to include every scheduled task.",
+				"create": "Create feed",
+				"creating": "Creating…",
+				"created": "Calendar feed created.",
+				"createError": "Could not create the calendar feed.",
+				"activeFeeds": "Your feeds",
+				"empty": "You have no calendar feeds for this project yet.",
+				"allScheduledTasks": "All scheduled tasks",
+				"createdOn": "Created {{date}} · {{timeZone}}",
+				"regenerate": "Regenerate link",
+				"regenerated": "New link generated. The old link no longer works.",
+				"regenerateError": "Could not regenerate the link.",
+				"revoke": "Revoke feed",
+				"revoked": "Calendar feed revoked.",
+				"revokeError": "Could not revoke the calendar feed."
+			}
 		}
 	},
 	"invitations": {
@@ -2957,6 +3136,13 @@
 			"setDefault": "Set as default when opening backlog",
 			"saveAsDefault": "Set as default filter",
 			"delete": "Delete view"
+		},
+		"customFields": {
+			"columns": "Fields",
+			"showColumns": "Show field columns",
+			"noValue": "No value",
+			"checked": "Checked",
+			"unchecked": "Unchecked"
 		}
 	}
 }

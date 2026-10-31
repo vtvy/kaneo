@@ -35,14 +35,22 @@ import { parseMultiselect } from "./parse-multiselect";
 
 const EMPTY_OPTION = "__empty__";
 
-type FieldEditorProps = {
+export type FieldEditorProps = {
   field: CustomFieldDefinition;
   value: string;
   canEdit: boolean;
   onSave: (value: string) => void;
+  /** Report every keystroke (forms that save later) instead of on blur. */
+  live?: boolean;
 };
 
-function TextLikeEditor({ field, value, canEdit, onSave }: FieldEditorProps) {
+function TextLikeEditor({
+  field,
+  value,
+  canEdit,
+  onSave,
+  live,
+}: FieldEditorProps) {
   const [draft, setDraft] = useState(value);
   useEffect(() => setDraft(value), [value]);
 
@@ -64,7 +72,7 @@ function TextLikeEditor({ field, value, canEdit, onSave }: FieldEditorProps) {
       className="h-7 text-xs"
       onChange={(event) => {
         setDraft(event.target.value);
-        if (field.type === "date") onSave(event.target.value);
+        if (live || field.type === "date") onSave(event.target.value);
       }}
       onBlur={field.type === "date" ? undefined : commit}
       onKeyDown={(event) => {
@@ -165,7 +173,7 @@ function MultiselectEditor({
   );
 }
 
-function FieldEditor(props: FieldEditorProps) {
+export function FieldEditor(props: FieldEditorProps) {
   const { field, value, canEdit, onSave } = props;
 
   if (field.type === "boolean") {

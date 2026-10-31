@@ -46,8 +46,10 @@ import { resolveDatabaseConnectionString } from "./resolve-database-url";
 import {
   accountTable,
   activityTable,
+  adminAuditLogTable,
   apikeyTable,
   assetTable,
+  calendarFeedTable,
   columnTable,
   commentTable,
   customFieldDefinitionTable,
@@ -92,9 +94,11 @@ config();
 
 export const schema = {
   accountTable,
+  adminAuditLogTable,
   assetTable,
   activityTable,
   apikeyTable,
+  calendarFeedTable,
   columnTable,
   commentTable,
   customFieldDefinitionTable,

@@ -1,0 +1,1 @@
+ALTER TABLE "sprint" ADD COLUMN "completion_snapshot" jsonb;

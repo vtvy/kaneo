@@ -1,6 +1,11 @@
 import { and, eq, isNull, max } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { applyDefaultCustomFieldValues } from "../../custom-field/task-values";
+import {
+  applyDefaultCustomFieldValues,
+  type CustomFieldValueInput,
+  insertCustomFieldValues,
+  resolveCreateCustomFieldValues,
+} from "../../custom-field/task-values";
 import db from "../../database";
 import {
   columnTable,
@@ -32,6 +37,7 @@ async function createTask({
   points,
   recurrence,
   createGitlabIssue,
+  customFields,
 }: {
   projectId: string;
   currentUserId: string;
@@ -47,6 +53,11 @@ async function createTask({
   recurrence?: TaskRecurrence | null;
   /** Opt-in: also create a linked GitLab issue when the project has one. */
   createGitlabIssue?: boolean;
+  /**
+   * Values to set on the new task. When sent (even empty), required fields
+   * without a default must be included; when omitted, only defaults apply.
+   */
+  customFields?: CustomFieldValueInput[];
 }) {
   // A task may have no status ("No status" / backlog). Only normalize a
   // provided, non-empty status; otherwise store null.
@@ -75,6 +86,10 @@ async function createTask({
   // also guarantees the user exists, so the FK insert below can't 500). An
   // empty/omitted userId is fine — the task is unassigned.
   await assertAssigneeInWorkspace(userId, projectId);
+
+  const customFieldValues = customFields
+    ? await resolveCreateCustomFieldValues(projectId, customFields)
+    : [];
 
   const [assignee] = await db
     .select({ name: userTable.name })
@@ -137,6 +152,7 @@ async function createTask({
 
   await recordTaskInvolvement(createdTask.id, currentUserId, "reporter");
   await recordTaskInvolvement(createdTask.id, userId, "assignee");
+  await insertCustomFieldValues(createdTask.id, customFieldValues);
   await applyDefaultCustomFieldValues(createdTask.id, projectId);
 
   if (createdTask.sprintId) {

@@ -7,6 +7,7 @@ import {
 import { ChevronLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import PageTitle from "@/components/page-title";
+import useAuth from "@/components/providers/auth-provider/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import useGetProjects from "@/hooks/queries/project/use-get-projects";
@@ -27,6 +28,9 @@ function SettingsLayout() {
   const { data: projects } = useGetProjects({
     workspaceId: workspace?.id ?? "",
   });
+  const { user } = useAuth();
+  const isInstanceAdmin =
+    (user as { role?: string | null } | null | undefined)?.role === "admin";
 
   const getActiveTab = () => {
     const pathname = location.pathname;
@@ -38,6 +42,9 @@ function SettingsLayout() {
     }
     if (pathname.includes("/dashboard/settings/projects")) {
       return "project";
+    }
+    if (pathname.includes("/dashboard/settings/admin")) {
+      return "admin";
     }
     return "account";
   };
@@ -93,6 +100,17 @@ function SettingsLayout() {
                 >
                   {t("navigation:sidebar.projects")}
                 </TabsTrigger>
+                {isInstanceAdmin && (
+                  <TabsTrigger
+                    value="admin"
+                    className="[&[data-state=active]]:border [&[data-state=active]]:border-border [&[data-state=active]]:rounded-md [&[data-state=active]]:bg-card"
+                    onClick={() =>
+                      navigate({ to: "/dashboard/settings/admin/users" })
+                    }
+                  >
+                    {t("settings:adminPanel.title")}
+                  </TabsTrigger>
+                )}
               </TabsList>
             </Tabs>
           </div>

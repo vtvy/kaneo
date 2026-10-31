@@ -16,7 +16,9 @@ import {
 } from "hono-openapi";
 import * as v from "valibot";
 import activity from "./activity";
+import admin from "./admin";
 import { auth } from "./auth";
+import calendarFeed, { publicCalendarFeed } from "./calendar-feed";
 import column from "./column";
 import comment from "./comment";
 import config from "./config";
@@ -264,6 +266,8 @@ export function createApp() {
     "/gitlab-integration/webhook/:integrationId",
     handleGitlabWebhookRoute,
   );
+
+  api.route("/calendar-feed", publicCalendarFeed);
 
   const invitationPublicApi = api.get("/invitation/public/:id", async (c) => {
     const { id } = c.req.param();
@@ -603,6 +607,8 @@ export function createApp() {
   const invitationApi = api.route("/invitation", invitation);
   const workspaceApi = api.route("/workspace", workspace);
   const projectRbacApi = api.route("/project-rbac", projectRbac);
+  const adminApi = api.route("/admin", admin);
+  const calendarFeedApi = api.route("/calendar-feed", calendarFeed);
 
   app.route(
     "/",
@@ -686,6 +692,8 @@ export function createApp() {
     api,
     injectWebSocket,
     activityApi,
+    adminApi,
+    calendarFeedApi,
     columnApi,
     commentApi,
     configApi,
@@ -809,6 +817,8 @@ const {
   app,
   injectWebSocket,
   activityApi,
+  adminApi,
+  calendarFeedApi,
   columnApi,
   commentApi,
   configApi,
@@ -880,6 +890,8 @@ export type AppType =
   | typeof projectRbacApi
   | typeof publicProjectApi
   | typeof invitationPublicApi
-  | typeof oauthApi;
+  | typeof oauthApi
+  | typeof adminApi
+  | typeof calendarFeedApi;
 
 export default app;

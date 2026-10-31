@@ -84,6 +84,36 @@ function satisfies(
   return true;
 }
 
+/**
+ * Whether `userId`'s role in `workspaceId` grants every permission in the map.
+ * False when the user is not a member. Instance admins are not special-cased
+ * here; callers decide whether they bypass.
+ */
+export async function memberHasWorkspacePermission(
+  userId: string,
+  workspaceId: string,
+  permissions: PermissionMap,
+): Promise<boolean> {
+  const [member] = await db
+    .select({ role: schema.workspaceUserTable.role })
+    .from(schema.workspaceUserTable)
+    .where(
+      and(
+        eq(schema.workspaceUserTable.workspaceId, workspaceId),
+        eq(schema.workspaceUserTable.userId, userId),
+      ),
+    )
+    .limit(1);
+
+  if (!member?.role) return false;
+
+  const statements =
+    (await customRoleStatements(workspaceId, member.role)) ??
+    builtInRoleStatements(member.role);
+
+  return Boolean(statements && satisfies(statements, permissions));
+}
+
 export function requireWorkspacePermission(permissions: PermissionMap) {
   return async (c: Context, next: Next) => {
     const workspaceId = c.get("workspaceId");

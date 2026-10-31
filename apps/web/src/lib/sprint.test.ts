@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getDaysUntilSprintEnd,
+  getSnapshotCompletionReport,
   getSprintCompletionReport,
   getSprintEndChip,
 } from "./sprint";
@@ -107,5 +108,22 @@ describe("getSprintCompletionReport", () => {
     expect(report.carriedOverTasks).toBe(0);
     expect(report.carriedOverPoints).toBe(0);
     expect(report.percentDone).toBe(100);
+  });
+});
+
+describe("getSnapshotCompletionReport", () => {
+  it("maps stored snapshot counts onto the completion report", () => {
+    expect(
+      getSnapshotCompletionReport({
+        tasks: { total: 4, done: 3 },
+        points: { total: 10, done: 7 },
+      }),
+    ).toMatchObject({
+      doneTasks: 3,
+      carriedOverTasks: 1,
+      donePoints: 7,
+      carriedOverPoints: 3,
+      percentDone: 75,
+    });
   });
 });
