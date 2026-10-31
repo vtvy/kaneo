@@ -100,15 +100,14 @@ const activity = new Hono<{
       v.object({
         taskId: v.string(),
         comment: v.string(),
-        mentions: v.optional(v.array(v.string())),
       }),
     ),
     workspaceAccess.fromTaskId(),
     requireWorkspacePermission({ task: ["update"] }),
     async (c) => {
-      const { taskId, comment, mentions } = c.req.valid("json");
+      const { taskId, comment } = c.req.valid("json");
       const userId = c.get("userId");
-      const newComment = await createComment(taskId, userId, comment, mentions);
+      const newComment = await createComment(taskId, userId, comment);
 
       return c.json(newComment);
     },

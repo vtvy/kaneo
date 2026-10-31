@@ -29,6 +29,7 @@ import useGetProject from "@/hooks/queries/project/use-get-project";
 import useGetProjects from "@/hooks/queries/project/use-get-projects";
 import useGetSprintsByProject from "@/hooks/queries/sprint/use-get-sprints-by-project";
 import useGetTask from "@/hooks/queries/task/use-get-task";
+import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { cn } from "@/lib/cn";
 import { getColumnIcon } from "@/lib/column";
@@ -36,6 +37,7 @@ import { dueDateStatusColors, getDueDateStatus } from "@/lib/due-date-status";
 import { formatDateShort } from "@/lib/format";
 import { getPriorityLabel, getStatusDisplayLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
+import { taskLink } from "@/lib/short-task-link";
 import { toast } from "@/lib/toast";
 import TaskSprintPopover from "../sprint/task-sprint-popover";
 import TaskAssigneePopover from "./task-assignee-popover";
@@ -44,6 +46,7 @@ import TaskLabelsPopover from "./task-labels-popover";
 import TaskMovePopover from "./task-move-popover";
 import TaskPointsPopover from "./task-points-popover";
 import TaskPriorityPopover from "./task-priority-popover";
+import { TaskRecurrenceBadge } from "./task-recurrence-badge";
 import TaskStartDatePopover from "./task-start-date-popover";
 import TaskStatusPopover from "./task-status-popover";
 
@@ -93,6 +96,7 @@ export default function TaskPropertiesSidebar({
   const { data: githubIntegration } = useGetGithubIntegration(projectId);
   const { data: giteaIntegration } = useGetGiteaIntegration(projectId);
   const { data: workspaceProjects = [] } = useGetProjects({ workspaceId });
+  const { data: activeWorkspace } = useActiveWorkspace();
   const canMoveTask =
     Boolean(task) && workspaceProjects.some((p) => p.id !== task?.projectId);
   const statusColumn = columns.find(
@@ -121,7 +125,15 @@ export default function TaskPropertiesSidebar({
 
   const handleCopyTaskLink = () => {
     navigator.clipboard.writeText(
-      `${window.location.origin}/dashboard/workspace/${workspaceId}/project/${projectId}/task/${taskId}`,
+      taskLink({
+        workspaceId,
+        workspaceSlug:
+          activeWorkspace?.id === workspaceId ? activeWorkspace.slug : null,
+        projectId,
+        projectSlug,
+        taskId: taskId ?? "",
+        taskNumber,
+      }),
     );
     toast.message(t("tasks:properties.copyTaskLink"));
   };
@@ -365,6 +377,7 @@ export default function TaskPropertiesSidebar({
                         <span className="text-xs font-semibold">
                           {formatDateShort(task.dueDate)}
                         </span>
+                        <TaskRecurrenceBadge task={task} />
                       </>
                     ) : (
                       <>
@@ -608,6 +621,7 @@ export default function TaskPropertiesSidebar({
                           <span className="text-xs font-semibold">
                             {formatDateShort(task.dueDate)}
                           </span>
+                          <TaskRecurrenceBadge task={task} />
                         </>
                       ) : (
                         <>
@@ -853,6 +867,7 @@ export default function TaskPropertiesSidebar({
                           <span className="text-xs font-semibold">
                             {formatDateShort(task.dueDate)}
                           </span>
+                          <TaskRecurrenceBadge task={task} />
                         </>
                       ) : (
                         <>

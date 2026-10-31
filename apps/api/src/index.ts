@@ -64,6 +64,7 @@ import {
 } from "./utils/authenticate-api-request";
 import { defaultBodyLimit, isUploadRoute } from "./utils/body-limit";
 import { getInvitationDetails } from "./utils/check-registration-allowed";
+import { isAllowedOrigin, resolveCorsOrigins } from "./utils/cors-origins";
 import { migrateApiKeyReferenceId } from "./utils/migrate-apikey-reference-id";
 import { migrateNotificationPreferencesSchema } from "./utils/migrate-notification-preferences-schema";
 import { migrateSessionColumn } from "./utils/migrate-session-column";
@@ -181,29 +182,20 @@ export function createApp() {
     baseUrl: resolveWebsocketBaseUrl(),
   });
   const { upgradeWebSocket, injectWebSocket } = nodeWs;
-  const corsOriginSource = [
-    process.env.CORS_ORIGINS,
-    process.env.KANEO_CLIENT_URL,
-  ].find((value) => value?.trim());
-  const corsOrigins = corsOriginSource
-    ?.split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  const corsOrigins = resolveCorsOrigins();
 
   app.use(
     "*",
     cors({
       credentials: true,
-      origin: (origin) => {
-        if (!corsOrigins) {
-          return origin || "*";
-        }
-
+      origin: (origin, c) => {
         if (!origin) {
           return null;
         }
 
-        return corsOrigins.includes(origin) ? origin : null;
+        return isAllowedOrigin(origin, corsOrigins, c.req.header("host"))
+          ? origin
+          : null;
       },
     }),
   );
@@ -617,7 +609,10 @@ export function createApp() {
       // the app's own origins may open one. Clients without an Origin header
       // (CLI, API keys) are not exposed to that.
       const origin = c.req.header("origin");
-      if (origin && corsOrigins && !corsOrigins.includes(origin)) {
+      if (
+        origin &&
+        !isAllowedOrigin(origin, corsOrigins, c.req.header("host"))
+      ) {
         throw new HTTPException(403, { message: "Origin not allowed" });
       }
 

@@ -15,6 +15,13 @@ type TaskExternalLink = {
   metadata: Record<string, unknown> | null;
 };
 
+export type TaskRecurrence = {
+  frequency: "daily" | "weekly" | "monthly" | "yearly";
+  interval: number;
+  weekdays?: number[];
+  timeZone: string;
+};
+
 type Task = {
   id: string;
   title: string;
@@ -26,6 +33,7 @@ type Task = {
   points?: number | null;
   startDate: string | null;
   dueDate: string | null;
+  recurrence?: TaskRecurrence | null;
   position: number | null;
   createdAt: string;
   updatedAt?: string;

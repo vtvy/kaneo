@@ -16,7 +16,10 @@ function useCompleteSprint() {
       // Carry-over moves unfinished tasks back to the backlog (or a target
       // sprint), so refresh sprint tasks, backlog, and the board.
       void queryClient.invalidateQueries({
-        queryKey: ["sprint-tasks", completedSprint.id],
+        queryKey: ["sprint-tasks"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["sprint-history"],
       });
       void queryClient.invalidateQueries({
         queryKey: ["sprint-backlog", completedSprint.projectId],

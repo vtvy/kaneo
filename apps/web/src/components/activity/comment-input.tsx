@@ -12,20 +12,23 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import useCreateComment from "@/hooks/mutations/comment/use-create-comment";
+import { useMentionMembers } from "@/hooks/queries/workspace-users/use-mention-members";
 import { getModifierKeyText } from "@/hooks/use-keyboard-shortcuts";
 import { cn } from "@/lib/cn";
 import { toast } from "@/lib/toast";
 
 type CommentInputProps = {
   taskId: string;
+  projectId?: string;
 };
 
-export default function CommentInput({ taskId }: CommentInputProps) {
+export default function CommentInput({ taskId, projectId }: CommentInputProps) {
   const { t } = useTranslation();
   const [content, setContent] = useState("");
   const [attachAction, setAttachAction] = useState<(() => void) | null>(null);
   const { mutateAsync: createComment, isPending } = useCreateComment();
   const queryClient = useQueryClient();
+  const mentionMembers = useMentionMembers(projectId);
 
   const handleSubmit = useCallback(async () => {
     if (!content.trim()) {
@@ -67,6 +70,7 @@ export default function CommentInput({ taskId }: CommentInputProps) {
           uploadSurface="comment"
           showQuickAttachButton={false}
           onAttachActionChange={handleAttachActionChange}
+          mentionMembers={mentionMembers}
           className="[&_.kaneo-comment-editor-content_.ProseMirror]:min-h-[3rem] [&_.kaneo-comment-editor-content_.ProseMirror]:max-h-none [&_.kaneo-comment-editor-content_.ProseMirror]:overflow-visible [&_.kaneo-comment-editor-content_.ProseMirror]:px-3 [&_.kaneo-comment-editor-content_.ProseMirror]:pt-3 [&_.kaneo-comment-editor-content_.ProseMirror]:pb-2"
           onSubmitShortcut={handleSubmit}
         />

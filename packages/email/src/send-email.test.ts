@@ -7,6 +7,8 @@ vi.mock("nodemailer", () => ({
 }));
 
 import {
+  getSmtpAuth,
+  isSmtpConfigured,
   sendPasswordResetEmail,
   sendWorkspaceInvitationEmail,
 } from "./send-email";
@@ -70,12 +72,12 @@ describe("sendWorkspaceInvitationEmail", () => {
     }
   });
 
-  it("reports SMTP as unconfigured when the password is missing", async () => {
-    process.env.SMTP_HOST = "smtp.example.com";
+  it("reports SMTP as unconfigured when the host is missing", async () => {
+    delete process.env.SMTP_HOST;
     process.env.SMTP_PORT = "587";
     process.env.SMTP_USER = "mailer@example.com";
+    process.env.SMTP_PASSWORD = "secret";
     process.env.SMTP_FROM = "mailer@example.com";
-    delete process.env.SMTP_PASSWORD;
 
     const result = await sendWorkspaceInvitationEmail(
       "user@example.com",
@@ -115,5 +117,45 @@ describe("sendWorkspaceInvitationEmail", () => {
     );
 
     expect(result).toEqual({ success: true });
+  });
+});
+
+describe("isSmtpConfigured", () => {
+  it("accepts a relay without credentials or SMTP_SECURE", () => {
+    expect(
+      isSmtpConfigured({
+        SMTP_HOST: "relay.internal",
+        SMTP_PORT: "25",
+        SMTP_FROM: "kaneo@example.com",
+      }),
+    ).toBe(true);
+  });
+
+  it("requires host, port and sender", () => {
+    expect(
+      isSmtpConfigured({ SMTP_PORT: "25", SMTP_FROM: "kaneo@example.com" }),
+    ).toBe(false);
+    expect(
+      isSmtpConfigured({
+        SMTP_HOST: "relay.internal",
+        SMTP_FROM: "kaneo@example.com",
+      }),
+    ).toBe(false);
+    expect(
+      isSmtpConfigured({ SMTP_HOST: "relay.internal", SMTP_PORT: "25" }),
+    ).toBe(false);
+  });
+});
+
+describe("getSmtpAuth", () => {
+  it("omits auth when no user is configured", () => {
+    expect(getSmtpAuth({})).toBeUndefined();
+    expect(getSmtpAuth({ SMTP_PASSWORD: "orphan" })).toBeUndefined();
+  });
+
+  it("passes credentials when a user is configured", () => {
+    expect(
+      getSmtpAuth({ SMTP_USER: "mailer", SMTP_PASSWORD: "secret" }),
+    ).toEqual({ user: "mailer", pass: "secret" });
   });
 });

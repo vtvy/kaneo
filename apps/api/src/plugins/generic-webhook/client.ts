@@ -39,10 +39,10 @@ export async function postToGenericWebhook(
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Generic webhook request failed (${response.status}): ${errorText}`,
-      );
+      // The receiver's response body is not echoed: the failure message is
+      // stored as webhook health and returned to API clients.
+      await response.body?.cancel().catch(() => {});
+      throw new Error(`Generic webhook request failed (${response.status})`);
     }
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {

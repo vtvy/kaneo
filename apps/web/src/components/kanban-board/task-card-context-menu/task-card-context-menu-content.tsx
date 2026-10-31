@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/context-menu";
 import useAssignTaskToSprint from "@/hooks/mutations/sprint/use-assign-task-to-sprint";
 import useRemoveTaskFromSprint from "@/hooks/mutations/sprint/use-remove-task-from-sprint";
+import { useDuplicateTask } from "@/hooks/mutations/task/use-duplicate-task";
 import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
 import { useUpdateTaskAssignee } from "@/hooks/mutations/task/use-update-task-assignee";
 import { useUpdateTaskDescription } from "@/hooks/mutations/task/use-update-task-description";
@@ -23,13 +24,14 @@ import { useUpdateTaskPriority } from "@/hooks/mutations/task/use-update-task-st
 import { useUpdateTaskTitle } from "@/hooks/mutations/task/use-update-task-title";
 import { useGetColumns } from "@/hooks/queries/column/use-get-columns";
 import useGetSprintsByProject from "@/hooks/queries/sprint/use-get-sprints-by-project";
+import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { getColumnIcon } from "@/lib/column";
-import { generateLink } from "@/lib/generate-link";
 import { getPriorityLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
+import { taskLink } from "@/lib/short-task-link";
 import { toast } from "@/lib/toast";
 import useProjectStore from "@/store/project";
 import type { Sprint } from "@/types/sprint";
@@ -87,6 +89,8 @@ export default function TaskCardContextMenuContent({
   const { mutateAsync: updateTaskDueDate } = useUpdateTaskDueDate();
   const { mutateAsync: assignTaskToSprint } = useAssignTaskToSprint();
   const { mutateAsync: removeTaskFromSprint } = useRemoveTaskFromSprint();
+  const { mutateAsync: duplicateTask } = useDuplicateTask();
+  const { data: activeWorkspace } = useActiveWorkspace();
   const { data: sprints = [] } = useGetSprintsByProject(
     taskCardContext.projectId,
   );
@@ -103,6 +107,9 @@ export default function TaskCardContextMenuContent({
   const canAssign =
     canAssignTasks() ||
     (!isCheckingPermissions && canProject("item", "assign"));
+  const canCreate =
+    canManageTasks() ||
+    (!isCheckingPermissions && canProject("item", "create"));
 
   const sortedSprints = useMemo(
     () =>
@@ -150,11 +157,31 @@ export default function TaskCardContextMenuContent({
   }, [workspaceUsers]);
 
   const handleCopyTaskLink = () => {
-    const path = `/dashboard/workspace/${taskCardContext.worskpaceId}/project/${taskCardContext.projectId}/task/${task.id}`;
-    const taskLink = generateLink(path);
-
-    navigator.clipboard.writeText(taskLink);
+    navigator.clipboard.writeText(
+      taskLink({
+        workspaceId: taskCardContext.worskpaceId,
+        workspaceSlug:
+          activeWorkspace?.id === taskCardContext.worskpaceId
+            ? activeWorkspace.slug
+            : null,
+        projectId: taskCardContext.projectId,
+        projectSlug: project?.id === task.projectId ? project.slug : null,
+        taskId: task.id,
+        taskNumber: task.number,
+      }),
+    );
     toast.success(t("tasks:contextMenu.copyLinkSuccess"));
+  };
+
+  const handleDuplicate = async () => {
+    try {
+      await duplicateTask({ taskId: task.id });
+      toast.success(t("tasks:duplicate.success"));
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : t("tasks:duplicate.error"),
+      );
+    }
   };
 
   const handleChange = async (field: keyof Task, value: string | Date) => {
@@ -198,6 +225,12 @@ export default function TaskCardContextMenuContent({
       <ContextMenuItem onClick={handleCopyTaskLink}>
         <span>{t("tasks:contextMenu.copyLink")}</span>
       </ContextMenuItem>
+
+      {canCreate && (
+        <ContextMenuItem onClick={handleDuplicate}>
+          <span>{t("tasks:contextMenu.duplicate")}</span>
+        </ContextMenuItem>
+      )}
 
       {(canEdit || canAssign) && <ContextMenuSeparator />}
 

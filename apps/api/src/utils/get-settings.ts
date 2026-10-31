@@ -9,12 +9,12 @@ function getSettings() {
     disablePasswordRegistration:
       process.env.DISABLE_PASSWORD_REGISTRATION === "true",
     isDemoMode: process.env.DEMO_MODE === "true",
+    // Same rule as isSmtpConfigured in packages/email: host, port and sender
+    // are required; SMTP_SECURE and credentials are optional (auth-less relay).
     hasSmtp:
       Boolean(process.env.SMTP_HOST) &&
       Boolean(process.env.SMTP_PORT) &&
-      Boolean(process.env.SMTP_SECURE) &&
-      Boolean(process.env.SMTP_USER) &&
-      Boolean(process.env.SMTP_PASSWORD),
+      Boolean(process.env.SMTP_FROM),
     hasGithubSignIn: isGithubSsoConfigured(),
     hasGoogleSignIn:
       Boolean(process.env.GOOGLE_CLIENT_ID) &&

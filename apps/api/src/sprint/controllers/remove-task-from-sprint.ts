@@ -3,6 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { taskTable } from "../../database/schema";
 import { publishEvent } from "../../events";
+import syncTaskSprintMembership from "./sync-task-sprint-membership";
 
 async function removeTaskFromSprint({
   taskId,
@@ -34,6 +35,8 @@ async function removeTaskFromSprint({
       message: "Failed to remove task from sprint",
     });
   }
+
+  await syncTaskSprintMembership(taskId, null);
 
   await publishEvent("task.sprint_changed", {
     taskId,

@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { taskRecurrenceSchema } from "./task/recurrence/schema";
 
 // A date input that must be parseable (clients send ISO 8601). Rejecting a
 // garbage string here returns a clean 400 instead of letting `new Date("x")`
@@ -69,6 +70,7 @@ export const taskSchema = v.object({
   points: v.optional(v.nullable(v.number())),
   startDate: v.optional(v.date()),
   dueDate: v.optional(v.date()),
+  recurrence: v.optional(v.nullable(taskRecurrenceSchema)),
   createdAt: v.date(),
   columnId: v.optional(v.nullable(v.string())),
   sprintId: v.optional(v.nullable(v.string())),

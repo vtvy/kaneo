@@ -24,6 +24,7 @@ import {
   taskInvolvementTable,
   taskRelationTable,
   taskReminderSentTable,
+  taskSprintTable,
   taskTable,
   teamMemberTable,
   teamTable,
@@ -181,6 +182,7 @@ export const taskTableRelations = relations(taskTable, ({ one, many }) => ({
   targetRelations: many(taskRelationTable, { relationName: "targetTask" }),
   remindersSent: many(taskReminderSentTable),
   involvements: many(taskInvolvementTable),
+  sprintMemberships: many(taskSprintTable),
 }));
 
 export const timeEntryTableRelations = relations(timeEntryTable, ({ one }) => ({
@@ -215,7 +217,22 @@ export const sprintTableRelations = relations(sprintTable, ({ one, many }) => ({
   }),
   tasks: many(taskTable),
   activities: many(activityTable),
+  memberships: many(taskSprintTable),
 }));
+
+export const taskSprintTableRelations = relations(
+  taskSprintTable,
+  ({ one }) => ({
+    task: one(taskTable, {
+      fields: [taskSprintTable.taskId],
+      references: [taskTable.id],
+    }),
+    sprint: one(sprintTable, {
+      fields: [taskSprintTable.sprintId],
+      references: [sprintTable.id],
+    }),
+  }),
+);
 
 export const activityTableRelations = relations(activityTable, ({ one }) => ({
   task: one(taskTable, {

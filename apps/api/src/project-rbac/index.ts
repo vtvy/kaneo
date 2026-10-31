@@ -20,13 +20,29 @@ import { projectPermission } from "./require-project-permission";
 
 // member:manage lets a role add people and pick their roles, but only an
 // Owner may hand out Owner; otherwise any manager could promote themselves.
-async function assertCallerIsProjectOwner(userId: string, projectId: string) {
+async function assertCallerIsProjectOwner(
+  userId: string,
+  projectId: string,
+  message = "Only a project Owner can grant the Owner role",
+) {
   const { isOwner } = await resolveProjectStatements(userId, projectId);
   if (!isOwner) {
-    throw new HTTPException(403, {
-      message: "Only a project Owner can grant the Owner role",
-    });
+    throw new HTTPException(403, { message });
   }
+}
+
+// Creating, editing or deleting roles is Owner-only. role:manage alone would
+// let a holder rewrite the permissions of a role they are assigned to (or
+// create one and get it assigned) and so grant themselves anything; keeping
+// role definitions with the Owner closes that. role:manage still gates
+// reading the role list. (Workspace owners/admins without a project_member
+// row count as Owner, see resolveProjectStatements.)
+async function assertCanEditRoles(userId: string, projectId: string) {
+  await assertCallerIsProjectOwner(
+    userId,
+    projectId,
+    "Only a project Owner can create, edit or delete roles",
+  );
 }
 
 async function includesOwnerRole(projectId: string, roleIds: string[]) {
@@ -124,6 +140,7 @@ const projectRbac = new Hono<{
     async (c) => {
       const { projectId } = c.req.valid("param");
       const { name, permissions } = c.req.valid("json");
+      await assertCanEditRoles(c.get("userId"), projectId);
       const role = await createRoleCtrl(projectId, name, permissions ?? {});
       return c.json(role);
     },
@@ -148,6 +165,7 @@ const projectRbac = new Hono<{
     async (c) => {
       const { projectId, roleId } = c.req.valid("param");
       const { name, permissions } = c.req.valid("json");
+      await assertCanEditRoles(c.get("userId"), projectId);
       const updated = await updateRoleCtrl(
         projectId,
         roleId,
@@ -169,6 +187,7 @@ const projectRbac = new Hono<{
     projectPermission.fromParam({ role: ["manage"] }),
     async (c) => {
       const { projectId, roleId } = c.req.valid("param");
+      await assertCanEditRoles(c.get("userId"), projectId);
       await deleteRoleCtrl(projectId, roleId);
       return c.json({ success: true });
     },

@@ -32,6 +32,9 @@ function useAssignTaskToSprint() {
       void queryClient.invalidateQueries({
         queryKey: ["task", variables.taskId],
       });
+      void queryClient.invalidateQueries({
+        queryKey: ["sprint-history", variables.taskId],
+      });
     },
   });
 }

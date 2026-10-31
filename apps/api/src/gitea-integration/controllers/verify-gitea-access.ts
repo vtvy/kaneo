@@ -2,6 +2,7 @@ import { HTTPException } from "hono/http-exception";
 import { normalizeGiteaBaseUrl } from "../../plugins/gitea/config";
 import {
   createGiteaClient,
+  GiteaApiError,
   verifyGiteaToken,
 } from "../../plugins/gitea/utils/gitea-api";
 
@@ -60,9 +61,11 @@ async function verifyGiteaAccess({
       });
     }
 
+    // GiteaApiError messages are short and generic ("Gitea API error 502");
+    // anything else may carry internal detail, so it is not echoed back.
     throw new HTTPException(500, {
       message:
-        error instanceof Error
+        error instanceof GiteaApiError
           ? error.message
           : "Failed to verify Gitea access",
     });

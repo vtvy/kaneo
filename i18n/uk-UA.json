@@ -184,6 +184,10 @@
 			"loading": "Loading…",
 			"backlogEmpty": "No tasks in the backlog. Tasks without a sprint appear here.",
 			"sprintTasksEmpty": "No tasks in this sprint yet.",
+			"history": "Sprint history",
+			"exportExcel": "Export sprints (Excel)",
+			"exportingExcel": "Exporting…",
+			"exportError": "Couldn't export the sprint workbook",
 			"noGoal": "No goal set",
 			"start": "Start",
 			"complete": "Complete",
@@ -1463,7 +1467,8 @@
 						"description": "Add, remove, and assign roles to project members."
 					}
 				}
-			}
+			},
+			"ownerOnly": "Only the project Owner can edit roles"
 		},
 		"security": "Security",
 		"securityPage": {
@@ -2106,6 +2111,29 @@
 			},
 			"points": {
 				"updateError": "Failed to update estimate"
+			},
+			"recurrence": {
+				"repeat": "Repeat",
+				"repeats": "Repeats",
+				"every": "Every",
+				"interval": "Interval",
+				"unitLabel": "Unit",
+				"onDays": "On",
+				"hint": "When this task is completed, the next one is created with its due date moved forward.",
+				"updateError": "Failed to update the repeat rule",
+				"pattern": {
+					"daily": "Daily",
+					"weekly": "Weekly",
+					"monthly": "Monthly",
+					"yearly": "Yearly",
+					"periodically": "Periodically"
+				},
+				"unit": {
+					"days": "days",
+					"weeks": "weeks",
+					"months": "months",
+					"years": "years"
+				}
 			}
 		},
 		"backlog": {
@@ -2250,7 +2278,8 @@
 		"contextMenu": {
 			"copyLink": "Копіювати посилання",
 			"copyLinkSuccess": "Посилання на завдання скопійовано!",
-			"sprint": "Sprint"
+			"sprint": "Sprint",
+			"duplicate": "Duplicate"
 		},
 		"actions": {
 			"archive": "Архівувати",
@@ -2318,6 +2347,18 @@
 			"none": "No estimate",
 			"unit": "{{n}} pts",
 			"value": "{{n}} points"
+		},
+		"duplicate": {
+			"success": "Task duplicated",
+			"error": "Failed to duplicate task"
+		},
+		"shortLink": {
+			"resolving": "Opening task…",
+			"resolveError": "Couldn't open this task link"
+		},
+		"recurrence": {
+			"everyInterval": "Every {{interval}} {{unit}}",
+			"onDays": "{{rule}} on {{days}}"
 		}
 	},
 	"invitations": {

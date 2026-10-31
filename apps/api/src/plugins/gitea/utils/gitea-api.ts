@@ -1,5 +1,6 @@
 import { assertPublicDestination } from "../../../utils/assert-public-destination";
 import { publicFetch } from "../../../utils/public-fetch";
+import { truncateText } from "../../../utils/truncate-text";
 import type { GiteaConfig } from "../config";
 import { normalizeGiteaBaseUrl } from "../config";
 
@@ -42,13 +43,21 @@ export type GiteaPullRequest = {
 };
 
 export class GiteaApiError extends Error {
+  /**
+   * Start of the upstream response body, for debugging only. It is capped so
+   * logging the error can't dump a whole upstream page, and it must never be
+   * returned to API clients; `message` stays a short generic summary.
+   */
+  public body?: string;
+
   constructor(
     message: string,
     public status: number,
-    public body?: string,
+    body?: string,
   ) {
     super(message);
     this.name = "GiteaApiError";
+    this.body = body === undefined ? undefined : truncateText(body);
   }
 }
 

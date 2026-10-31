@@ -13,6 +13,7 @@ import type { GiteaConfig } from "../../plugins/gitea/config";
 import { extractTaskNumberGitea } from "../../plugins/gitea/utils/branch-matcher";
 import {
   createGiteaClient,
+  GiteaApiError,
   type GiteaIssue,
   type GiteaLabel,
   type GiteaPullRequest,
@@ -36,6 +37,16 @@ type ImportResult = {
 };
 
 type LabelLike = { name?: string };
+
+// Per-item import errors are returned to the client, so only pass through
+// messages known to be short and generic; log the rest server side.
+function describeImportError(error: unknown, item: string): string {
+  if (error instanceof GiteaApiError || error instanceof HTTPException) {
+    return error.message;
+  }
+  console.error(`Gitea import failed for ${item}:`, error);
+  return "Import failed";
+}
 
 function toPriorityLabels(labels: GiteaLabel[]): LabelLike[] {
   return labels.map((label) => ({ name: label.name }));
@@ -135,9 +146,8 @@ export async function importGiteaIssues(
         skipped++;
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      errors.push(`Issue #${issue.number}: ${errorMessage}`);
+      const item = `Issue #${issue.number}`;
+      errors.push(`${item}: ${describeImportError(error, item)}`);
     }
   }
 
@@ -175,9 +185,8 @@ export async function importGiteaIssues(
         config,
       );
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      errors.push(`PR #${pr.number}: ${errorMessage}`);
+      const item = `PR #${pr.number}`;
+      errors.push(`${item}: ${describeImportError(error, item)}`);
     }
   }
 

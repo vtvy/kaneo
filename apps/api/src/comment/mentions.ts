@@ -1,29 +1,58 @@
+import { and, eq, inArray } from "drizzle-orm";
+import db from "../database";
+import { workspaceUserTable } from "../database/schema";
+import { canInProject } from "../project-rbac/can-in-project";
+import { parseMentionIds } from "../utils/parse-mentions";
+
+// Cap on how many users a single comment can @mention, to avoid notification
+// spam / abuse via a crafted comment body.
+export const MAX_MENTIONS = 50;
+
 /**
- * Normalizes a list of mentioned user IDs from a comment.
+ * Resolve who should be notified for the @mentions in a comment body.
  *
- * Trims whitespace, drops empty strings, removes duplicates (order-stable,
- * first occurrence wins), and excludes the commenter's own ID so authors are
- * never notified about mentioning themselves.
+ * Mentioned ids are parsed from the stored content (never taken from the
+ * client separately). The author is never included, ids listed in
+ * `excludeIds` (e.g. already mentioned before an edit) are skipped, and only
+ * members of the task's workspace who can read the project are kept.
  */
-export function dedupeMentions(
-  mentions: string[] | undefined,
-  commenterId: string,
-): string[] {
-  if (!mentions) {
-    return [];
-  }
+export async function resolveMentionRecipients({
+  content,
+  authorId,
+  workspaceId,
+  projectId,
+  excludeIds = [],
+}: {
+  content: string | null | undefined;
+  authorId: string;
+  workspaceId: string;
+  projectId: string;
+  excludeIds?: string[];
+}): Promise<string[]> {
+  const skip = new Set([authorId, ...excludeIds]);
+  const candidateIds = parseMentionIds(content)
+    .filter((id) => !skip.has(id))
+    .slice(0, MAX_MENTIONS);
 
-  const seen = new Set<string>();
-  const result: string[] = [];
+  if (candidateIds.length === 0) return [];
 
-  for (const raw of mentions) {
-    const id = typeof raw === "string" ? raw.trim() : "";
-    if (!id || id === commenterId || seen.has(id)) {
-      continue;
+  const members = await db
+    .select({ userId: workspaceUserTable.userId })
+    .from(workspaceUserTable)
+    .where(
+      and(
+        eq(workspaceUserTable.workspaceId, workspaceId),
+        inArray(workspaceUserTable.userId, candidateIds),
+      ),
+    );
+  const memberSet = new Set(members.map((m) => m.userId));
+
+  const recipients: string[] = [];
+  for (const id of candidateIds) {
+    if (!memberSet.has(id)) continue;
+    if (await canInProject(id, projectId, "item", "read")) {
+      recipients.push(id);
     }
-    seen.add(id);
-    result.push(id);
   }
-
-  return result;
+  return recipients;
 }

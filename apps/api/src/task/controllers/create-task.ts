@@ -8,7 +8,12 @@ import {
   userTable,
 } from "../../database/schema";
 import { publishEvent } from "../../events";
-import { assertValidTaskStatus } from "../validate-task-fields";
+import syncTaskSprintMembership from "../../sprint/controllers/sync-task-sprint-membership";
+import type { TaskRecurrence } from "../recurrence/schema";
+import {
+  assertAssigneeInWorkspace,
+  assertValidTaskStatus,
+} from "../validate-task-fields";
 import getNextTaskNumber from "./get-next-task-number";
 import { recordTaskInvolvement } from "./record-task-involvement";
 
@@ -24,6 +29,7 @@ async function createTask({
   description,
   priority,
   points,
+  recurrence,
 }: {
   projectId: string;
   currentUserId: string;
@@ -36,6 +42,7 @@ async function createTask({
   description?: string;
   priority?: string;
   points?: number | null;
+  recurrence?: TaskRecurrence | null;
 }) {
   // A task may have no status ("No status" / backlog). Only normalize a
   // provided, non-empty status; otherwise store null.
@@ -60,18 +67,15 @@ async function createTask({
     resolvedSprintId = sprint ? sprint.id : null;
   }
 
+  // A provided assignee must be a member of the project's workspace (this
+  // also guarantees the user exists, so the FK insert below can't 500). An
+  // empty/omitted userId is fine — the task is unassigned.
+  await assertAssigneeInWorkspace(userId, projectId);
+
   const [assignee] = await db
     .select({ name: userTable.name })
     .from(userTable)
     .where(eq(userTable.id, userId ?? ""));
-
-  // A provided assignee must exist, otherwise the FK insert below throws an
-  // unhandled 500. (An empty/omitted userId is fine — the task is unassigned.)
-  if (userId && !assignee) {
-    throw new HTTPException(400, {
-      message: "Assignee user not found",
-    });
-  }
 
   const nextTaskNumber = await getNextTaskNumber(projectId);
 
@@ -105,7 +109,7 @@ async function createTask({
     .values({
       projectId,
       userId: userId || null,
-      reporterId: currentUserId,
+      reporterId: currentUserId || null,
       title: title || "",
       status: resolvedStatus,
       sprintId: resolvedSprintId,
@@ -115,6 +119,7 @@ async function createTask({
       description: description || "",
       priority: resolvedPriority,
       points: points ?? null,
+      recurrence: recurrence ?? null,
       number: nextTaskNumber + 1,
       position: nextPosition,
     })
@@ -128,6 +133,10 @@ async function createTask({
 
   await recordTaskInvolvement(createdTask.id, currentUserId, "reporter");
   await recordTaskInvolvement(createdTask.id, userId, "assignee");
+
+  if (createdTask.sprintId) {
+    await syncTaskSprintMembership(createdTask.id, createdTask.sprintId);
+  }
 
   // `userId` on task.created is the actor (creator) for webhooks/activity.
   // Assignee lives on the task row and as `assigneeId` for notifications.
