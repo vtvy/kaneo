@@ -3,7 +3,22 @@ import { HTTPException } from "hono/http-exception";
 import db, { schema } from "../../database";
 import { PROJECT_SYSTEM_OWNER } from "../catalog";
 
-async function removeMember(memberId: string) {
+async function removeMember(projectId: string, memberId: string) {
+  const [member] = await db
+    .select({ id: schema.projectMemberTable.id })
+    .from(schema.projectMemberTable)
+    .where(
+      and(
+        eq(schema.projectMemberTable.id, memberId),
+        eq(schema.projectMemberTable.projectId, projectId),
+      ),
+    )
+    .limit(1);
+
+  if (!member) {
+    throw new HTTPException(404, { message: "Member not found" });
+  }
+
   const ownerRole = await db
     .select({ id: schema.projectMemberRoleTable.id })
     .from(schema.projectMemberRoleTable)

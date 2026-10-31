@@ -18,11 +18,61 @@ type AuthCode = {
   expiresAt: number;
 };
 
+type AuthorizationRequest = {
+  clientId: string;
+  codeChallenge: string;
+  redirectUri: string;
+  state?: string;
+  expiresAt: number;
+};
+
 const clients = new Map<string, RegisteredClient>();
 const codes = new Map<string, AuthCode>();
+const authorizationRequests = new Map<string, AuthorizationRequest>();
 
 export function getClient(clientId: string): RegisteredClient | undefined {
   return clients.get(clientId);
+}
+
+export function isValidRedirectUri(value: unknown): value is string {
+  if (typeof value !== "string" || value.length > 2048) return false;
+  try {
+    const url = new URL(value);
+    return (url.protocol === "https:" || url.protocol === "http:") && !url.hash;
+  } catch {
+    return false;
+  }
+}
+
+export function createAuthorizationRequest(
+  params: Omit<AuthorizationRequest, "expiresAt">,
+): string {
+  const requestId = randomUUID();
+  authorizationRequests.set(requestId, {
+    ...params,
+    expiresAt: Date.now() + 10 * 60 * 1000,
+  });
+  return requestId;
+}
+
+export function getAuthorizationRequest(
+  requestId: string,
+): AuthorizationRequest | undefined {
+  const request = authorizationRequests.get(requestId);
+  if (!request) return undefined;
+  if (request.expiresAt < Date.now()) {
+    authorizationRequests.delete(requestId);
+    return undefined;
+  }
+  return request;
+}
+
+export function consumeAuthorizationRequest(
+  requestId: string,
+): AuthorizationRequest | undefined {
+  const request = getAuthorizationRequest(requestId);
+  authorizationRequests.delete(requestId);
+  return request;
 }
 
 export function registerClient(params: {

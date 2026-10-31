@@ -51,6 +51,7 @@ import { initializeScheduler, shutdownScheduler } from "./scheduler";
 import search from "./search";
 import slackIntegration from "./slack-integration";
 import sprint from "./sprint";
+import { storage } from "./storage";
 import { getPrivateObject } from "./storage/s3";
 import task from "./task";
 import taskRelation from "./task-relation";
@@ -112,7 +113,28 @@ type ApiVariables = {
   };
 };
 
-function buildContentDisposition(filename: string) {
+// Raster images are safe to render inline. Everything else, including SVG
+// (which can carry script), is served as a download.
+const inlineAssetMimeTypes = new Set([
+  "image/apng",
+  "image/avif",
+  "image/gif",
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+]);
+
+async function readAssetObject(objectKey: string) {
+  try {
+    return await storage.get(objectKey);
+  } catch {
+    // Assets uploaded through the presigned flow live in S3.
+    return getPrivateObject(objectKey);
+  }
+}
+
+function buildContentDisposition(filename: string, inline: boolean) {
   const normalized = filename
     .normalize("NFC")
     .replace(/[\r\n"]/g, "")
@@ -123,7 +145,7 @@ function buildContentDisposition(filename: string) {
       .normalize("NFKD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[\\/]/g, "-")
-      .replace(/[^\x20-\u7E]+/g, "_")
+      .replace(/[^\x20-\x7E]+/g, "_")
       .replace(/\s+/g, " ")
       .trim() || "file";
   const encodedFilename = encodeURIComponent(safeFilename).replace(
@@ -131,7 +153,8 @@ function buildContentDisposition(filename: string) {
     (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
   );
 
-  return `inline; filename="${asciiFallback}"; filename*=UTF-8''${encodedFilename}`;
+  const disposition = inline ? "inline" : "attachment";
+  return `${disposition}; filename="${asciiFallback}"; filename*=UTF-8''${encodedFilename}`;
 }
 
 export function createApp() {
@@ -292,18 +315,23 @@ export function createApp() {
       }
 
       try {
-        const object = await getPrivateObject(asset.objectKey);
+        const object = await readAssetObject(asset.objectKey);
+        const inline = inlineAssetMimeTypes.has(asset.mimeType.toLowerCase());
 
         return new Response(object.body as BodyInit, {
           headers: {
             "Cache-Control": asset.isPublic
               ? "public, max-age=300"
               : "private, max-age=120",
-            "Content-Disposition": buildContentDisposition(asset.filename),
+            "Content-Disposition": buildContentDisposition(
+              asset.filename,
+              inline,
+            ),
             "Content-Length": object.contentLength?.toString() || "",
-            "Content-Type": object.contentType || asset.mimeType,
-            ETag: object.etag || "",
+            "Content-Security-Policy": "default-src 'none'; sandbox",
+            "Content-Type": asset.mimeType,
             "Last-Modified": object.lastModified?.toUTCString() || "",
+            "X-Content-Type-Options": "nosniff",
           },
         });
       } catch (error) {

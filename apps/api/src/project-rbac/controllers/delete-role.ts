@@ -1,15 +1,20 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import db, { schema } from "../../database";
 
-async function deleteRole(roleId: string) {
+async function deleteRole(projectId: string, roleId: string) {
   const [existing] = await db
     .select({
       id: schema.projectRoleTable.id,
       isSystem: schema.projectRoleTable.isSystem,
     })
     .from(schema.projectRoleTable)
-    .where(eq(schema.projectRoleTable.id, roleId))
+    .where(
+      and(
+        eq(schema.projectRoleTable.id, roleId),
+        eq(schema.projectRoleTable.projectId, projectId),
+      ),
+    )
     .limit(1);
 
   if (!existing) {

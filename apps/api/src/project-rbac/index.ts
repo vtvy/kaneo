@@ -115,9 +115,14 @@ const projectRbac = new Hono<{
     workspaceAccess.fromProject("projectId"),
     projectPermission.fromParam({ role: ["manage"] }),
     async (c) => {
-      const { roleId } = c.req.valid("param");
+      const { projectId, roleId } = c.req.valid("param");
       const { name, permissions } = c.req.valid("json");
-      const updated = await updateRoleCtrl(roleId, name, permissions);
+      const updated = await updateRoleCtrl(
+        projectId,
+        roleId,
+        name,
+        permissions,
+      );
       return c.json(updated);
     },
   )
@@ -132,8 +137,8 @@ const projectRbac = new Hono<{
     workspaceAccess.fromProject("projectId"),
     projectPermission.fromParam({ role: ["manage"] }),
     async (c) => {
-      const { roleId } = c.req.valid("param");
-      await deleteRoleCtrl(roleId);
+      const { projectId, roleId } = c.req.valid("param");
+      await deleteRoleCtrl(projectId, roleId);
       return c.json({ success: true });
     },
   )
@@ -216,9 +221,9 @@ const projectRbac = new Hono<{
     workspaceAccess.fromProject("projectId"),
     projectPermission.fromParam({ member: ["manage"] }),
     async (c) => {
-      const { memberId } = c.req.valid("param");
+      const { projectId, memberId } = c.req.valid("param");
       const { roleIds } = c.req.valid("json");
-      await assignMemberRolesCtrl(memberId, roleIds);
+      await assignMemberRolesCtrl(projectId, memberId, roleIds);
       return c.json({ success: true });
     },
   )
@@ -236,8 +241,8 @@ const projectRbac = new Hono<{
     workspaceAccess.fromProject("projectId"),
     projectPermission.fromParam({ member: ["manage"] }),
     async (c) => {
-      const { memberId } = c.req.valid("param");
-      await removeMemberCtrl(memberId);
+      const { projectId, memberId } = c.req.valid("param");
+      await removeMemberCtrl(projectId, memberId);
       return c.json({ success: true });
     },
   );

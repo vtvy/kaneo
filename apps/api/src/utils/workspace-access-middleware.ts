@@ -18,7 +18,10 @@ type WorkspaceIdSource =
         | "activity"
         | "comment"
         | "column"
-        | "workflowRule";
+        | "workflowRule"
+        | "sprint"
+        | "folder"
+        | "document";
       idKey: string;
     };
 
@@ -58,11 +61,13 @@ export function workspaceAccessMiddleware(
       } else if (source.type === "param") {
         workspaceId = c.req.param(source.key) || null;
       } else if (source.type === "lookup") {
-        const body = await readJsonObjectBody(c);
-        const idFromBody =
-          typeof body[source.idKey] === "string" ? body[source.idKey] : null;
-        const id =
-          c.req.param(source.idKey) || c.req.query(source.idKey) || idFromBody;
+        // Only fall back to the JSON body when the id is not in the path or
+        // query: reading it would consume a multipart upload stream.
+        let id = c.req.param(source.idKey) || c.req.query(source.idKey) || null;
+        if (!id) {
+          const bodyValue = (await readJsonObjectBody(c))[source.idKey];
+          id = typeof bodyValue === "string" ? bodyValue : null;
+        }
         if (id) {
           workspaceId = await lookupWorkspaceId(source.resource, id);
         }
@@ -99,7 +104,10 @@ async function lookupWorkspaceId(
     | "activity"
     | "comment"
     | "column"
-    | "workflowRule",
+    | "workflowRule"
+    | "sprint"
+    | "folder"
+    | "document",
   id: string,
 ): Promise<string | null> {
   try {
@@ -224,6 +232,51 @@ async function lookupWorkspaceId(
         return workflowRule?.workspaceId || null;
       }
 
+      case "sprint": {
+        const [sprint] = await db
+          .select({
+            workspaceId: schema.projectTable.workspaceId,
+          })
+          .from(schema.sprintTable)
+          .innerJoin(
+            schema.projectTable,
+            eq(schema.sprintTable.projectId, schema.projectTable.id),
+          )
+          .where(eq(schema.sprintTable.id, id))
+          .limit(1);
+        return sprint?.workspaceId || null;
+      }
+
+      case "folder": {
+        const [folder] = await db
+          .select({
+            workspaceId: schema.projectTable.workspaceId,
+          })
+          .from(schema.folderTable)
+          .innerJoin(
+            schema.projectTable,
+            eq(schema.folderTable.projectId, schema.projectTable.id),
+          )
+          .where(eq(schema.folderTable.id, id))
+          .limit(1);
+        return folder?.workspaceId || null;
+      }
+
+      case "document": {
+        const [document] = await db
+          .select({
+            workspaceId: schema.projectTable.workspaceId,
+          })
+          .from(schema.documentTable)
+          .innerJoin(
+            schema.projectTable,
+            eq(schema.documentTable.projectId, schema.projectTable.id),
+          )
+          .where(eq(schema.documentTable.id, id))
+          .limit(1);
+        return document?.workspaceId || null;
+      }
+
       default:
         return null;
     }
@@ -243,12 +296,11 @@ export const workspaceAccess = {
   fromParam: (key = "workspaceId") =>
     workspaceAccessMiddleware({ sources: [{ type: "param", key }] }),
 
+  // Resolve the workspace from the project itself; a caller-supplied
+  // workspaceId must never stand in for the project's real workspace.
   fromProject: (idKey = "id") =>
     workspaceAccessMiddleware({
-      sources: [
-        { type: "query", key: "workspaceId" },
-        { type: "lookup", resource: "project", idKey },
-      ],
+      sources: [{ type: "lookup", resource: "project", idKey }],
     }),
 
   fromTask: (idKey = "id") =>
@@ -313,5 +365,20 @@ export const workspaceAccess = {
         { type: "lookup", resource: "workflowRule", idKey },
         { type: "query", key: "workspaceId" },
       ],
+    }),
+
+  fromSprint: (idKey = "id") =>
+    workspaceAccessMiddleware({
+      sources: [{ type: "lookup", resource: "sprint", idKey }],
+    }),
+
+  fromFolder: (idKey = "id") =>
+    workspaceAccessMiddleware({
+      sources: [{ type: "lookup", resource: "folder", idKey }],
+    }),
+
+  fromDocument: (idKey = "id") =>
+    workspaceAccessMiddleware({
+      sources: [{ type: "lookup", resource: "document", idKey }],
     }),
 };
