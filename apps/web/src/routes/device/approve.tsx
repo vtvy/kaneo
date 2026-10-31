@@ -94,6 +94,9 @@ function DeviceApprovePage() {
   const handleApprove = async () => {
     setProcessing(true);
     try {
+      // Better Auth only lets the signed-in user who claimed the code (by
+      // looking it up) approve or deny it.
+      await authClient.device({ query: { user_code: normalizedCode } });
       const res = await authClient.device.approve({
         userCode: normalizedCode,
       });
@@ -113,6 +116,7 @@ function DeviceApprovePage() {
   const handleDeny = async () => {
     setProcessing(true);
     try {
+      await authClient.device({ query: { user_code: normalizedCode } });
       const res = await authClient.device.deny({
         userCode: normalizedCode,
       });
