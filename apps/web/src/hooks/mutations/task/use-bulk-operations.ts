@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import assignTaskToSprint from "@/fetchers/sprint/assign-task";
 import bulkOperation from "@/fetchers/task/bulk-operation";
 import deleteTask from "@/fetchers/task/delete-task";
 
@@ -144,6 +145,30 @@ export function useBulkOperations() {
     onSuccess: invalidateCommon,
   });
 
+  const bulkAssignSprint = useMutation({
+    mutationFn: async ({
+      taskIds,
+      sprintId,
+    }: {
+      taskIds: string[];
+      sprintId: string;
+    }) => {
+      // No bulk sprint endpoint: reuse the per-task assign route, which
+      // enforces project item:update for each task.
+      await Promise.all(
+        taskIds.map((taskId) => assignTaskToSprint({ id: sprintId, taskId })),
+      );
+    },
+    onSettled: () => {
+      invalidateCommon();
+      queryClientRef.invalidateQueries({ queryKey: ["task"] });
+      queryClientRef.invalidateQueries({ queryKey: ["all-project-tasks"] });
+      queryClientRef.invalidateQueries({ queryKey: ["sprints"] });
+      queryClientRef.invalidateQueries({ queryKey: ["sprint-tasks"] });
+      queryClientRef.invalidateQueries({ queryKey: ["sprint-backlog"] });
+    },
+  });
+
   return {
     bulkDelete: bulkDelete.mutateAsync,
     bulkArchive: bulkArchive.mutateAsync,
@@ -154,5 +179,6 @@ export function useBulkOperations() {
     bulkPriority: bulkPriority.mutateAsync,
     bulkAddLabel: bulkAddLabel.mutateAsync,
     bulkDueDate: bulkDueDate.mutateAsync,
+    bulkAssignSprint: bulkAssignSprint.mutateAsync,
   };
 }

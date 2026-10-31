@@ -217,7 +217,15 @@
 			"taskCount_one": "{{count}} task",
 			"taskCount_other": "{{count}} tasks",
 			"showingActiveSprint": "Showing active sprint",
-			"filterToActiveSprint": "Filter to active sprint"
+			"filterToActiveSprint": "Filter to active sprint",
+			"pointsTotal": "{{completed}}/{{total}} pts",
+			"pointsTotalTitle": "Completed / total story points"
+		},
+		"notFound": {
+			"title": "Page not found",
+			"description": "This link may be incomplete, or the page may have moved. Return home to open an available workspace.",
+			"home": "Go to home",
+			"back": "Go back"
 		}
 	},
 	"auth": {
@@ -2159,6 +2167,7 @@
 			"allPriorities": "Все приоритеты",
 			"allAssignees": "Все исполнители",
 			"allDueDates": "Все сроки",
+			"allCreatedDates": "All created dates",
 			"allLabels": "Все метки",
 			"selectedCount_one": "{{count}} выбран",
 			"selectedCount_few": "{{count}} выбрано",
@@ -2169,9 +2178,16 @@
 				"priority": "Приоритет",
 				"assignee": "Исполнитель",
 				"dueDate": "Срок выполнения",
+				"createdAt": "Created date",
 				"labels": "Метки",
 				"creator": "Creator",
 				"relatedToMe": "Related to me"
+			},
+			"createdDate": {
+				"createdToday": "Created today",
+				"createdThisWeek": "Created this week",
+				"createdLastWeek": "Created last week",
+				"createdLast30Days": "Created in last 30 days"
 			},
 			"operators": {
 				"isAnyOf": "любой из",
@@ -2253,7 +2269,8 @@
 		},
 		"contextMenu": {
 			"copyLink": "Скопировать ссылку",
-			"copyLinkSuccess": "Ссылка на задачу скопирована!"
+			"copyLinkSuccess": "Ссылка на задачу скопирована!",
+			"sprint": "Sprint"
 		},
 		"actions": {
 			"archive": "Архивировать",
@@ -2326,7 +2343,9 @@
 			"archiveSuccess": "{{count}} tasks archived",
 			"updateSuccess": "{{count}} tasks updated",
 			"assignSuccess": "{{count}} tasks assigned",
-			"addLabelSuccess": "Label added to {{count}} tasks"
+			"addLabelSuccess": "Label added to {{count}} tasks",
+			"addToSprint": "Add to sprint",
+			"addToSprintError": "Failed to add tasks to sprint"
 		},
 		"blueprint": {
 			"pushToBlueprint": "Push to Blueprint",
@@ -2692,7 +2711,8 @@
 			"priority": "Priority",
 			"sprint": "Sprint",
 			"assignee": "Assignee",
-			"creator": "Created by"
+			"creator": "Created by",
+			"createdAt": "Created date"
 		},
 		"sort": {
 			"asc": "Sort ascending",
@@ -2708,6 +2728,20 @@
 			"title": "No tasks yet",
 			"description": "Create a task to start building your backlog."
 		},
-		"error": "Could not load tasks. Please try again."
+		"error": "Could not load tasks. Please try again.",
+		"savedViews": {
+			"rename": "Rename view",
+			"nameLabel": "View name",
+			"saveName": "Save view name",
+			"label": "Saved views",
+			"empty": "No saved views yet. Set filters, then save one.",
+			"save": "Save",
+			"namePlaceholder": "View name…",
+			"nameRequired": "Enter a name for this view",
+			"saved": "Saved view “{{name}}”",
+			"setDefault": "Set as default when opening backlog",
+			"saveAsDefault": "Set as default filter",
+			"delete": "Delete view"
+		}
 	}
 }

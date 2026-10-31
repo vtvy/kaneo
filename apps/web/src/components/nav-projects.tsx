@@ -38,6 +38,7 @@ import useGetProjects from "@/hooks/queries/project/use-get-projects";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { toast } from "@/lib/toast";
+import { getWorkspaceDestination } from "@/lib/workspace-destination";
 import { useRecentVisitsStore } from "@/store/recent-visits";
 import type { ProjectWithTasks } from "@/types/project";
 import CreateProjectModal from "./shared/modals/create-project-modal";
@@ -312,12 +313,7 @@ export function NavProjects() {
                 queryClient.invalidateQueries({
                   queryKey: ["projects"],
                 });
-                navigate({
-                  to: "/dashboard/workspace/$workspaceId",
-                  params: {
-                    workspaceId: workspace?.id || "",
-                  },
-                });
+                navigate(getWorkspaceDestination(workspace?.id));
               }}
             >
               <Button variant="destructive" size="sm">

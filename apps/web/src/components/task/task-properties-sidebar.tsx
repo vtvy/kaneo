@@ -5,7 +5,9 @@ import {
   CalendarX,
   Copy,
   GitBranch,
+  Hash,
   Plus,
+  Target,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,6 +27,7 @@ import useGetGithubIntegration from "@/hooks/queries/github-integration/use-get-
 import useGetLabelsByTask from "@/hooks/queries/label/use-get-labels-by-task";
 import useGetProject from "@/hooks/queries/project/use-get-project";
 import useGetProjects from "@/hooks/queries/project/use-get-projects";
+import useGetSprintsByProject from "@/hooks/queries/sprint/use-get-sprints-by-project";
 import useGetTask from "@/hooks/queries/task/use-get-task";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { cn } from "@/lib/cn";
@@ -34,10 +37,12 @@ import { formatDateShort } from "@/lib/format";
 import { getPriorityLabel, getStatusDisplayLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
 import { toast } from "@/lib/toast";
+import TaskSprintPopover from "../sprint/task-sprint-popover";
 import TaskAssigneePopover from "./task-assignee-popover";
 import TaskDueDatePopover from "./task-due-date-popover";
 import TaskLabelsPopover from "./task-labels-popover";
 import TaskMovePopover from "./task-move-popover";
+import TaskPointsPopover from "./task-points-popover";
 import TaskPriorityPopover from "./task-priority-popover";
 import TaskStartDatePopover from "./task-start-date-popover";
 import TaskStatusPopover from "./task-status-popover";
@@ -110,6 +115,9 @@ export default function TaskPropertiesSidebar({
   const assignee = workspaceUsers?.members?.find(
     (member) => member.userId === task?.userId,
   );
+
+  const { data: sprints = [] } = useGetSprintsByProject(projectId);
+  const currentSprint = sprints.find((sprint) => sprint.id === task?.sprintId);
 
   const handleCopyTaskLink = () => {
     navigator.clipboard.writeText(
@@ -225,6 +233,24 @@ export default function TaskPropertiesSidebar({
                 </TaskPriorityPopover>
               )}
               {task && (
+                <TaskPointsPopover task={task}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="justify-start h-7 px-1.5 gap-1.5"
+                  >
+                    <Hash className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span
+                      className={`text-xs font-semibold truncate ${task.points != null ? "" : "text-muted-foreground"}`}
+                    >
+                      {task.points != null
+                        ? t("tasks:points.unit", { n: task.points })
+                        : t("tasks:points.none")}
+                    </span>
+                  </Button>
+                </TaskPointsPopover>
+              )}
+              {task && (
                 <TaskAssigneePopover task={task} workspaceId={workspaceId}>
                   <Button
                     variant="ghost"
@@ -256,6 +282,23 @@ export default function TaskPropertiesSidebar({
                     </span>
                   </Button>
                 </TaskAssigneePopover>
+              )}
+              {task && (
+                <TaskSprintPopover task={task}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="justify-start h-7 px-1.5 gap-1.5"
+                  >
+                    <Target className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span
+                      className={`text-xs font-semibold truncate max-w-[100px] ${currentSprint ? "" : "text-muted-foreground"}`}
+                    >
+                      {currentSprint?.name ??
+                        t("common:sprints.noSprintBacklog")}
+                    </span>
+                  </Button>
+                </TaskSprintPopover>
               )}
               {task?.reporterId && (
                 <div
@@ -432,6 +475,24 @@ export default function TaskPropertiesSidebar({
                   </TaskPriorityPopover>
                 )}
                 {task && (
+                  <TaskPointsPopover task={task}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start h-7 px-1.5 gap-1.5"
+                    >
+                      <Hash className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span
+                        className={`text-xs font-semibold truncate ${task.points != null ? "" : "text-muted-foreground"}`}
+                      >
+                        {task.points != null
+                          ? t("tasks:points.unit", { n: task.points })
+                          : t("tasks:points.none")}
+                      </span>
+                    </Button>
+                  </TaskPointsPopover>
+                )}
+                {task && (
                   <TaskAssigneePopover task={task} workspaceId={workspaceId}>
                     <Button
                       variant="ghost"
@@ -463,6 +524,23 @@ export default function TaskPropertiesSidebar({
                       </span>
                     </Button>
                   </TaskAssigneePopover>
+                )}
+                {task && (
+                  <TaskSprintPopover task={task}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start h-7 px-1.5 gap-1.5"
+                    >
+                      <Target className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span
+                        className={`text-xs font-semibold truncate max-w-[100px] ${currentSprint ? "" : "text-muted-foreground"}`}
+                      >
+                        {currentSprint?.name ??
+                          t("common:sprints.noSprintBacklog")}
+                      </span>
+                    </Button>
+                  </TaskSprintPopover>
                 )}
                 {task?.reporterId && (
                   <div
@@ -642,6 +720,24 @@ export default function TaskPropertiesSidebar({
                   </TaskPriorityPopover>
                 )}
                 {task && (
+                  <TaskPointsPopover task={task}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start h-7 px-1.5 gap-1.5 w-full"
+                    >
+                      <Hash className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span
+                        className={`text-xs font-semibold truncate ${task.points != null ? "" : "text-muted-foreground"}`}
+                      >
+                        {task.points != null
+                          ? t("tasks:points.unit", { n: task.points })
+                          : t("tasks:points.none")}
+                      </span>
+                    </Button>
+                  </TaskPointsPopover>
+                )}
+                {task && (
                   <TaskAssigneePopover task={task} workspaceId={workspaceId}>
                     <Button
                       variant="ghost"
@@ -673,6 +769,23 @@ export default function TaskPropertiesSidebar({
                       </span>
                     </Button>
                   </TaskAssigneePopover>
+                )}
+                {task && (
+                  <TaskSprintPopover task={task}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start h-7 px-1.5 gap-1.5 w-full"
+                    >
+                      <Target className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span
+                        className={`text-xs font-semibold truncate ${currentSprint ? "" : "text-muted-foreground"}`}
+                      >
+                        {currentSprint?.name ??
+                          t("common:sprints.noSprintBacklog")}
+                      </span>
+                    </Button>
+                  </TaskSprintPopover>
                 )}
                 {task?.reporterId && (
                   <div

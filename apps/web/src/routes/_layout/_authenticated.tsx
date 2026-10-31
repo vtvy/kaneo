@@ -1,18 +1,14 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { authClient } from "@/lib/auth-client";
+import { SessionConnectionError } from "@/components/auth/session-connection-error";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { getRouteSession } from "@/lib/get-route-session";
 
 // protects all child routes, must be logged in
 export const Route = createFileRoute("/_layout/_authenticated")({
   beforeLoad: async ({ location }) => {
-    let session = null;
-    try {
-      const { data } = await authClient.getSession();
-      session = data;
-    } catch (error) {
-      // getSession() rejected (e.g. network error) — treat as unauthenticated
-      // instead of letting the rejection bubble up as a blank error screen.
-      if (import.meta.env.DEV) console.warn("getSession failed", error);
-    }
+    // Only a confirmed missing session redirects to sign-in. Network errors and
+    // 5xx responses (e.g. during a deploy) surface as a retryable error instead.
+    const session = await getRouteSession();
     if (!session) {
       throw redirect({
         to: "/auth/sign-in",
@@ -25,4 +21,6 @@ export const Route = createFileRoute("/_layout/_authenticated")({
     }
     return { session };
   },
+  pendingComponent: LoadingSkeleton,
+  errorComponent: SessionConnectionError,
 });

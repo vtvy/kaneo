@@ -217,7 +217,15 @@
 			"taskCount_one": "{{count}} task",
 			"taskCount_other": "{{count}} tasks",
 			"showingActiveSprint": "Showing active sprint",
-			"filterToActiveSprint": "Filter to active sprint"
+			"filterToActiveSprint": "Filter to active sprint",
+			"pointsTotal": "{{completed}}/{{total}} pts",
+			"pointsTotalTitle": "Completed / total story points"
+		},
+		"notFound": {
+			"title": "Page not found",
+			"description": "This link may be incomplete, or the page may have moved. Return home to open an available workspace.",
+			"home": "Go to home",
+			"back": "Go back"
 		}
 	},
 	"auth": {
@@ -2145,6 +2153,7 @@
 			"allPriorities": "모든 우선순위",
 			"allAssignees": "모든 담당자",
 			"allDueDates": "모든 마감일",
+			"allCreatedDates": "All created dates",
 			"allLabels": "모든 라벨",
 			"selectedCount": "{{count}}개 선택됨",
 			"subjects": {
@@ -2152,9 +2161,16 @@
 				"priority": "우선순위",
 				"assignee": "담당자",
 				"dueDate": "마감일",
+				"createdAt": "Created date",
 				"labels": "라벨",
 				"creator": "Creator",
 				"relatedToMe": "Related to me"
+			},
+			"createdDate": {
+				"createdToday": "Created today",
+				"createdThisWeek": "Created this week",
+				"createdLastWeek": "Created last week",
+				"createdLast30Days": "Created in last 30 days"
 			},
 			"operators": {
 				"isAnyOf": "다음 중 하나",
@@ -2229,7 +2245,8 @@
 		},
 		"contextMenu": {
 			"copyLink": "링크 복사",
-			"copyLinkSuccess": "작업 링크가 복사되었습니다!"
+			"copyLinkSuccess": "작업 링크가 복사되었습니다!",
+			"sprint": "Sprint"
 		},
 		"actions": {
 			"archive": "보관",
@@ -2266,7 +2283,9 @@
 			"actions": "작업",
 			"searchActions": "작업 검색...",
 			"noActionsFound": "작업을 찾을 수 없습니다.",
-			"changeStatus": "상태 변경"
+			"changeStatus": "상태 변경",
+			"addToSprint": "Add to sprint",
+			"addToSprintError": "Failed to add tasks to sprint"
 		},
 		"blueprint": {
 			"pushToBlueprint": "Push to Blueprint",
@@ -2630,7 +2649,8 @@
 			"priority": "Priority",
 			"sprint": "Sprint",
 			"assignee": "Assignee",
-			"creator": "Created by"
+			"creator": "Created by",
+			"createdAt": "Created date"
 		},
 		"sort": {
 			"asc": "Sort ascending",
@@ -2646,6 +2666,20 @@
 			"title": "No tasks yet",
 			"description": "Create a task to start building your backlog."
 		},
-		"error": "Could not load tasks. Please try again."
+		"error": "Could not load tasks. Please try again.",
+		"savedViews": {
+			"rename": "Rename view",
+			"nameLabel": "View name",
+			"saveName": "Save view name",
+			"label": "Saved views",
+			"empty": "No saved views yet. Set filters, then save one.",
+			"save": "Save",
+			"namePlaceholder": "View name…",
+			"nameRequired": "Enter a name for this view",
+			"saved": "Saved view “{{name}}”",
+			"setDefault": "Set as default when opening backlog",
+			"saveAsDefault": "Set as default filter",
+			"delete": "Delete view"
+		}
 	}
 }

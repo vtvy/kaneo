@@ -20,6 +20,7 @@ import useGetSprintTasks from "@/hooks/queries/sprint/use-get-sprint-tasks";
 import useGetSprintsByProject from "@/hooks/queries/sprint/use-get-sprints-by-project";
 import { useGetTasks } from "@/hooks/queries/task/use-get-tasks";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
+import { useBoardSprintFilter } from "@/hooks/use-board-sprint-filter";
 import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useTaskFiltersWithLabelsSupport } from "@/hooks/use-task-filters-with-labels-support";
@@ -118,27 +119,13 @@ function RouteComponent() {
   );
 
   // The board filters to a single sprint. ALL_SPRINTS_VALUE = show everything.
-  // Defaults to the current sprint once sprints load (see effect below).
-  const [selectedSprintId, setSelectedSprintId] =
-    useState<string>(ALL_SPRINTS_VALUE);
-  const [hasInitializedSprintFilter, setHasInitializedSprintFilter] =
-    useState(false);
+  // Sticky per project (QC: don't reset to "current" on every visit).
+  const { selectedSprintId, setSelectedSprintId } = useBoardSprintFilter(
+    projectId,
+    sprints,
+    currentSprint?.id,
+  );
   const { setActiveSprint } = useActiveSprintStore();
-
-  // Once sprints are loaded, default the filter to the current sprint (once).
-  useEffect(() => {
-    if (hasInitializedSprintFilter || !sprints) return;
-    setSelectedSprintId(currentSprint?.id ?? ALL_SPRINTS_VALUE);
-    setHasInitializedSprintFilter(true);
-  }, [sprints, currentSprint, hasInitializedSprintFilter]);
-
-  // If the selected sprint no longer exists (e.g. deleted), fall back to "all".
-  useEffect(() => {
-    if (selectedSprintId === ALL_SPRINTS_VALUE || !sprints) return;
-    if (!sprints.some((sprint) => sprint.id === selectedSprintId)) {
-      setSelectedSprintId(ALL_SPRINTS_VALUE);
-    }
-  }, [sprints, selectedSprintId]);
 
   const filteredSprintId =
     selectedSprintId === ALL_SPRINTS_VALUE ? "" : selectedSprintId;

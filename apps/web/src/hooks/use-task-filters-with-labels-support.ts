@@ -1,5 +1,6 @@
 import { addWeeks, endOfWeek, isWithinInterval, startOfWeek } from "date-fns";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { matchesCreatedDateFilter } from "@/lib/created-date-filter";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 import type { ProjectWithTasks } from "@/types/project";
 import type Task from "@/types/task";
@@ -11,6 +12,7 @@ const DEFAULT_FILTERS: BoardFilters = {
   assignee: null,
   creator: null,
   dueDate: null,
+  createdAt: null,
   labels: null,
   relatedToMe: null,
 };
@@ -21,6 +23,7 @@ const FILTER_KEYS: Array<keyof BoardFilters> = [
   "assignee",
   "creator",
   "dueDate",
+  "createdAt",
   "labels",
   "relatedToMe",
 ];
@@ -57,6 +60,9 @@ export function useTaskFiltersWithLabelsSupport(
   const weekStartsOn = useUserPreferencesStore((state) => state.weekStartsOn);
   const storageKey = projectId ? `kaneo:board-filters:${projectId}` : null;
   const [filters, setFilters] = useState<BoardFilters>(DEFAULT_FILTERS);
+  const [hydratedStorageKey, setHydratedStorageKey] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!storageKey || typeof window === "undefined") return;
@@ -65,6 +71,7 @@ export function useTaskFiltersWithLabelsSupport(
       const stored = window.localStorage.getItem(storageKey);
       if (!stored) {
         setFilters(DEFAULT_FILTERS);
+        setHydratedStorageKey(storageKey);
         return;
       }
 
@@ -73,12 +80,22 @@ export function useTaskFiltersWithLabelsSupport(
     } catch {
       setFilters(DEFAULT_FILTERS);
     }
+    setHydratedStorageKey(storageKey);
   }, [storageKey]);
 
   useEffect(() => {
-    if (!storageKey || typeof window === "undefined") return;
-    window.localStorage.setItem(storageKey, JSON.stringify(filters));
-  }, [filters, storageKey]);
+    if (
+      !storageKey ||
+      hydratedStorageKey !== storageKey ||
+      typeof window === "undefined"
+    )
+      return;
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(filters));
+    } catch {
+      // ignore quota / private mode
+    }
+  }, [filters, storageKey, hydratedStorageKey]);
 
   const filterTasks = useCallback(
     (tasks: Task[]): Task[] => {
@@ -188,6 +205,20 @@ export function useTaskFiltersWithLabelsSupport(
           });
 
           if (!matchesAnyDueDate) {
+            return false;
+          }
+        }
+
+        if (filters.createdAt && filters.createdAt.length > 0) {
+          const matchesAnyCreatedAt = filters.createdAt.some(
+            (createdAtFilter) =>
+              matchesCreatedDateFilter(
+                task.createdAt,
+                createdAtFilter,
+                weekStartsOn,
+              ),
+          );
+          if (!matchesAnyCreatedAt) {
             return false;
           }
         }
