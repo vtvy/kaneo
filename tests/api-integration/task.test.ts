@@ -8,6 +8,7 @@ import { resetTestDatabase } from "./helpers/database";
 import {
   createProjectFixture,
   createWorkspaceMember,
+  joinProject,
 } from "./helpers/fixtures";
 
 describe("API integration: task creation", () => {
@@ -48,6 +49,7 @@ describe("API integration: task creation", () => {
       name: "Delivery",
       slug: "delivery",
     });
+    await joinProject(project.id, member.user.id);
 
     await db.insert(schema.taskTable).values({
       projectId: project.id,
@@ -174,6 +176,7 @@ describe("API integration: task creation", () => {
     const { project, columns } = await createProjectFixture({
       workspaceId: member.workspace.id,
     });
+    await joinProject(project.id, member.user.id);
 
     mockAuthenticatedSession(member.user);
     const { app } = createApp();
@@ -234,6 +237,7 @@ describe("API integration: task creation", () => {
     const { project } = await createProjectFixture({
       workspaceId: member.workspace.id,
     });
+    await joinProject(project.id, member.user.id);
 
     mockAuthenticatedSession(member.user);
     const { app } = createApp();
@@ -282,6 +286,7 @@ describe("API integration: task creation", () => {
     const { project } = await createProjectFixture({
       workspaceId: member.workspace.id,
     });
+    await joinProject(project.id, member.user.id);
 
     const [sprint] = await db
       .insert(schema.sprintTable)
@@ -335,6 +340,7 @@ describe("API integration: task creation", () => {
       workspaceId: member.workspace.id,
       slug: `project-target-${randomUUID()}`,
     });
+    await joinProject(project.id, member.user.id);
     const { project: otherProject } = await createProjectFixture({
       workspaceId: member.workspace.id,
       slug: `project-other-${randomUUID()}`,

@@ -17,18 +17,30 @@ export async function createNextOccurrence(
   const completedAt = new Date();
 
   // Moving the rule off the completed task is the claim: a concurrent
-  // completion finds no rule left, so each completion creates one next task.
-  const [claimed] = await db
-    .update(taskTable)
-    .set({ recurrence: null })
-    .where(
-      and(
-        eq(taskTable.id, taskId),
-        isNotNull(taskTable.recurrence),
-        taskIsCompleted,
-      ),
-    )
-    .returning();
+  // completion waits on the row lock, then finds no rule left, so each
+  // completion creates one next task. The row is read before the update
+  // because RETURNING would only show the cleared rule.
+  const claimed = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(taskTable)
+      .where(
+        and(
+          eq(taskTable.id, taskId),
+          isNotNull(taskTable.recurrence),
+          taskIsCompleted,
+        ),
+      )
+      .for("update")
+      .limit(1);
+    if (!row) return undefined;
+
+    await tx
+      .update(taskTable)
+      .set({ recurrence: null })
+      .where(eq(taskTable.id, row.id));
+    return row;
+  });
   const recurrence = claimed?.recurrence;
   if (!claimed || !recurrence) return null;
 

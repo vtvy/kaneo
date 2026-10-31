@@ -1,6 +1,20 @@
 import { randomUUID } from "node:crypto";
 import db, { schema } from "../../../apps/api/src/database";
 import { DEFAULT_PROJECT_COLUMNS } from "../../../apps/api/src/project/controllers/create-project";
+import {
+  addProjectMemberWithRole,
+  seedProjectRoles,
+} from "../../../apps/api/src/project-rbac/seed-default-project-roles";
+
+// Workspace members only reach a project's tasks once they are added to it.
+export async function joinProject(
+  projectId: string,
+  userId: string,
+  roleName = "Member",
+) {
+  await seedProjectRoles(db, projectId);
+  await addProjectMemberWithRole(db, projectId, userId, roleName);
+}
 
 export type SeededMemberContext = {
   user: typeof schema.userTable.$inferSelect;
