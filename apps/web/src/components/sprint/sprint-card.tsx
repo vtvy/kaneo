@@ -30,6 +30,7 @@ import { isCurrentSprint } from "@/lib/sprint";
 import { toast } from "@/lib/toast";
 import type { Sprint } from "@/types/sprint";
 import CompleteSprintModal from "./complete-sprint-modal";
+import SprintEndChip from "./sprint-end-chip";
 import SprintFormModal from "./sprint-form-modal";
 import SprintTaskRow from "./sprint-task-row";
 
@@ -136,6 +137,7 @@ function SprintCard({
               {t("common:sprints.statePlanned")}
             </Badge>
           )}
+          <SprintEndChip sprint={sprint} />
         </button>
 
         <div className="flex shrink-0 items-center gap-1">

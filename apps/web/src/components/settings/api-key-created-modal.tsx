@@ -1,6 +1,7 @@
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { copyText } from "@/lib/copy-text";
 import { toast } from "@/lib/toast";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Button } from "../ui/button";
@@ -30,7 +31,7 @@ export function ApiKeyCreatedModal({
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(apiKey);
+    copyText(apiKey);
     setCopied(true);
     toast.success(t("settings:apiKey.createdModal.toastCopied"));
   };

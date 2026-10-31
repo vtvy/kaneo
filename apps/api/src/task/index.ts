@@ -38,6 +38,7 @@ import getTaskByTicketId, {
 import getTasks from "./controllers/get-tasks";
 import importTasks from "./controllers/import-tasks";
 import moveTask from "./controllers/move-task";
+import pushTaskToGitlab from "./controllers/push-task-to-gitlab";
 import updateTask from "./controllers/update-task";
 import updateTaskAssignee from "./controllers/update-task-assignee";
 import updateTaskDescription from "./controllers/update-task-description";
@@ -259,7 +260,7 @@ const task = new Hono<{
       operationId: "getMyTasks",
       tags: ["Tasks"],
       description:
-        "Get tasks for the current user in a workspace (assigned or involved)",
+        "Get tasks for the current user in a workspace (assigned or involved), limited to projects the user can read. open=true keeps only unfinished tasks in active projects.",
       responses: {
         200: {
           description: "Tasks for the current user in the workspace",
@@ -274,18 +275,20 @@ const task = new Hono<{
       "query",
       v.object({
         scope: v.optional(v.picklist(["assigned", "involved"] as const)),
+        open: v.optional(v.picklist(["true", "false"] as const)),
       }),
     ),
     workspaceAccess.fromParam("workspaceId"),
     async (c) => {
       const { workspaceId } = c.req.valid("param");
-      const { scope } = c.req.valid("query");
+      const { scope, open } = c.req.valid("query");
       const userId = c.get("userId");
 
       const tasks = await getMyTasks(
         userId,
         workspaceId,
         scope === "involved" ? "involved" : "assigned",
+        { open: open === "true" },
       );
 
       return c.json(tasks);
@@ -322,6 +325,7 @@ const task = new Hono<{
         status: v.optional(v.nullable(v.string())),
         sprintId: v.optional(v.nullable(v.string())),
         userId: v.optional(v.string()),
+        createGitlabIssue: v.optional(v.boolean()),
       }),
     ),
     workspaceAccess.fromProject("projectId"),
@@ -338,6 +342,7 @@ const task = new Hono<{
         status,
         sprintId,
         userId,
+        createGitlabIssue,
       } = c.req.valid("json");
 
       const task = await createTask({
@@ -352,9 +357,43 @@ const task = new Hono<{
         points,
         status,
         sprintId,
+        createGitlabIssue,
       });
 
       return c.json(task);
+    },
+  )
+  .post(
+    "/:id/push-to-gitlab",
+    describeRoute({
+      operationId: "pushTaskToGitlab",
+      tags: ["Tasks"],
+      description: "Create a GitLab issue from an existing task",
+      responses: {
+        200: {
+          description: "GitLab issue created or already linked",
+          content: {
+            "application/json": {
+              schema: resolver(
+                v.object({
+                  taskId: v.string(),
+                  issueNumber: v.string(),
+                  url: v.string(),
+                  created: v.boolean(),
+                }),
+              ),
+            },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    workspaceAccess.fromTask(),
+    projectPermission.fromTask({ item: ["update"] }),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const result = await pushTaskToGitlab(id);
+      return c.json(result);
     },
   )
   .get(

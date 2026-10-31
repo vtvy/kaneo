@@ -17,6 +17,7 @@ async function createTask(
   priority: CreateTaskRequest["priority"],
   points?: number | null,
   sprintId?: string | null,
+  createGitlabIssue?: boolean,
 ) {
   if (!projectId) {
     throw new Error("No project selected for task creation");
@@ -33,6 +34,7 @@ async function createTask(
       priority,
       points: points ?? undefined,
       ...(sprintId !== undefined ? { sprintId } : {}),
+      ...(createGitlabIssue ? { createGitlabIssue: true } : {}),
     },
     param: { projectId },
   });

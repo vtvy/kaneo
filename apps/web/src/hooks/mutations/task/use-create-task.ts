@@ -18,6 +18,7 @@ function useCreateTask() {
       priority,
       points,
       sprintId,
+      createGitlabIssue,
     }: CreateTaskRequest) =>
       createTask(
         title,
@@ -30,6 +31,7 @@ function useCreateTask() {
         priority,
         points,
         sprintId,
+        createGitlabIssue,
       ),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({

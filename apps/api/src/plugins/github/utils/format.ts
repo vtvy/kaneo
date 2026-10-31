@@ -24,7 +24,7 @@ export function formatSyncComment(taskId: string): string {
 
 export function getLabelsForIssue(
   priority: string | null,
-  status: string,
+  status: string | null,
 ): string[] {
   const labels: string[] = [];
 
@@ -32,7 +32,10 @@ export function getLabelsForIssue(
     labels.push(`priority:${priority}`);
   }
 
-  labels.push(`status:${status}`);
+  // Tasks may have no status; don't emit a "status:null" label.
+  if (status) {
+    labels.push(`status:${status}`);
+  }
 
   return labels;
 }

@@ -21,7 +21,8 @@ type WorkspaceIdSource =
         | "workflowRule"
         | "sprint"
         | "folder"
-        | "document";
+        | "document"
+        | "customField";
       idKey: string;
     };
 
@@ -107,7 +108,8 @@ async function lookupWorkspaceId(
     | "workflowRule"
     | "sprint"
     | "folder"
-    | "document",
+    | "document"
+    | "customField",
   id: string,
 ): Promise<string | null> {
   try {
@@ -277,6 +279,24 @@ async function lookupWorkspaceId(
         return document?.workspaceId || null;
       }
 
+      case "customField": {
+        const [field] = await db
+          .select({
+            workspaceId: schema.projectTable.workspaceId,
+          })
+          .from(schema.customFieldDefinitionTable)
+          .innerJoin(
+            schema.projectTable,
+            eq(
+              schema.customFieldDefinitionTable.projectId,
+              schema.projectTable.id,
+            ),
+          )
+          .where(eq(schema.customFieldDefinitionTable.id, id))
+          .limit(1);
+        return field?.workspaceId || null;
+      }
+
       default:
         return null;
     }
@@ -380,5 +400,10 @@ export const workspaceAccess = {
   fromDocument: (idKey = "id") =>
     workspaceAccessMiddleware({
       sources: [{ type: "lookup", resource: "document", idKey }],
+    }),
+
+  fromCustomField: (idKey = "id") =>
+    workspaceAccessMiddleware({
+      sources: [{ type: "lookup", resource: "customField", idKey }],
     }),
 };

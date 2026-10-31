@@ -37,6 +37,7 @@ import useDeleteProject from "@/hooks/mutations/project/use-delete-project";
 import useGetProjects from "@/hooks/queries/project/use-get-projects";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
+import { copyText } from "@/lib/copy-text";
 import { toast } from "@/lib/toast";
 import { getWorkspaceDestination } from "@/lib/workspace-destination";
 import { useRecentVisitsStore } from "@/store/recent-visits";
@@ -212,7 +213,7 @@ export function NavProjects() {
                             <DropdownMenuItem
                               className="h-7 items-start cursor-pointer text-sm"
                               onClick={() => {
-                                navigator.clipboard.writeText(
+                                copyText(
                                   `${window.location.origin}/dashboard/workspace/${workspace?.id}/project/${project.id}`,
                                 );
                                 toast.success(

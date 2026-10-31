@@ -113,5 +113,6 @@ On the first tool call that needs Kaneo, the server:
 - Session: `whoami`, `list_workspaces`
 - Projects: `list_projects`, `get_project`, `create_project`, `update_project`
 - Tasks: `list_tasks`, `get_task`, `create_task`, `update_task`, `move_task`, `update_task_status`, `update_task_recurrence`
+- Custom fields: `list_project_custom_fields`, `get_task_custom_field_values`, `set_task_custom_field_value`
 - Comments: `list_task_comments`, `create_task_comment`
 - Labels: `list_workspace_labels`, `create_label`, `attach_label_to_task`, `detach_label_from_task`

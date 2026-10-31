@@ -52,6 +52,7 @@ import useGetTask from "@/hooks/queries/task/use-get-task";
 import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
+import { copyText } from "@/lib/copy-text";
 import debounce from "@/lib/debounce";
 import { parseTaskListMarkdownToNodes } from "@/lib/editor-task-list-paste";
 import {
@@ -1272,7 +1273,7 @@ export default function TaskDescription({ taskId }: TaskDescriptionProps) {
     if (!content) return;
 
     try {
-      await navigator.clipboard.writeText(content);
+      await copyText(content);
       setIsCodeCopied(true);
       if (codeCopyResetTimeoutRef.current !== null) {
         window.clearTimeout(codeCopyResetTimeoutRef.current);

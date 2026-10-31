@@ -1,5 +1,6 @@
 import { and, eq, isNull, max } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { applyDefaultCustomFieldValues } from "../../custom-field/task-values";
 import db from "../../database";
 import {
   columnTable,
@@ -30,6 +31,7 @@ async function createTask({
   priority,
   points,
   recurrence,
+  createGitlabIssue,
 }: {
   projectId: string;
   currentUserId: string;
@@ -43,6 +45,8 @@ async function createTask({
   priority?: string;
   points?: number | null;
   recurrence?: TaskRecurrence | null;
+  /** Opt-in: also create a linked GitLab issue when the project has one. */
+  createGitlabIssue?: boolean;
 }) {
   // A task may have no status ("No status" / backlog). Only normalize a
   // provided, non-empty status; otherwise store null.
@@ -133,6 +137,7 @@ async function createTask({
 
   await recordTaskInvolvement(createdTask.id, currentUserId, "reporter");
   await recordTaskInvolvement(createdTask.id, userId, "assignee");
+  await applyDefaultCustomFieldValues(createdTask.id, projectId);
 
   if (createdTask.sprintId) {
     await syncTaskSprintMembership(createdTask.id, createdTask.sprintId);
@@ -148,6 +153,7 @@ async function createTask({
     currentUserId,
     type: "created",
     content: null,
+    createGitlabIssue: Boolean(createGitlabIssue),
   });
 
   return {

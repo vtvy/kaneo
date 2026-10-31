@@ -144,7 +144,9 @@
 				"status": "Status",
 				"noStatus": "No status",
 				"sprint": "Sprint",
-				"noSprint": "No sprint"
+				"noSprint": "No sprint",
+				"pushToGitlab": "Also create GitLab issue",
+				"pushGitlabError": "Task created, but creating the GitLab issue failed"
 			},
 			"sprint": {
 				"breadcrumbProjectFallback": "PROJECT",
@@ -172,6 +174,17 @@
 				"completeButton": "Complete sprint",
 				"completedToast": "Sprint completed",
 				"completeError": "Failed to complete sprint"
+			},
+			"sprintReport": {
+				"title": "“{{name}}” report",
+				"description": "Sprint completed. Unfinished work was carried over.",
+				"done": "Done",
+				"carriedOver": "Carried over",
+				"total": "Total",
+				"tasks_one": "{{count}} task",
+				"tasks_other": "{{count}} tasks",
+				"points_one": "{{count}} point",
+				"points_other": "{{count}} points"
 			}
 		},
 		"sprints": {
@@ -223,7 +236,11 @@
 			"showingActiveSprint": "Showing active sprint",
 			"filterToActiveSprint": "Filter to active sprint",
 			"pointsTotal": "{{completed}}/{{total}} pts",
-			"pointsTotalTitle": "Completed / total story points"
+			"pointsTotalTitle": "Completed / total story points",
+			"overdue": "Overdue",
+			"endsToday": "Ends today",
+			"endsInDays_one": "Ends in {{count}} day",
+			"endsInDays_other": "Ends in {{count}} days"
 		},
 		"notFound": {
 			"title": "Page not found",
@@ -762,7 +779,9 @@
 			"googleChatSectionTitle": "Google Chat",
 			"googleChatSectionSubtitle": "Post task updates to a Google Chat Space via an incoming webhook.",
 			"blueprintSectionTitle": "Blueprint Integration",
-			"blueprintSectionSubtitle": "Map this Kaneo project to a Blueprint project/process for Push to Blueprint."
+			"blueprintSectionSubtitle": "Map this Kaneo project to a Blueprint project/process for Push to Blueprint.",
+			"gitlabSectionTitle": "GitLab Integration",
+			"gitlabSectionSubtitle": "Synchronize tasks with a GitLab instance (issues, merge requests, webhooks)."
 		},
 		"projectVisibility": {
 			"pageTitle": "Visibilité du projet",
@@ -1595,6 +1614,147 @@
 					}
 				}
 			}
+		},
+		"gitlabIntegration": {
+			"validation": {
+				"baseUrlRequired": "GitLab base URL is required",
+				"baseUrlInvalid": "Enter a valid URL (e.g. https://gitlab.example.com)",
+				"ownerRequired": "Namespace is required",
+				"ownerInvalid": "Invalid namespace (use nested groups like group/subgroup)",
+				"nameRequired": "Repository name is required",
+				"nameInvalid": "Invalid repository name format"
+			},
+			"toast": {
+				"verifyOk": "GitLab token can access this repository",
+				"verifyWarning": "Check token permissions or repository access",
+				"repoNotFound": "Repository not found or not accessible",
+				"verifyError": "Failed to verify GitLab access",
+				"tokenRequired": "Personal access token is required",
+				"tokenRequiredVerify": "Enter a token to verify",
+				"verifyFirst": "Verify access failed — check URL, token, and repository",
+				"updated": "GitLab integration saved",
+				"updateError": "Failed to save GitLab integration",
+				"removed": "GitLab integration removed",
+				"removeError": "Failed to remove GitLab integration",
+				"issuesImported": "Issues imported successfully",
+				"importError": "Failed to import issues",
+				"commentOnEnabled": "Kaneo will comment with a task link on new issues",
+				"commentOnDisabled": "Task link comments on new issues are turned off",
+				"settingsUpdateError": "Failed to update GitLab integration",
+				"secretCopied": "Copied",
+				"unableToCopySecret": "Unable to copy secret"
+			},
+			"webhookShow": "Show",
+			"webhookHide": "Hide",
+			"webhookCopy": "Copy",
+			"connectionStatus": "Connection status",
+			"connectedActive": "Repository connected and active",
+			"notConnectedHint": "No GitLab repository connected",
+			"badgeConnected": "Connected",
+			"badgeNotConnected": "Not connected",
+			"repository": "Repository",
+			"repositoryHint": "Linked GitLab repository",
+			"commentTaskLinkTitle": "Comment Kaneo link on new issues",
+			"commentTaskLinkHint": "When enabled, Kaneo posts a comment on each new issue with a link to the task.",
+			"webhookTitle": "Webhook",
+			"webhookHint": "In your GitLab project, go to Settings > Webhooks and add a webhook with this URL. Paste the secret below into the Secret token field, then enable push, issue, comment and merge request events.",
+			"webhookSecretLabel": "Secret token (must match the webhook secret token in GitLab)",
+			"baseUrlLabel": "GitLab URL",
+			"baseUrlHint": "Root URL of your GitLab instance",
+			"tokenLabel": "Personal access token",
+			"tokenHint": "Personal, project, or group access token with the api scope",
+			"tokenPlaceholder": "Paste token",
+			"tokenPlaceholderUpdate": "Paste new token to rotate",
+			"currentToken": "stored",
+			"ownerLabel": "Namespace",
+			"ownerHint": "User, group, or nested group path (e.g. group/subgroup)",
+			"repoNameLabel": "Repository name",
+			"repoNameHint": "Repository name only (no owner)",
+			"actionsTitle": "Actions",
+			"actionsHint": "Verify access and connect",
+			"browse": "Browse",
+			"verify": "Verify",
+			"update": "Update",
+			"connect": "Connect",
+			"disconnect": "Disconnect",
+			"importSectionTitle": "Import GitLab issues",
+			"importSectionHint": "Import open issues and pull requests from the repository",
+			"importing": "Importing…",
+			"importIssues": "Import issues",
+			"importDisabledHint": "Verify the repository above to enable importing",
+			"browseModalTitle": "Your repositories",
+			"browseModalHint": "Repositories your token can access",
+			"searchRepos": "Search…",
+			"browseNeedsCredentials": "Enter GitLab URL and token to browse",
+			"loadingRepos": "Loading repositories…",
+			"retry": "Retry"
+		},
+		"projectCustomFields": {
+			"pageTitle": "Custom Fields",
+			"title": "Custom fields",
+			"subtitle": "Add your own fields to every task in this project.",
+			"addField": "Add field",
+			"empty": "No custom fields yet.",
+			"required": "Required",
+			"hiddenCount_one": "{{count}} hidden",
+			"hiddenCount_other": "{{count}} hidden",
+			"edit": "Edit field",
+			"delete": "Delete field",
+			"types": {
+				"text": "Text",
+				"number": "Number",
+				"date": "Date",
+				"dropdown": "Dropdown",
+				"boolean": "Checkbox",
+				"multiselect": "Multi-select"
+			},
+			"dialog": {
+				"createTitle": "New custom field",
+				"editTitle": "Edit custom field",
+				"description": "Fields appear on every task in this project.",
+				"nameLabel": "Name",
+				"namePlaceholder": "e.g. Customer",
+				"typeLabel": "Type",
+				"typeLocked": "The type can't change after the field is created. Dropdowns can still allow several options.",
+				"optionsLabel": "Options",
+				"allowMultiple": "Allow several",
+				"renameOption": "Rename option",
+				"moveUp": "Move up",
+				"moveDown": "Move down",
+				"hideOption": "Hide option",
+				"showOption": "Show option",
+				"removeOption": "Remove option",
+				"addOption": "Add",
+				"addOptionPlaceholder": "New option",
+				"hiddenHint": "Hidden options stay on tasks that already use them but can't be picked anew.",
+				"requiredLabel": "Required",
+				"requiredHint": "Every task needs a value. Tasks without one get the default.",
+				"defaultLabel": "Default value",
+				"defaultChecked": "Checked by default",
+				"noDefault": "No default",
+				"cancel": "Cancel",
+				"save": "Save",
+				"create": "Create field"
+			},
+			"issues": {
+				"nameRequired": "Enter a name.",
+				"optionsRequired": "Add at least one option.",
+				"moreOptionsRequired": "Add at least two options.",
+				"defaultRequired": "Required fields need a default value."
+			},
+			"deleteDialog": {
+				"title": "Delete custom field?",
+				"description": "\"{{name}}\" and its values on every task will be removed. This can't be undone.",
+				"confirm": "Delete"
+			},
+			"toast": {
+				"created": "Custom field created",
+				"updated": "Custom field updated",
+				"deleted": "Custom field deleted",
+				"saveError": "Failed to save the custom field",
+				"deleteError": "Failed to delete the custom field",
+				"reorderError": "Failed to reorder custom fields"
+			}
 		}
 	},
 	"navigation": {
@@ -1626,7 +1786,9 @@
 			"members": "Membres",
 			"invitations": "Invitations",
 			"more": "Plus",
-			"backToBoard": "Retour au tableau"
+			"backToBoard": "Retour au tableau",
+			"home": "Home",
+			"inbox": "Inbox"
 		},
 		"projectList": {
 			"viewProject": "Voir le projet",
@@ -1764,6 +1926,30 @@
 			"task_deleted": {
 				"title": "Task deleted",
 				"content": "{{deletedByName}} deleted task \"{{taskTitle}}\""
+			},
+			"sprint_started": {
+				"title": "Sprint started",
+				"content": "{{sprintName}} has started in {{projectName}}."
+			},
+			"sprint_ended": {
+				"title": "Sprint ended",
+				"content": "{{sprintName}} has ended in {{projectName}}."
+			}
+		},
+		"inbox": {
+			"pageTitle": "Inbox",
+			"markRead": "Mark as read",
+			"markUnread": "Mark as unread",
+			"delete": "Delete notification",
+			"clearRead": "Clear read",
+			"loadError": "Could not load notifications. Please try again.",
+			"emptyFiltered": "Nothing here",
+			"today": "Today",
+			"earlier": "Earlier",
+			"filters": {
+				"all": "All",
+				"unread": "Unread",
+				"mentions": "Mentions"
 			}
 		}
 	},
@@ -1865,7 +2051,8 @@
 					"yaml": "YAML"
 				},
 				"mentionEmpty": "No people found"
-			}
+			},
+			"commentedOnForge": "commented on {{forge}}"
 		}
 	},
 	"tasks": {
@@ -2355,6 +2542,18 @@
 		"recurrence": {
 			"everyInterval": "Every {{interval}} {{unit}}",
 			"onDays": "{{rule}} on {{days}}"
+		},
+		"gitlab": {
+			"pushToGitlab": "Push to GitLab",
+			"pushing": "Pushing…",
+			"pushSuccess": "GitLab issue created",
+			"pushAlreadyLinked": "Task already linked to a GitLab issue",
+			"pushError": "Failed to create GitLab issue"
+		},
+		"customFields": {
+			"title": "Custom fields",
+			"empty": "Empty",
+			"updateError": "Failed to update the field"
 		}
 	},
 	"invitations": {
@@ -2429,6 +2628,43 @@
 			"success": "Workspace créé avec succès",
 			"error": "Échec de la création du workspace",
 			"alreadyExists": "A workspace with this name (or URL) already exists. Try a different name."
+		},
+		"home": {
+			"pageTitle": "Home",
+			"greeting": {
+				"morning": "Good morning",
+				"afternoon": "Good afternoon",
+				"evening": "Good evening"
+			},
+			"due": {
+				"today": "Today",
+				"tomorrow": "Tomorrow",
+				"overdue": "Overdue"
+			},
+			"week": {
+				"more_one": "+{{count}} more",
+				"more_other": "+{{count}} more"
+			},
+			"upNext": {
+				"title": "Up next",
+				"assigned_one": "{{count}} open task assigned to you",
+				"assigned_other": "{{count}} open tasks assigned to you",
+				"viewAll": "View all"
+			},
+			"activity": {
+				"title": "Recent activity",
+				"commented": "commented",
+				"updated": "updated the task",
+				"loadError": "Could not load recent activity.",
+				"empty": "No activity in your projects in the last 30 days."
+			},
+			"projects": {
+				"title": "Projects",
+				"all": "All projects",
+				"loadError": "Could not load projects.",
+				"tasks_one": "{{count}} task",
+				"tasks_other": "{{count}} tasks"
+			}
 		}
 	},
 	"team": {

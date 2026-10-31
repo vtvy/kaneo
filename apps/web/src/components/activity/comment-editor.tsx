@@ -52,6 +52,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/menu";
 import { cn } from "@/lib/cn";
+import { copyText } from "@/lib/copy-text";
 import { parseTaskListMarkdownToNodes } from "@/lib/editor-task-list-paste";
 import {
   extractIssueKeyFromUrl,
@@ -1390,7 +1391,7 @@ export default function CommentEditor({
     if (!content) return;
 
     try {
-      await navigator.clipboard.writeText(content);
+      await copyText(content);
       setIsCodeCopied(true);
       if (codeCopyResetTimeoutRef.current !== null) {
         window.clearTimeout(codeCopyResetTimeoutRef.current);

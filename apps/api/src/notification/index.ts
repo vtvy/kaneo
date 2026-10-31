@@ -5,11 +5,15 @@ import * as v from "valibot";
 import db, { schema } from "../database";
 import { subscribeToEvent } from "../events";
 import { notificationSchema } from "../schemas";
+import { notifySprintMembers } from "../sprint/sprint-notifications";
 import clearNotifications from "./controllers/clear-notifications";
 import createNotification from "./controllers/create-notification";
+import deleteNotification from "./controllers/delete-notification";
 import getNotifications from "./controllers/get-notifications";
 import markAllNotificationsAsRead from "./controllers/mark-all-notifications-as-read";
-import markAsRead from "./controllers/mark-notification-as-read";
+import markAsRead, {
+  setNotificationRead,
+} from "./controllers/mark-notification-as-read";
 
 const bulkResultSchema = v.object({
   success: v.boolean(),
@@ -154,6 +158,79 @@ const notification = new Hono<{
     async (c) => {
       const userId = c.get("userId");
       const result = await clearNotifications(userId);
+      return c.json(result);
+    },
+  )
+  .patch(
+    "/:id/unread",
+    describeRoute({
+      operationId: "markNotificationAsUnread",
+      tags: ["Notifications"],
+      description:
+        "Mark one of the current user's notifications as unread again",
+      responses: {
+        200: {
+          description: "Notification marked as unread",
+          content: {
+            "application/json": { schema: resolver(notificationSchema) },
+          },
+        },
+        404: { description: "Notification not found" },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const notification = await setNotificationRead(
+        id,
+        c.get("userId"),
+        false,
+      );
+      return c.json(notification);
+    },
+  )
+  // Registered before `/:id` so the literal path is not taken as an id.
+  .delete(
+    "/clear-read",
+    describeRoute({
+      operationId: "clearReadNotifications",
+      tags: ["Notifications"],
+      description:
+        "Delete the current user's read notifications; unread ones are kept",
+      responses: {
+        200: {
+          description: "Read notifications cleared",
+          content: {
+            "application/json": { schema: resolver(bulkResultSchema) },
+          },
+        },
+      },
+    }),
+    async (c) => {
+      const result = await clearNotifications(c.get("userId"), true);
+      return c.json(result);
+    },
+  )
+  .delete(
+    "/:id",
+    describeRoute({
+      operationId: "deleteNotification",
+      tags: ["Notifications"],
+      description: "Delete one of the current user's notifications",
+      responses: {
+        200: {
+          description: "Notification deleted",
+          content: {
+            "application/json": { schema: resolver(bulkResultSchema) },
+          },
+        },
+        404: { description: "Notification not found" },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const result = await deleteNotification(id, c.get("userId"));
       return c.json(result);
     },
   );
@@ -407,6 +484,21 @@ subscribeToEvent<{
       resourceType: "task",
     });
   }
+});
+
+// Completing a sprint by hand ends it; the scheduler covers date-driven
+// start/end. notifySprintMembers dedupes, so the two never double-notify.
+subscribeToEvent<{
+  sprintId: string;
+  name: string;
+  projectId: string;
+  userId: string;
+}>("sprint.completed", async (data) => {
+  await notifySprintMembers(
+    { id: data.sprintId, name: data.name, projectId: data.projectId },
+    "sprint_ended",
+    data.userId,
+  );
 });
 
 export default notification;

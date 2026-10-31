@@ -5,7 +5,7 @@ import {
   useLocation,
   useNavigate,
 } from "@tanstack/react-router";
-import { Eye, GitBranch, Plug, Settings } from "lucide-react";
+import { Eye, GitBranch, ListPlus, Plug, Settings } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -58,6 +58,11 @@ function RouteComponent() {
       title: t("settings:projectWorkflow.title"),
       icon: GitBranch,
       segment: "workflow",
+    },
+    {
+      title: t("settings:projectCustomFields.title"),
+      icon: ListPlus,
+      segment: "custom-fields",
     },
   ];
   const { data: projects } = useGetProjects({
