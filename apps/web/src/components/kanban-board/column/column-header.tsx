@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import CreateTaskModal from "@/components/shared/modals/create-task-modal";
 import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { getColumnIcon } from "@/lib/column";
 import { toast } from "@/lib/toast";
@@ -20,7 +21,15 @@ export function ColumnHeader({ column }: ColumnHeaderProps) {
   const { project, setProject } = useProjectStore();
   const { mutate: updateTask } = useUpdateTask();
   const { canManageTasks } = useWorkspacePermission();
-  const canTask = canManageTasks();
+  const { can: canProject, isCheckingPermissions } = useProjectPermission(
+    project?.id,
+  );
+  const canCreate =
+    canManageTasks() ||
+    (!isCheckingPermissions && canProject("item", "create"));
+  const canArchive =
+    canManageTasks() ||
+    (!isCheckingPermissions && canProject("item", "update"));
 
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -64,7 +73,7 @@ export function ColumnHeader({ column }: ColumnHeaderProps) {
       </div>
 
       <div className="flex items-center">
-        {canTask && column.isFinal && column.tasks.length > 0 && (
+        {canArchive && column.isFinal && column.tasks.length > 0 && (
           <button
             type="button"
             onClick={() => setIsArchiveModalOpen(true)}
@@ -74,7 +83,7 @@ export function ColumnHeader({ column }: ColumnHeaderProps) {
             <Archive className="w-4 h-4 text-muted-foreground" />
           </button>
         )}
-        {canTask && (
+        {canCreate && (
           <button
             type="button"
             onClick={() => setIsTaskModalOpen(true)}

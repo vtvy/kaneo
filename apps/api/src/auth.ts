@@ -37,6 +37,7 @@ import { config } from "dotenv-mono";
 import { count, eq, sql } from "drizzle-orm";
 import db, { schema } from "./database";
 import { publishEvent } from "./events";
+import { resolveAuthSecret } from "./utils/auth-secret";
 import { checkRegistrationAllowed } from "./utils/check-registration-allowed";
 import { checkWorkspaceName } from "./utils/check-workspace-name";
 import { generateDemoName } from "./utils/generate-demo-name";
@@ -88,12 +89,20 @@ const baseURLWithoutPath = (() => {
   }
 })();
 
-if (process.env.AUTH_SECRET && process.env.AUTH_SECRET.length < 32) {
-  console.error(
-    "AUTH_SECRET is less than 32 characters, please generate a new one.",
-  );
-  process.exit(1);
-}
+// Opt-in: proves the user owns the address before they can sign in, so nobody
+// can register someone else's email and pick up invitations sent to it.
+// Needs working SMTP; existing unverified users verify on their next sign-in.
+const requireEmailVerification =
+  process.env.REQUIRE_EMAIL_VERIFICATION === "true";
+
+const authSecret = (() => {
+  try {
+    return resolveAuthSecret();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+})();
 
 async function getUserLocale(email: string) {
   const [user] = await db
@@ -154,7 +163,7 @@ function getInvitationEmailSubject(
 export const auth = betterAuth({
   baseURL: baseURLWithoutPath,
   trustedOrigins,
-  secret: process.env.AUTH_SECRET || "",
+  secret: authSecret,
   basePath: "/api/auth",
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -183,9 +192,14 @@ export const auth = betterAuth({
       },
     },
   },
+  emailVerification: {
+    sendOnSignIn: requireEmailVerification,
+    autoSignInAfterVerification: true,
+  },
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
+    requireEmailVerification,
     revokeSessionsOnPasswordReset: true,
     resetPasswordTokenExpiresIn: 60 * 60,
     sendResetPassword: async ({ user, url }) => {
@@ -255,8 +269,11 @@ export const auth = betterAuth({
       },
     }),
     emailOTP({
+      // Verification codes replace Better Auth's link emails. They are only
+      // sent (on sign-up and sign-in) when verification is required.
+      overrideDefaultEmailVerification: true,
       async sendVerificationOTP({ email, otp, type }) {
-        if (type === "sign-in") {
+        if (type === "sign-in" || type === "email-verification") {
           const locale = await getUserLocale(email);
           const copy = getAuthEmailCopy(locale);
           await sendOtpEmail(email, copy.otpSubject, {

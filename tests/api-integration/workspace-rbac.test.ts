@@ -541,8 +541,7 @@ describe("API integration: workspace RBAC enforcement", () => {
         workspaceId: member.workspace.id,
       });
       const task = await seedTask(project.id, columns.todo.id);
-      // deleteLabel requires the label to be attached to a task; without a
-      // taskId the controller rejects with 400 before checking permissions.
+      // Attach the label to a task so this exercises the task-label path.
       const [label] = await db
         .insert(schema.labelTable)
         .values({

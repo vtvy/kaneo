@@ -1,11 +1,13 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
+  Bug,
   ChevronDown,
   ChevronRight,
   Link2,
   Plus,
   Search,
   X,
+  Zap,
 } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -45,6 +47,7 @@ import { useGetTasks } from "@/hooks/queries/task/use-get-tasks";
 import useGetTaskRelations from "@/hooks/queries/task-relation/use-get-task-relations";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { getColumnIcon } from "@/lib/column";
 import { toast } from "@/lib/toast";
@@ -82,7 +85,7 @@ export default function TaskRelations({
   const [commandOpen, setCommandOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRelationType, setSelectedRelationType] = useState<
-    "blocks" | "related"
+    "blocks" | "related" | "bug" | "cause"
   >("related");
 
   const { data: relations = [] } = useGetTaskRelations(taskId);
@@ -94,8 +97,16 @@ export default function TaskRelations({
   );
   const createRelation = useCreateTaskRelation();
   const deleteRelation = useDeleteTaskRelation(taskId);
-  const { canManageTasks } = useWorkspacePermission();
-  const canEdit = canManageTasks();
+  const { canManageTasks, isCheckingPermissions } = useWorkspacePermission();
+  const {
+    can: canProject,
+    isCheckingPermissions: isCheckingProjectPermissions,
+  } = useProjectPermission(projectId);
+  const canEdit =
+    canManageTasks() ||
+    (!isCheckingPermissions &&
+      !isCheckingProjectPermissions &&
+      canProject("item", "update"));
 
   useEffect(() => {
     if (!commandOpen) {
@@ -469,6 +480,22 @@ export default function TaskRelations({
                 >
                   <X className="size-3" />
                   {t("tasks:relations.blocks")}
+                </button>
+                <button
+                  type="button"
+                  className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-md transition-colors ${selectedRelationType === "bug" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => setSelectedRelationType("bug")}
+                >
+                  <Bug className="size-3" />
+                  {t("tasks:relations.bug")}
+                </button>
+                <button
+                  type="button"
+                  className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-md transition-colors ${selectedRelationType === "cause" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => setSelectedRelationType("cause")}
+                >
+                  <Zap className="size-3" />
+                  {t("tasks:relations.cause")}
                 </button>
               </div>
               <span className="text-muted-foreground/60">

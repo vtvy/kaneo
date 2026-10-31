@@ -43,6 +43,7 @@ const taskRelation = new Hono<{
     }),
     validator("param", v.object({ taskId: v.string() })),
     workspaceAccess.fromTaskId("taskId"),
+    projectPermission.fromTask({ item: ["read"] }, "taskId"),
     async (c) => {
       const { taskId } = c.req.valid("param");
       const relations = await getTaskRelations(taskId);

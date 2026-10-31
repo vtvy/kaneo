@@ -6,7 +6,9 @@ import { publishEvent } from "../../events";
 import { storage } from "../../storage";
 import { buildDocumentKey } from "../../storage/build-document-key";
 
-const MAX = Number(process.env.DOCUMENT_MAX_UPLOAD_BYTES ?? 50 * 1024 * 1024);
+export const DOCUMENT_MAX_UPLOAD_BYTES = Number(
+  process.env.DOCUMENT_MAX_UPLOAD_BYTES ?? 50 * 1024 * 1024,
+);
 
 const EXTENSION_CONTENT_TYPES: Record<string, string> = {
   md: "text/markdown",
@@ -58,9 +60,9 @@ async function uploadDocument({
   if (!file || file.size <= 0) {
     throw new HTTPException(400, { message: "Empty file" });
   }
-  if (file.size > MAX) {
+  if (file.size > DOCUMENT_MAX_UPLOAD_BYTES) {
     throw new HTTPException(413, {
-      message: `File exceeds ${Math.floor(MAX / 1048576)}MB limit`,
+      message: `File exceeds ${Math.floor(DOCUMENT_MAX_UPLOAD_BYTES / 1048576)}MB limit`,
     });
   }
 

@@ -21,6 +21,7 @@ import { useUpdateTaskPriority } from "@/hooks/mutations/task/use-update-task-st
 import { useUpdateTaskTitle } from "@/hooks/mutations/task/use-update-task-title";
 import { useGetColumns } from "@/hooks/queries/column/use-get-columns";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { getColumnIcon } from "@/lib/column";
 import { generateLink } from "@/lib/generate-link";
@@ -74,8 +75,18 @@ export default function TaskCardContextMenuContent({
   const { mutateAsync: updateTaskDescription } = useUpdateTaskDescription();
   const { mutateAsync: updateTaskDueDate } = useUpdateTaskDueDate();
   const { canManageTasks, canAssignTasks } = useWorkspacePermission();
-  const canEdit = canManageTasks();
-  const canAssign = canAssignTasks();
+  const { can: canProject, isCheckingPermissions } = useProjectPermission(
+    task.projectId,
+  );
+  const canEdit =
+    canManageTasks() ||
+    (!isCheckingPermissions && canProject("item", "update"));
+  const canDelete =
+    canManageTasks() ||
+    (!isCheckingPermissions && canProject("item", "delete"));
+  const canAssign =
+    canAssignTasks() ||
+    (!isCheckingPermissions && canProject("item", "assign"));
 
   const usersOptions = useMemo(() => {
     return workspaceUsers?.members?.map((member) => ({
@@ -292,31 +303,42 @@ export default function TaskCardContextMenuContent({
         </ContextMenuSub>
       )}
 
-      {canEdit && (
+      {(canEdit || canDelete) && (
         <>
           <ContextMenuSeparator />
 
-          <ContextMenuItem onClick={() => handleChange("status", "archived")}>
-            <span>{t("tasks:actions.archive")}</span>
-          </ContextMenuItem>
+          {canEdit && (
+            <>
+              <ContextMenuItem
+                onClick={() => handleChange("status", "archived")}
+              >
+                <span>{t("tasks:actions.archive")}</span>
+              </ContextMenuItem>
 
-          <ContextMenuItem onClick={() => handleChange("status", "planned")}>
-            <span>{t("tasks:actions.markAsPlanned")}</span>
-          </ContextMenuItem>
+              <ContextMenuItem
+                onClick={() => handleChange("status", "planned")}
+              >
+                <span>{t("tasks:actions.markAsPlanned")}</span>
+              </ContextMenuItem>
+            </>
+          )}
 
-          <ContextMenuSeparator />
-
-          <ContextMenuItem
-            className="text-destructive"
-            onClick={(e) => {
-              e.preventDefault();
-              setTimeout(() => {
-                onDeleteClick();
-              }, 0);
-            }}
-          >
-            <span>{t("tasks:actions.delete")}</span>
-          </ContextMenuItem>
+          {canDelete && (
+            <>
+              {canEdit && <ContextMenuSeparator />}
+              <ContextMenuItem
+                className="text-destructive"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setTimeout(() => {
+                    onDeleteClick();
+                  }, 0);
+                }}
+              >
+                <span>{t("tasks:actions.delete")}</span>
+              </ContextMenuItem>
+            </>
+          )}
         </>
       )}
     </ContextMenuContent>

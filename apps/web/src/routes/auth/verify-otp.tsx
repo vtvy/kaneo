@@ -32,13 +32,18 @@ export const Route = createFileRoute("/auth/verify-otp")({
     email: search.email as string,
     invitationId: search.invitationId as string | undefined,
     redirect: search.redirect as string | undefined,
+    // "email-verification" when the instance requires a verified address.
+    type:
+      search.type === "email-verification"
+        ? ("email-verification" as const)
+        : ("sign-in" as const),
   }),
 });
 
 function VerifyOtp() {
   const { t } = useTranslation();
   const { history } = useRouter();
-  const { email, invitationId, redirect } = useSearch({
+  const { email, invitationId, redirect, type } = useSearch({
     from: "/auth/verify-otp",
   });
   const [isPending, setIsPending] = useState(false);
@@ -77,10 +82,11 @@ function VerifyOtp() {
     async (data: VerifyOtpFormValues) => {
       setIsPending(true);
       try {
-        const result = await authClient.signIn.emailOtp({
-          email,
-          otp: data.otp,
-        });
+        // Verifying the address also signs the user in.
+        const result =
+          type === "email-verification"
+            ? await authClient.emailOtp.verifyEmail({ email, otp: data.otp })
+            : await authClient.signIn.emailOtp({ email, otp: data.otp });
 
         if (result.error) {
           toast.error(
@@ -107,7 +113,7 @@ function VerifyOtp() {
         setIsPending(false);
       }
     },
-    [email, invitationId, history, safeRedirect, t],
+    [email, invitationId, history, safeRedirect, t, type],
   );
 
   useEffect(() => {
@@ -124,7 +130,7 @@ function VerifyOtp() {
     try {
       const result = await authClient.emailOtp.sendVerificationOtp({
         email,
-        type: "sign-in",
+        type,
       });
 
       if (result.error) {

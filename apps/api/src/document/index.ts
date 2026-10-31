@@ -4,6 +4,7 @@ import { describeRoute, resolver, validator } from "hono-openapi";
 import * as v from "valibot";
 import { projectPermission } from "../project-rbac/require-project-permission";
 import { storage } from "../storage";
+import { uploadBodyLimit } from "../utils/body-limit";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import createFolder from "./controllers/create-folder";
 import emptyTrash from "./controllers/empty-trash";
@@ -19,7 +20,9 @@ import trashDocument from "./controllers/trash-document";
 import trashFolder from "./controllers/trash-folder";
 import updateDocument from "./controllers/update-document";
 import updateFolder from "./controllers/update-folder";
-import uploadDocument from "./controllers/upload-document";
+import uploadDocument, {
+  DOCUMENT_MAX_UPLOAD_BYTES,
+} from "./controllers/upload-document";
 
 // Builds a safe `attachment` Content-Disposition with both an ASCII fallback
 // and a UTF-8 encoded form for non-ASCII filenames.
@@ -275,6 +278,7 @@ const document = new Hono<{
         },
       },
     }),
+    uploadBodyLimit(DOCUMENT_MAX_UPLOAD_BYTES),
     validator("param", v.object({ projectId: v.string() })),
     workspaceAccess.fromProject("projectId"),
     projectPermission.fromParam({ doc: ["upload"] }, "projectId"),

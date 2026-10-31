@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import * as v from "valibot";
 import { subscribeToEvent } from "../events";
+import { projectPermission } from "../project-rbac/require-project-permission";
 import { activitySchema } from "../schemas";
 import { requireWorkspacePermission } from "../utils/require-workspace-permission";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
@@ -33,6 +34,7 @@ const activity = new Hono<{
     }),
     validator("param", v.object({ taskId: v.string() })),
     workspaceAccess.fromTaskId(),
+    projectPermission.fromTask({ item: ["read"] }, "taskId"),
     async (c) => {
       const { taskId } = c.req.valid("param");
       const activities = await getActivities(taskId);

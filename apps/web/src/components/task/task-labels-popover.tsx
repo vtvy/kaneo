@@ -12,6 +12,7 @@ import useCreateLabel from "@/hooks/mutations/label/use-create-label";
 import useDeleteLabel from "@/hooks/mutations/label/use-delete-label";
 import useGetLabelsByTask from "@/hooks/queries/label/use-get-labels-by-task";
 import useGetLabelsByWorkspace from "@/hooks/queries/label/use-get-labels-by-workspace";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
 import { toast } from "@/lib/toast";
@@ -72,7 +73,12 @@ export default function TaskLabelsPopover({
   // on whichever is required: any flow needs at least task-edit since the
   // result lives on the task.
   const { canManageTasks, canManageLabels } = useWorkspacePermission();
-  const canEdit = canManageTasks();
+  const { can: canProject, isCheckingPermissions } = useProjectPermission(
+    task.projectId,
+  );
+  const canEdit =
+    canManageTasks() ||
+    (!isCheckingPermissions && canProject("item", "update"));
   const canCreateLabels = canManageLabels();
 
   const { data: taskLabels = [] } = useGetLabelsByTask(task.id);

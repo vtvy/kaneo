@@ -17,6 +17,7 @@ import { useDeleteColumn } from "@/hooks/mutations/column/use-delete-column";
 import { useReorderColumns } from "@/hooks/mutations/column/use-reorder-columns";
 import { useUpdateColumn } from "@/hooks/mutations/column/use-update-column";
 import { useGetColumns } from "@/hooks/queries/column/use-get-columns";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { getColumnIcon } from "@/lib/column";
 import { toast } from "@/lib/toast";
@@ -34,7 +35,13 @@ export default function ColumnEditor({ projectId }: ColumnEditorProps) {
   const { mutateAsync: deleteColumn } = useDeleteColumn();
   const { mutateAsync: reorderColumns } = useReorderColumns();
   const { canManageProjects } = useWorkspacePermission();
-  const canEdit = canManageProjects();
+  const { can: canProject, isCheckingPermissions } =
+    useProjectPermission(projectId);
+  // Workspace project managers, or project members with backlog:manage
+  // (what the column API checks), can edit columns.
+  const canEdit =
+    canManageProjects() ||
+    (!isCheckingPermissions && canProject("backlog", "manage"));
   const [newColumnName, setNewColumnName] = useState("");
   const [newColumnIcon, setNewColumnIcon] = useState("Circle");
   const [iconPickerColumnId, setIconPickerColumnId] = useState<string | null>(
@@ -162,13 +169,25 @@ export default function ColumnEditor({ projectId }: ColumnEditorProps) {
           <div
             key={col.id}
             role="listitem"
-            draggable={canEdit}
-            onDragStart={() => handleDragStart(index)}
             onDragOver={(e) => handleDragOver(e, index)}
             onDragEnd={handleDragEnd}
             className="flex items-center gap-2 p-2 border border-border rounded-md bg-sidebar hover:bg-sidebar-accent/50 transition-colors"
           >
-            <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab shrink-0" />
+            {/* Only the grip handle starts a drag; making the whole row
+                draggable also dragged its inputs, buttons and popovers. */}
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: drag handle */}
+            <span
+              draggable={canEdit}
+              onDragStart={() => {
+                if (canEdit) handleDragStart(index);
+              }}
+              className={cn(
+                "shrink-0",
+                canEdit ? "cursor-grab" : "cursor-default",
+              )}
+            >
+              <GripVertical className="w-4 h-4 text-muted-foreground" />
+            </span>
             <Popover
               open={iconPickerColumnId === col.id}
               onOpenChange={(open) => {
@@ -241,6 +260,8 @@ export default function ColumnEditor({ projectId }: ColumnEditorProps) {
                 }
               }}
               onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)
+                  return;
                 if (e.key === "Enter") {
                   e.preventDefault();
                   e.currentTarget.blur();
@@ -362,6 +383,8 @@ export default function ColumnEditor({ projectId }: ColumnEditorProps) {
             onChange={(e) => setNewColumnName(e.target.value)}
             className="h-8 text-sm flex-1"
             onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)
+                return;
               if (e.key === "Enter") handleCreate();
             }}
           />

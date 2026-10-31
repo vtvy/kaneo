@@ -41,6 +41,7 @@ import useDeleteProject from "@/hooks/mutations/project/use-delete-project";
 import useUpdateProject from "@/hooks/mutations/project/use-update-project";
 import { useGetTasks } from "@/hooks/queries/task/use-get-tasks";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
 import { toast } from "@/lib/toast";
@@ -125,8 +126,15 @@ function RouteComponent() {
   const { mutateAsync: deleteProject, isPending: isDeleting } =
     useDeleteProject();
   const { canManageProjects, canDeleteProjects } = useWorkspacePermission();
-  const canEdit = canManageProjects();
-  const canDelete = canDeleteProjects();
+  const { can: canProject, isCheckingPermissions: isCheckingProjectPerms } =
+    useProjectPermission(projectId);
+  // Project update/delete are gated on the project's role:manage permission
+  // (project Owners have it), so a workspace "member" who owns the project
+  // can still manage it.
+  const canManageThisProject =
+    !isCheckingProjectPerms && canProject("role", "manage");
+  const canEdit = canManageProjects() || canManageThisProject;
+  const canDelete = canDeleteProjects() || canManageThisProject;
 
   const projectForm = useForm<ProjectFormValues>({
     resolver: standardSchemaResolver(projectSchema),

@@ -257,6 +257,25 @@ export default function TaskPropertiesSidebar({
                   </Button>
                 </TaskAssigneePopover>
               )}
+              {task?.reporterId && (
+                <div
+                  className="flex items-center h-7 px-1.5 gap-1.5"
+                  title={t("tasks:properties.reporter")}
+                >
+                  <Avatar className="h-[16px] w-[16px]">
+                    <AvatarImage
+                      src={task.reporterImage ?? ""}
+                      alt={task.reporterName || ""}
+                    />
+                    <AvatarFallback className="text-[9px] font-medium border border-border/30 shrink-0 h-[16px] w-[16px]">
+                      {task.reporterName?.charAt(0).toUpperCase() ?? "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs font-semibold truncate max-w-[100px] text-muted-foreground">
+                    {task.reporterName ?? t("tasks:properties.reporter")}
+                  </span>
+                </div>
+              )}
               {task && (
                 <TaskStartDatePopover task={task}>
                   <Button
@@ -444,6 +463,25 @@ export default function TaskPropertiesSidebar({
                       </span>
                     </Button>
                   </TaskAssigneePopover>
+                )}
+                {task?.reporterId && (
+                  <div
+                    className="flex items-center h-7 px-1.5 gap-1.5"
+                    title={t("tasks:properties.reporter")}
+                  >
+                    <Avatar className="h-[16px] w-[16px]">
+                      <AvatarImage
+                        src={task.reporterImage ?? ""}
+                        alt={task.reporterName || ""}
+                      />
+                      <AvatarFallback className="text-[9px] font-medium border border-border/30 shrink-0 h-[16px] w-[16px]">
+                        {task.reporterName?.charAt(0).toUpperCase() ?? "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-semibold truncate max-w-[100px] text-muted-foreground">
+                      {task.reporterName ?? t("tasks:properties.reporter")}
+                    </span>
+                  </div>
                 )}
                 {task && (
                   <TaskStartDatePopover task={task}>
@@ -635,6 +673,25 @@ export default function TaskPropertiesSidebar({
                       </span>
                     </Button>
                   </TaskAssigneePopover>
+                )}
+                {task?.reporterId && (
+                  <div
+                    className="flex items-center h-7 px-1.5 gap-1.5 w-full"
+                    title={t("tasks:properties.reporter")}
+                  >
+                    <Avatar className="h-[16px] w-[16px]">
+                      <AvatarImage
+                        src={task.reporterImage ?? ""}
+                        alt={task.reporterName || ""}
+                      />
+                      <AvatarFallback className="text-[9px] font-medium border border-border/30 shrink-0 h-[16px] w-[16px]">
+                        {task.reporterName?.charAt(0).toUpperCase() ?? "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-semibold truncate text-muted-foreground">
+                      {task.reporterName ?? t("tasks:properties.reporter")}
+                    </span>
+                  </div>
                 )}
                 {task && (
                   <TaskStartDatePopover task={task}>

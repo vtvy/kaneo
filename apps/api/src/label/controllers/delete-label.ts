@@ -16,10 +16,17 @@ async function deleteLabel(id: string, userId: string) {
     });
   }
 
+  // Standalone workspace label (not attached to a task): delete it directly.
+  // Rejecting it here left such labels impossible to remove.
   if (!label.taskId) {
-    throw new HTTPException(400, {
-      message: "Label is not associated with a task",
-    });
+    const [deleted] = await db
+      .delete(labelTable)
+      .where(eq(labelTable.id, id))
+      .returning();
+    if (!deleted) {
+      throw new HTTPException(404, { message: "Label not found" });
+    }
+    return deleted;
   }
 
   const [task] = await db
