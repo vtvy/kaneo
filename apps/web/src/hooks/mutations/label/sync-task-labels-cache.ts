@@ -33,12 +33,6 @@ export function updateTaskLabelsInProject(
         updateTaskLabels(task, taskId, updater),
       ),
     })),
-    plannedTasks: project.plannedTasks.map((task) =>
-      updateTaskLabels(task, taskId, updater),
-    ),
-    archivedTasks: project.archivedTasks.map((task) =>
-      updateTaskLabels(task, taskId, updater),
-    ),
   };
 }
 

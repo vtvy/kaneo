@@ -27,11 +27,7 @@ export default function TaskCrumbSelect({
 }: TaskCrumbSelectProps) {
   const { t } = useTranslation();
   const { data: project } = useGetTasks(projectId);
-  const tasks = [
-    ...(project?.columns?.flatMap((column) => column.tasks) ?? []),
-    ...(project?.plannedTasks ?? []),
-    ...(project?.archivedTasks ?? []),
-  ];
+  const tasks = project?.columns?.flatMap((column) => column.tasks) ?? [];
 
   return (
     <DropdownMenu>

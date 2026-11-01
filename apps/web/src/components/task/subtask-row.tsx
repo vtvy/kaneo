@@ -63,7 +63,7 @@ export default function SubtaskRow({
                 type="button"
                 className="shrink-0 flex items-center justify-center rounded p-0.5 transition-colors outline-none [&_svg]:text-muted-foreground hover:[&_svg]:text-foreground"
               >
-                {getColumnIcon(task.status, false)}
+                {getColumnIcon(task.status ?? "", false)}
               </button>
             </SubtaskStatusPopover>
 

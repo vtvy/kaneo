@@ -33,23 +33,26 @@ async function deleteComment(userId: string, id: string) {
     });
   }
 
-  const [task] = await db
-    .select({ projectId: taskTable.projectId })
-    .from(taskTable)
-    .where(eq(taskTable.id, deletedComment.taskId))
-    .limit(1);
+  const taskId = deletedComment.taskId;
+  if (taskId) {
+    const [task] = await db
+      .select({ projectId: taskTable.projectId })
+      .from(taskTable)
+      .where(eq(taskTable.id, taskId))
+      .limit(1);
 
-  if (task) {
-    await publishEvent("comment.deleted", {
-      ...deletedComment,
-      projectId: task.projectId,
-      userId,
-    });
+    if (task) {
+      await publishEvent("comment.deleted", {
+        ...deletedComment,
+        projectId: task.projectId,
+        userId,
+      });
+    }
+
+    deleteOrphanedAssets(existing.content, null, {
+      taskId,
+    }).catch(() => {});
   }
-
-  deleteOrphanedAssets(existing.content, null, {
-    taskId: existing.taskId,
-  }).catch(() => {});
 
   return deletedComment;
 }

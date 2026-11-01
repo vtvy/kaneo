@@ -56,7 +56,10 @@ async function getTaskRelations(taskId: string) {
       .where(inArray(taskTable.id, [...taskIds]));
 
     for (const task of taskRows) {
-      tasks.set(task.id, task);
+      if (task.status === null) {
+        continue;
+      }
+      tasks.set(task.id, { ...task, status: task.status });
     }
   }
 

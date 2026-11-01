@@ -24,11 +24,7 @@ export function EmailSignInSection({
   return (
     <div>
       {method === "password" ? (
-        <SignInForm
-          defaultEmail={defaultEmail}
-          onSuccess={onSuccess}
-          showForgotPassword={hasSmtp}
-        />
+        <SignInForm defaultEmail={defaultEmail} onSuccess={onSuccess} />
       ) : (
         <OtpSignInForm
           invitationId={invitationId}

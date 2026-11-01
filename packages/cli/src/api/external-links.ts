@@ -1,4 +1,5 @@
 import { Effect, Schema } from "effect";
+import { InvalidArgument } from "../errors/errors.js";
 import { KaneoApi } from "./kaneo-api.js";
 
 const NullableString = Schema.NullOr(Schema.String);
@@ -19,10 +20,8 @@ export type ExternalLink = typeof ExternalLink.Type;
 
 const ExternalLinkList = Schema.Array(ExternalLink);
 
-const DeletedLink = Schema.Struct({ id: Schema.String });
-
-function linksPath(taskId: string, suffix = ""): string {
-  return `/api/external-link/task/${encodeURIComponent(taskId)}${suffix}`;
+function linksPath(taskId: string): string {
+  return `/api/external-link/task/${encodeURIComponent(taskId)}`;
 }
 
 export const listExternalLinks = Effect.fnUntraced(function* (taskId: string) {
@@ -31,21 +30,21 @@ export const listExternalLinks = Effect.fnUntraced(function* (taskId: string) {
 });
 
 export const createExternalLink = Effect.fnUntraced(function* (
-  taskId: string,
-  body: { readonly url: string; readonly title?: string },
+  _taskId: string,
+  _body: { readonly url: string; readonly title?: string },
 ) {
-  const api = yield* KaneoApi;
-  return yield* api.request("POST", linksPath(taskId), ExternalLink, { body });
+  return yield* new InvalidArgument({
+    message: "This server cannot attach a link to a task.",
+    hint: "Links are created by integrations. kaneo task link list still shows the ones already on the task.",
+  });
 });
 
 export const deleteExternalLink = Effect.fnUntraced(function* (
-  taskId: string,
-  linkId: string,
+  _taskId: string,
+  _linkId: string,
 ) {
-  const api = yield* KaneoApi;
-  return yield* api.request(
-    "DELETE",
-    linksPath(taskId, `/${encodeURIComponent(linkId)}`),
-    DeletedLink,
-  );
+  return yield* new InvalidArgument({
+    message: "This server cannot remove a task link.",
+    hint: "Links come from integrations. Remove the link there, or disconnect the integration.",
+  });
 });

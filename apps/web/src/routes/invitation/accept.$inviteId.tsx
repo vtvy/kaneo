@@ -118,8 +118,12 @@ function AcceptInvitation() {
                 {t("auth:invitation.errorLoadDescription")}
               </AlertDescription>
             </Alert>
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/auth/sign-in">{t("auth:invitation.goToSignIn")}</Link>
+            <Button
+              variant="outline"
+              className="w-full"
+              render={<Link to="/auth/sign-in" />}
+            >
+              {t("auth:invitation.goToSignIn")}
             </Button>
           </div>
         </AuthLayout>
@@ -159,8 +163,12 @@ function AcceptInvitation() {
               )}
             </div>
 
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/auth/sign-in">{t("auth:invitation.goToSignIn")}</Link>
+            <Button
+              variant="outline"
+              className="w-full"
+              render={<Link to="/auth/sign-in" />}
+            >
+              {t("auth:invitation.goToSignIn")}
             </Button>
           </div>
         </AuthLayout>
@@ -229,10 +237,12 @@ function AcceptInvitation() {
                 )}
               </Button>
 
-              <Button asChild variant="outline" className="w-full">
-                <Link to="/dashboard">
-                  {t("auth:invitation.goToDashboard")}
-                </Link>
+              <Button
+                variant="outline"
+                className="w-full"
+                render={<Link to="/dashboard" />}
+              >
+                {t("auth:invitation.goToDashboard")}
               </Button>
             </div>
 

@@ -40,6 +40,13 @@ type BacklogListViewProps = {
   disableDragDrop?: boolean;
 };
 
+function isSectionExpanded(
+  expandedSections: Record<string, boolean>,
+  sectionId: string,
+) {
+  return expandedSections[sectionId] !== false;
+}
+
 function BacklogListView({
   project,
   disableDragDrop = false,
@@ -59,28 +66,21 @@ function BacklogListView({
   const [overColumnId, setOverColumnId] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
-  >({
-    planned: true,
-    archived: true,
-  });
+  >({});
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [activeColumn, setActiveColumn] = useState<string | null>(null);
 
   useEffect(() => {
-    if (project) {
-      const visibleTaskIds: string[] = [];
-      if (expandedSections.planned) {
-        visibleTaskIds.push(
-          ...(project.plannedTasks || []).map((task) => task.id),
-        );
-      }
-      if (expandedSections.archived) {
-        visibleTaskIds.push(
-          ...(project.archivedTasks || []).map((task) => task.id),
-        );
-      }
-      setAvailableTasks(visibleTaskIds);
-    }
+    if (!project) return;
+
+    // GET /task/tasks/:projectId only returns board columns. Planned and
+    // archived lists are not on that payload, so visible rows are column tasks.
+    const visibleTaskIds = project.columns.flatMap((column) =>
+      isSectionExpanded(expandedSections, column.id)
+        ? column.tasks.map((task) => task.id)
+        : [],
+    );
+    setAvailableTasks(visibleTaskIds);
   }, [project, expandedSections, setAvailableTasks]);
 
   useEffect(() => {
@@ -137,27 +137,17 @@ function BacklogListView({
 
   const handleDragOver = (event: DragOverEvent) => {
     const { over } = event;
-    if (!over || !activeId) {
+    if (!over || !activeId || !project) {
       setOverColumnId(null);
       return;
     }
 
-    if (over.id === "planned" || over.id === "archived") {
-      setOverColumnId(over.id.toString());
-      return;
-    }
-
-    const taskId = over.id.toString();
-    const plannedTasks = project?.plannedTasks || [];
-    const archivedTasks = project?.archivedTasks || [];
-
-    if (plannedTasks.some((task) => task.id === taskId)) {
-      setOverColumnId("planned");
-    } else if (archivedTasks.some((task) => task.id === taskId)) {
-      setOverColumnId("archived");
-    } else {
-      setOverColumnId(null);
-    }
+    const overId = over.id.toString();
+    const column = project.columns.find(
+      (item) =>
+        item.id === overId || item.tasks.some((task) => task.id === overId),
+    );
+    setOverColumnId(column?.id ?? null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -170,111 +160,79 @@ function BacklogListView({
     const activeTaskId = active.id.toString();
     const overId = over.id.toString();
 
-    const plannedTasks = project.plannedTasks || [];
-    const archivedTasks = project.archivedTasks || [];
-    const activeTask = [...plannedTasks, ...archivedTasks].find(
-      (task) => task.id === activeTaskId,
+    const sourceColumn = project.columns.find((column) =>
+      column.tasks.some((task) => task.id === activeTaskId),
     );
+    if (!sourceColumn) return;
 
-    if (!activeTask) return;
-
-    let targetSection = overId;
-    if (overId !== "planned" && overId !== "archived") {
-      if (plannedTasks.some((task) => task.id === overId)) {
-        targetSection = "planned";
-      } else if (archivedTasks.some((task) => task.id === overId)) {
-        targetSection = "archived";
-      } else {
-        return;
-      }
-    }
+    const targetColumn =
+      project.columns.find((column) => column.id === overId) ??
+      project.columns.find((column) =>
+        column.tasks.some((task) => task.id === overId),
+      );
+    if (!targetColumn) return;
 
     const updatedProject = produce(project, (draft) => {
-      const sourceSection =
-        activeTask.status === "planned"
-          ? draft.plannedTasks || []
-          : draft.archivedTasks || [];
+      const draftSource = draft.columns.find(
+        (column) => column.id === sourceColumn.id,
+      );
+      const draftTarget = draft.columns.find(
+        (column) => column.id === targetColumn.id,
+      );
+      if (!draftSource || !draftTarget) return;
 
-      const sourceTaskIndex = sourceSection.findIndex(
+      const sourceTaskIndex = draftSource.tasks.findIndex(
         (task) => task.id === activeTaskId,
       );
-      const task = sourceSection[sourceTaskIndex];
-
+      const task = draftSource.tasks[sourceTaskIndex];
       if (!task) return;
 
-      if (activeTask.status === "planned") {
-        draft.plannedTasks =
-          draft.plannedTasks?.filter((t) => t.id !== activeTaskId) || [];
-      } else {
-        draft.archivedTasks =
-          draft.archivedTasks?.filter((t) => t.id !== activeTaskId) || [];
-      }
+      draftSource.tasks = draftSource.tasks.filter(
+        (item) => item.id !== activeTaskId,
+      );
 
-      if (activeTask.status === targetSection) {
-        const targetSectionTasks =
-          activeTask.status === "planned"
-            ? draft.plannedTasks || []
-            : draft.archivedTasks || [];
-
-        let destinationIndex = targetSectionTasks.findIndex(
-          (t) => t.id === overId,
+      if (sourceColumn.id === targetColumn.id) {
+        let destinationIndex = draftTarget.tasks.findIndex(
+          (item) => item.id === overId,
         );
-
+        if (destinationIndex < 0) {
+          destinationIndex = draftTarget.tasks.length;
+        }
         if (sourceTaskIndex <= destinationIndex) {
           destinationIndex += 1;
         }
-
-        if (activeTask.status === "planned") {
-          draft.plannedTasks?.splice(destinationIndex, 0, task);
-        } else {
-          draft.archivedTasks?.splice(destinationIndex, 0, task);
-        }
-
-        const finalTasks =
-          activeTask.status === "planned"
-            ? draft.plannedTasks || []
-            : draft.archivedTasks || [];
-
-        finalTasks.forEach((t, index) => {
+        draftTarget.tasks.splice(destinationIndex, 0, task);
+        draftTarget.tasks.forEach((item, index) => {
           updateTask({
-            ...t,
+            ...item,
             position: index,
           });
         });
-      } else {
-        task.status = targetSection;
-
-        if (targetSection === "planned") {
-          draft.plannedTasks = [...(draft.plannedTasks || []), task];
-        } else {
-          draft.archivedTasks = [...(draft.archivedTasks || []), task];
-        }
-
-        const updatedTasks =
-          targetSection === "planned"
-            ? draft.plannedTasks || []
-            : draft.archivedTasks || [];
-
-        updatedTasks.forEach((t, index) => {
-          updateTask({
-            ...t,
-            status: targetSection,
-            position: index,
-          });
-        });
-
-        const sourceTasks =
-          activeTask.status === "planned"
-            ? draft.plannedTasks || []
-            : draft.archivedTasks || [];
-
-        sourceTasks.forEach((t, index) => {
-          updateTask({
-            ...t,
-            position: index,
-          });
-        });
+        return;
       }
+
+      task.status = draftTarget.slug;
+      let destinationIndex = draftTarget.tasks.findIndex(
+        (item) => item.id === overId,
+      );
+      if (destinationIndex < 0) {
+        destinationIndex = draftTarget.tasks.length;
+      }
+      draftTarget.tasks.splice(destinationIndex, 0, task);
+
+      draftTarget.tasks.forEach((item, index) => {
+        updateTask({
+          ...item,
+          status: draftTarget.slug,
+          position: index,
+        });
+      });
+      draftSource.tasks.forEach((item, index) => {
+        updateTask({
+          ...item,
+          position: index,
+        });
+      });
     });
 
     setProject(updatedProject);
@@ -283,7 +241,7 @@ function BacklogListView({
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) => ({
       ...prev,
-      [sectionId]: !prev[sectionId],
+      [sectionId]: prev[sectionId] === false,
     }));
   };
 
@@ -309,6 +267,7 @@ function BacklogListView({
     });
 
     const showDropIndicator = activeId && overColumnId === sectionId;
+    const expanded = isSectionExpanded(expandedSections, sectionId);
 
     return (
       <div
@@ -326,17 +285,13 @@ function BacklogListView({
             <ChevronRight
               className={cn(
                 "w-3 h-3 transition-transform",
-                expandedSections[sectionId] && "rotate-90",
+                expanded && "rotate-90",
               )}
             />
             <div className="flex items-center gap-2 h-4">
               <IconComponent className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
               <div className="flex items-center gap-1">
-                <span className="mt-1 mr-1">
-                  {t(`tasks:backlog.sections.${sectionId}`, {
-                    defaultValue: title,
-                  })}
-                </span>
+                <span className="mt-1 mr-1">{title}</span>
                 <span className="text-xs text-muted-foreground mt-0.5">
                   {tasks.length}
                 </span>
@@ -350,7 +305,7 @@ function BacklogListView({
                 type="button"
                 onClick={() => {
                   setIsTaskModalOpen(true);
-                  setActiveColumn("planned");
+                  setActiveColumn(sectionId);
                 }}
                 className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground transition-colors"
                 title={t("tasks:backlog.addTask")}
@@ -361,7 +316,7 @@ function BacklogListView({
           </div>
         </div>
 
-        {expandedSections[sectionId] && (
+        {expanded && (
           <div ref={setNodeRef} className="bg-card">
             <SortableContext
               items={tasks}
@@ -375,9 +330,7 @@ function BacklogListView({
             {tasks.length === 0 && (
               <div className="py-6 px-4 text-center text-xs text-muted-foreground">
                 {t("tasks:backlog.noTasksInSection", {
-                  section: t(`tasks:backlog.sections.${sectionId}`, {
-                    defaultValue: title,
-                  }).toLowerCase(),
+                  section: title.toLowerCase(),
                 })}
               </div>
             )}
@@ -391,12 +344,9 @@ function BacklogListView({
     return null;
   }
 
-  const plannedTasks = project.plannedTasks || [];
-  const archivedTasks = project.archivedTasks || [];
-
-  const activeTask =
-    project.plannedTasks.find((task) => task.id === activeId) ||
-    project.archivedTasks.find((task) => task.id === activeId);
+  const activeTask = project.columns
+    .flatMap((column) => column.tasks)
+    .find((task) => task.id === activeId);
 
   return (
     <DndContext
@@ -409,20 +359,16 @@ function BacklogListView({
     >
       <div className="w-full h-full overflow-auto bg-muted/20">
         <div className="divide-y divide-border/50">
-          <BacklogSection
-            sectionId="planned"
-            title={t("tasks:backlog.sections.planned")}
-            icon={Clock}
-            tasks={plannedTasks}
-            showAddButton={true}
-          />
-
-          <BacklogSection
-            sectionId="archived"
-            title={t("tasks:backlog.sections.archived")}
-            icon={Archive}
-            tasks={archivedTasks}
-          />
+          {project.columns.map((column) => (
+            <BacklogSection
+              key={column.id}
+              sectionId={column.id}
+              title={column.name}
+              icon={column.isFinal ? Archive : Clock}
+              tasks={column.tasks}
+              showAddButton={!column.isFinal}
+            />
+          ))}
         </div>
       </div>
 
@@ -460,7 +406,7 @@ function BacklogListView({
         open={isTaskModalOpen}
         projectId={project?.id}
         onClose={() => setIsTaskModalOpen(false)}
-        status={activeColumn ?? "planned"}
+        status={activeColumn ?? project.columns[0]?.slug ?? ""}
       />
 
       <BacklogBulkToolbar />

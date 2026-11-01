@@ -47,7 +47,7 @@ export function relatedTaskJson(
     ticketId: slug ? ticketId(slug, task.number) : null,
     title: task.title,
     status: task.status,
-    completed: task.isCompleted,
+    completed: task.isCompleted ?? task.status === "done",
     url: taskUrl(context.webUrl, {
       workspaceId: context.workspaceId,
       projectId: task.projectId,

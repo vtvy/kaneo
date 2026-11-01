@@ -52,7 +52,6 @@ function KaneoIssueLinkView({ node }: NodeViewProps) {
     queryFn: () =>
       getProject({
         id: taskRoute?.projectId ?? "",
-        workspaceId: taskRoute?.workspaceId ?? "",
       }),
     enabled: Boolean(taskRoute?.workspaceId && taskRoute?.projectId),
     staleTime: 1000 * 60,

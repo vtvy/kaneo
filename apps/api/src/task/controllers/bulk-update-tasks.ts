@@ -99,7 +99,9 @@ async function bulkUpdateTasks({
       const projectIds = [...new Set(tasks.map((t) => t.projectId))];
 
       for (const projectId of projectIds) {
-        await assertValidTaskStatus(nextStatus, projectId);
+        if (nextStatus) {
+          await assertValidTaskStatus(nextStatus, projectId);
+        }
 
         const column = nextStatus
           ? await db.query.columnTable.findFirst({

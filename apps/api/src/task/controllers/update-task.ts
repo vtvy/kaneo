@@ -45,7 +45,9 @@ async function updateTask(
   // A task may have no status ("No status" / backlog). Normalize empty to null.
   const resolvedStatus = status ? status : null;
 
-  await assertValidTaskStatus(resolvedStatus, projectId);
+  if (resolvedStatus) {
+    await assertValidTaskStatus(resolvedStatus, projectId);
+  }
 
   // Only validate a changed assignee, so editing other fields of a task whose
   // assignee has since left the workspace keeps working.
