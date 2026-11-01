@@ -33,6 +33,8 @@ import { bundledLanguages, type Highlighter } from "shiki";
 import { AttachmentCard } from "@/components/task/extensions/attachment-card";
 import { EmbedBlock } from "@/components/task/extensions/embed-block";
 import { KaneoIssueLink } from "@/components/task/extensions/kaneo-issue-link";
+import { createKaneoMention } from "@/components/task/extensions/kaneo-mention";
+import type { MentionMember } from "@/components/task/extensions/mention-list";
 import {
   SHIKI_CODEBLOCK_REFRESH_META,
   ShikiCodeBlock,
@@ -80,6 +82,8 @@ type CommentEditorProps = {
   ensureTaskId?: () => Promise<string | null>;
   showQuickAttachButton?: boolean;
   onAttachActionChange?: (attach: (() => void) | null) => void;
+  /** Members offered when typing @; omit to disable mention suggestions. */
+  mentionMembers?: MentionMember[];
 };
 
 type SlashRange = { from: number; to: number };
@@ -173,6 +177,7 @@ export default function CommentEditor({
   ensureTaskId,
   showQuickAttachButton = true,
   onAttachActionChange,
+  mentionMembers,
 }: CommentEditorProps) {
   const { t } = useTranslation();
   const resolvedPlaceholder =
@@ -191,6 +196,9 @@ export default function CommentEditor({
   const onCancelShortcutRef = useRef(onCancelShortcut);
   onSubmitShortcutRef.current = onSubmitShortcut;
   onCancelShortcutRef.current = onCancelShortcut;
+  const mentionMembersRef = useRef(mentionMembers);
+  mentionMembersRef.current = mentionMembers;
+  const isMentionMenuOpenRef = useRef(false);
   const pendingImageInsertRef = useRef<{
     editor: Editor;
     range?: SlashRange;
@@ -598,6 +606,12 @@ export default function CommentEditor({
         EmbedBlock,
         AttachmentCard,
         KaneoIssueLink,
+        createKaneoMention({
+          getMembers: () => mentionMembersRef.current,
+          onActiveChange: (active) => {
+            isMentionMenuOpenRef.current = active;
+          },
+        }),
         TaskList,
         Image.configure({
           HTMLAttributes: {
@@ -754,6 +768,8 @@ export default function CommentEditor({
           return true;
         },
         handleKeyDown: (_view, event) => {
+          // Let the @mention suggestion plugin handle keys while it is open.
+          if (isMentionMenuOpenRef.current) return false;
           if (!readOnly && !disabled && slashMenu) {
             if (event.key === "ArrowDown") {
               event.preventDefault();

@@ -18,12 +18,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import useUpdateComment from "@/hooks/mutations/comment/use-update-comment";
+import { useMentionMembers } from "@/hooks/queries/workspace-users/use-mention-members";
 import { formatDateTime, formatRelativeTime } from "@/lib/format";
 import { toast } from "@/lib/toast";
 
 type CommentCardProps = {
   commentId: string;
   taskId: string;
+  projectId?: string;
   content: string;
   user: {
     id?: string;
@@ -39,6 +41,7 @@ type CommentCardProps = {
 export default function CommentCard({
   commentId,
   taskId,
+  projectId,
   content,
   user,
   createdAt,
@@ -51,6 +54,7 @@ export default function CommentCard({
   const [editedContent, setEditedContent] = useState(content);
   const { mutateAsync: updateComment, isPending } = useUpdateComment();
   const queryClient = useQueryClient();
+  const mentionMembers = useMentionMembers(isEditing ? projectId : undefined);
 
   const canEdit = currentUser?.id === user?.id;
   const isFromGitHub = externalSource === "github";
@@ -232,6 +236,7 @@ export default function CommentCard({
             readOnly={!isEditing}
             onSubmitShortcut={isEditing ? handleSave : undefined}
             onCancelShortcut={isEditing ? handleCancel : undefined}
+            mentionMembers={isEditing ? mentionMembers : undefined}
           />
         </div>
 

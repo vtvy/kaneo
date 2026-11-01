@@ -13,6 +13,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import type { TaskRecurrence } from "../task/recurrence/schema";
 export const userTable = pgTable("user", {
   id: text("id")
     .$defaultFn(() => createId())
@@ -486,6 +487,8 @@ export const taskTable = pgTable(
     points: integer("points"),
     startDate: timestamp("start_date", { mode: "date" }),
     dueDate: timestamp("due_date", { mode: "date" }),
+    // Repeat rule; completing the task hands it to the next occurrence.
+    recurrence: jsonb("recurrence").$type<TaskRecurrence>(),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" })
       .defaultNow()
@@ -499,6 +502,43 @@ export const taskTable = pgTable(
     index("task_columnId_idx").on(table.columnId),
     index("task_sprintId_idx").on(table.sprintId),
     unique("task_project_number_unique").on(table.projectId, table.number),
+  ],
+);
+
+/**
+ * Every sprint a task has passed through. `removedAt` is null while the task
+ * is still in that sprint; leaving closes the row so history survives moves.
+ */
+export const taskSprintTable = pgTable(
+  "task_sprint",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => taskTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    sprintId: text("sprint_id")
+      .notNull()
+      .references(() => sprintTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    addedAt: timestamp("added_at", { mode: "date" }).defaultNow().notNull(),
+    removedAt: timestamp("removed_at", { mode: "date" }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    unique("task_sprint_task_sprint_unique").on(table.taskId, table.sprintId),
+    index("task_sprint_taskId_idx").on(table.taskId),
+    index("task_sprint_sprintId_idx").on(table.sprintId),
   ],
 );
 

@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { saveAs } from "file-saver";
-import { Download, Loader2, Upload } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import {
   DialogPopup,
   DialogTitle,
 } from "@/components/ui/dialog";
+import useExportProjectSprints from "@/hooks/mutations/sprint/use-export-project-sprints";
 import useExportTasks from "@/hooks/mutations/task/use-export-tasks";
 import useImportTasks from "@/hooks/mutations/task/use-import-tasks";
 import { cn } from "@/lib/cn";
@@ -30,6 +31,8 @@ export function TasksImportExport({ project }: TasksImportExportProps) {
     useExportTasks();
   const { mutateAsync: importTasksMutation, isPending: isImporting } =
     useImportTasks();
+  const { mutateAsync: exportSprintsMutation, isPending: isExportingSprints } =
+    useExportProjectSprints();
 
   const handleExport = async () => {
     try {
@@ -47,6 +50,16 @@ export function TasksImportExport({ project }: TasksImportExportProps) {
     } catch (error) {
       toast.dismiss();
       toast.error(t("settings:tasksImportExport.exportError"));
+      console.error(error);
+    }
+  };
+
+  const handleExportSprints = async () => {
+    try {
+      const blob = await exportSprintsMutation(project.id);
+      saveAs(blob, `${project.slug}-sprints.xlsx`);
+    } catch (error) {
+      toast.error(t("common:sprints.exportError"));
       console.error(error);
     }
   };
@@ -148,6 +161,22 @@ export function TasksImportExport({ project }: TasksImportExportProps) {
             <Download className="h-4 w-4" />
           )}
           {t("settings:tasksImportExport.exportTasks")}
+        </Button>
+
+        <Button
+          className="flex items-center gap-1.5 bg-card hover:bg-accent text-foreground border border-border"
+          size="sm"
+          onClick={handleExportSprints}
+          disabled={isExportingSprints}
+        >
+          {isExportingSprints ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FileSpreadsheet className="h-4 w-4" />
+          )}
+          {isExportingSprints
+            ? t("common:sprints.exportingExcel")
+            : t("common:sprints.exportExcel")}
         </Button>
 
         <Button

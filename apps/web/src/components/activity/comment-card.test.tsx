@@ -13,6 +13,10 @@ vi.mock("@/components/providers/auth-provider/hooks/use-auth", () => ({
   useAuth: () => ({ user: null }),
 }));
 
+vi.mock("@/hooks/queries/workspace-users/use-mention-members", () => ({
+  useMentionMembers: () => [],
+}));
+
 vi.mock("@/hooks/mutations/comment/use-update-comment", () => ({
   default: () => ({
     mutateAsync: vi.fn(),

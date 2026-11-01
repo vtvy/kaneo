@@ -213,4 +213,61 @@ describe("registerTools", () => {
       }),
     ).toThrow();
   });
+
+  it("sets and clears a repeat rule with update_task_recurrence", async () => {
+    const { server, tools } = createServerMock();
+    const client = { json: vi.fn().mockResolvedValue({ id: "task-1" }) };
+
+    registerTools(server as never, { client: client as never });
+    const tool = tools.get("update_task_recurrence");
+
+    await tool?.handler(
+      tool.config.inputSchema?.parse({
+        taskId: "task-1",
+        frequency: "weekly",
+        weekdays: [1, 5],
+        timeZone: "Europe/Madrid",
+      }) as Record<string, unknown>,
+    );
+    expect(client.json).toHaveBeenLastCalledWith(
+      "/api/task/recurrence/task-1",
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          recurrence: {
+            frequency: "weekly",
+            interval: 1,
+            weekdays: [1, 5],
+            timeZone: "Europe/Madrid",
+          },
+        }),
+      },
+    );
+
+    await tool?.handler(
+      tool.config.inputSchema?.parse({ taskId: "task-1" }) as Record<
+        string,
+        unknown
+      >,
+    );
+    expect(client.json).toHaveBeenLastCalledWith(
+      "/api/task/recurrence/task-1",
+      { method: "PUT", body: JSON.stringify({ recurrence: null }) },
+    );
+  });
+
+  it("requires a time zone when setting a repeat rule", async () => {
+    const { server, tools } = createServerMock();
+    const client = { json: vi.fn() };
+
+    registerTools(server as never, { client: client as never });
+    const result = await tools.get("update_task_recurrence")?.handler({
+      taskId: "task-1",
+      frequency: "daily",
+      interval: 1,
+    });
+
+    expect(result?.isError).toBe(true);
+    expect(client.json).not.toHaveBeenCalled();
+  });
 });

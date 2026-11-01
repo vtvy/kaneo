@@ -22,14 +22,19 @@ import {
 } from "../storage/s3";
 import { uploadBodyLimit } from "../utils/body-limit";
 import { isInstanceAdmin } from "../utils/is-instance-admin";
+import { validateWorkspaceAccess } from "../utils/validate-workspace-access";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import bulkUpdateTasks from "./controllers/bulk-update-tasks";
 import createTask from "./controllers/create-task";
 import deleteTask from "./controllers/delete-task";
+import duplicateTask from "./controllers/duplicate-task";
 import exportTasks from "./controllers/export-tasks";
 import getAllProjectTasks from "./controllers/get-all-project-tasks";
 import getMyTasks from "./controllers/get-my-tasks";
 import getTask from "./controllers/get-task";
+import getTaskByTicketId, {
+  findWorkspaceIdBySlug,
+} from "./controllers/get-task-by-ticket-id";
 import getTasks from "./controllers/get-tasks";
 import importTasks from "./controllers/import-tasks";
 import moveTask from "./controllers/move-task";
@@ -39,16 +44,70 @@ import updateTaskDescription from "./controllers/update-task-description";
 import updateTaskDueDate from "./controllers/update-task-due-date";
 import updateTaskPoints from "./controllers/update-task-points";
 import updateTaskPriority from "./controllers/update-task-priority";
+import updateTaskRecurrence from "./controllers/update-task-recurrence";
 import updateTaskStatus from "./controllers/update-task-status";
 import updateTaskTitle from "./controllers/update-task-title";
 import uploadTaskAsset from "./controllers/upload-task-asset";
+import { taskRecurrenceSchema } from "./recurrence/schema";
+import "./recurrence/subscribe";
 import { VALID_PRIORITIES } from "./validate-task-fields";
 
 const task = new Hono<{
   Variables: {
     userId: string;
+    apiKey?: { id: string };
   };
 }>()
+  .get(
+    "/ticket/:ticketId",
+    describeRoute({
+      operationId: "getTaskByTicketId",
+      tags: ["Tasks"],
+      description:
+        "Resolve a short ticket id like PROJ-12 within a workspace (by slug)",
+      responses: {
+        200: {
+          description: "Task resolved from the ticket id",
+          content: {
+            "application/json": {
+              schema: resolver(
+                v.object({ ...taskSchema.entries, workspaceId: v.string() }),
+              ),
+            },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ ticketId: v.string() })),
+    validator("query", v.object({ workspaceSlug: v.string() })),
+    async (c) => {
+      const { ticketId } = c.req.valid("param");
+      const { workspaceSlug } = c.req.valid("query");
+      const userId = c.get("userId");
+      if (!userId) {
+        throw new HTTPException(401, { message: "Unauthorized" });
+      }
+
+      // The workspace comes from a slug, so the workspaceAccess and
+      // projectPermission middlewares cannot resolve it; check both here.
+      const workspaceId = await findWorkspaceIdBySlug(workspaceSlug);
+      await validateWorkspaceAccess(userId, workspaceId, c.get("apiKey")?.id);
+
+      const { taskId, projectId } = await getTaskByTicketId(
+        ticketId,
+        workspaceId,
+      );
+      if (
+        !(await isInstanceAdmin(c)) &&
+        !(await canInProject(userId, projectId, "item", "read"))
+      ) {
+        throw new HTTPException(403, { message: "Insufficient permissions" });
+      }
+
+      const task = await getTask(taskId);
+      return c.json({ ...task, workspaceId });
+    },
+  )
   .get(
     "/tasks/:projectId",
     describeRoute({
@@ -740,6 +799,76 @@ const task = new Hono<{
         id,
         dueDate: dueDate ? new Date(dueDate) : null,
         currentUserId,
+      });
+
+      return c.json(task);
+    },
+  )
+
+  .post(
+    "/duplicate/:id",
+    describeRoute({
+      operationId: "duplicateTask",
+      tags: ["Tasks"],
+      description:
+        "Duplicate a task into the same project (fields and labels; not comments, activity or relations)",
+      responses: {
+        200: {
+          description: "Task duplicated successfully",
+          content: {
+            "application/json": { schema: resolver(taskSchema) },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    validator("json", v.object({ title: v.optional(v.string()) })),
+    workspaceAccess.fromTask(),
+    projectPermission.fromTask({ item: ["create"] }),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const { title } = c.req.valid("json");
+
+      const task = await duplicateTask({
+        taskId: id,
+        currentUserId: c.get("userId"),
+        title,
+      });
+
+      return c.json(task);
+    },
+  )
+  .put(
+    "/recurrence/:id",
+    describeRoute({
+      operationId: "updateTaskRecurrence",
+      tags: ["Tasks"],
+      description:
+        "Set or clear a task's repeat rule. When the task moves into a final column, the next task is created with its dates moved forward one interval from the due date.",
+      responses: {
+        200: {
+          description: "Task repeat rule updated successfully",
+          content: {
+            "application/json": { schema: resolver(taskSchema) },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    validator(
+      "json",
+      v.object({ recurrence: v.nullable(taskRecurrenceSchema) }),
+    ),
+    workspaceAccess.fromTask(),
+    projectPermission.fromTask({ item: ["update"] }),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const { recurrence } = c.req.valid("json");
+
+      const task = await updateTaskRecurrence({
+        id,
+        recurrence,
+        currentUserId: c.get("userId"),
       });
 
       return c.json(task);

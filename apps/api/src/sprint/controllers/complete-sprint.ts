@@ -4,6 +4,7 @@ import db from "../../database";
 import { columnTable, sprintTable, taskTable } from "../../database/schema";
 import { publishEvent } from "../../events";
 import { getSprintTotals } from "./get-sprint-totals";
+import syncTaskSprintMembership from "./sync-task-sprint-membership";
 
 async function completeSprint({
   id,
@@ -71,6 +72,10 @@ async function completeSprint({
       .update(taskTable)
       .set({ sprintId: targetSprintId ?? null })
       .where(inArray(taskTable.id, carryOverIds));
+
+    for (const taskId of carryOverIds) {
+      await syncTaskSprintMembership(taskId, targetSprintId ?? null);
+    }
   }
 
   const [completedSprint] = await db

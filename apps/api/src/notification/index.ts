@@ -270,13 +270,16 @@ subscribeToEvent<{
   }
 });
 
-subscribeToEvent<{
+type CommentMentionEvent = {
   taskId: string;
   userId: string;
+  /** Recipients already resolved and permission-checked by the comment controller. */
   mentions?: string[];
   taskTitle?: string;
   actorName?: string;
-}>("task.comment_created", async (data) => {
+};
+
+async function notifyCommentMentions(data: CommentMentionEvent) {
   if (!Array.isArray(data.mentions) || data.mentions.length === 0) {
     return;
   }
@@ -295,7 +298,14 @@ subscribeToEvent<{
       resourceType: "task",
     });
   }
-});
+}
+
+subscribeToEvent<CommentMentionEvent>(
+  "task.comment_created",
+  notifyCommentMentions,
+);
+// Edits only carry users newly mentioned by the edit (see update-comment).
+subscribeToEvent<CommentMentionEvent>("comment.updated", notifyCommentMentions);
 
 subscribeToEvent<{
   email: string;

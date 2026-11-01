@@ -271,12 +271,15 @@ function DraftEditor({
 function ProjectRoleEditor({
   projectId,
   role,
+  canEdit,
   onDelete,
 }: {
   projectId: string;
   role: ProjectRole;
+  canEdit: boolean;
   onDelete: () => void;
 }) {
+  const locked = role.isSystem || !canEdit;
   const [permissions, setPermissions] = useState<Record<string, Set<string>>>(
     () => {
       const out: Record<string, Set<string>> = {};
@@ -333,16 +336,18 @@ function ProjectRoleEditor({
       <div className="max-h-[60vh] overflow-y-auto">
         <PermissionList
           selected={permissions}
-          onToggle={role.isSystem ? undefined : togglePermission}
-          readOnly={role.isSystem}
+          onToggle={locked ? undefined : togglePermission}
+          readOnly={locked}
           disabled={isPending}
         />
       </div>
       <Separator />
       <div className="flex items-center justify-between gap-2 px-4 py-3 bg-sidebar">
-        {role.isSystem ? (
+        {locked ? (
           <span className="text-xs text-muted-foreground">
-            {t("projectRoles.systemLocked")}
+            {role.isSystem
+              ? t("projectRoles.systemLocked")
+              : t("projectRoles.ownerOnly")}
           </span>
         ) : (
           <Button
@@ -356,7 +361,7 @@ function ProjectRoleEditor({
             {t("projectRoles.deleteRoleBtn")}
           </Button>
         )}
-        {!role.isSystem && (
+        {!locked && (
           <div className="flex items-center gap-3">
             <p className="text-xs text-muted-foreground">
               {dirty
@@ -451,8 +456,12 @@ function RouteComponent() {
   const projectId = rawProjectId ?? "";
 
   const { t } = useTranslation("settings");
-  const { can, isCheckingPermissions } = useProjectPermission(projectId);
+  const { can, isOwner, isCheckingPermissions } =
+    useProjectPermission(projectId);
   const canManage = !isCheckingPermissions && can("role", "manage");
+  // role:manage shows the roles; only an Owner may change them (the API
+  // enforces the same rule so nobody can widen their own role).
+  const canEditRoles = !isCheckingPermissions && isOwner;
 
   const {
     data: rawRoles = [],
@@ -506,7 +515,7 @@ function RouteComponent() {
               {t("projectRoles.subtitle")}
             </p>
           </div>
-          {canManage && (
+          {canEditRoles && (
             <Button
               size="sm"
               className="gap-1.5"
@@ -625,6 +634,7 @@ function RouteComponent() {
                       key={role.id}
                       projectId={projectId}
                       role={role}
+                      canEdit={canEditRoles}
                       onDelete={() => setRoleToDelete(role)}
                     />
                   </AccordionPanel>

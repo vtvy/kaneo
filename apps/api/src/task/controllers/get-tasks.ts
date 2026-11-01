@@ -134,6 +134,7 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
     points: taskTable.points,
     startDate: taskTable.startDate,
     dueDate: taskTable.dueDate,
+    recurrence: taskTable.recurrence,
     position: taskTable.position,
     createdAt: taskTable.createdAt,
     userId: taskTable.userId,
