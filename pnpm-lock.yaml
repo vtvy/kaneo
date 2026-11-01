@@ -113,6 +113,9 @@ importers:
       '@kaneo/email':
         specifier: workspace:*
         version: link:../../packages/email
+      '@kaneo/importers':
+        specifier: workspace:*
+        version: link:../../packages/importers
       '@kaneo/permissions':
         specifier: workspace:*
         version: link:../../packages/permissions
@@ -624,6 +627,31 @@ importers:
       vitest:
         specifier: ^4.1.5
         version: 4.1.5(@opentelemetry/api@1.9.0)(@types/node@25.8.0)(@vitest/coverage-v8@4.1.5)(jsdom@29.1.1(@noble/hashes@2.4.0))(msw@2.12.10(@types/node@25.8.0)(typescript@5.9.3))(vite@7.3.7(@types/node@25.8.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0))
+
+  packages/importers:
+    dependencies:
+      turndown:
+        specifier: ^7.2.2
+        version: 7.2.2
+      turndown-plugin-gfm:
+        specifier: ^1.0.2
+        version: 1.0.2
+    devDependencies:
+      '@kaneo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: ^25.3.5
+        version: 25.8.0
+      '@types/turndown':
+        specifier: ^5.0.6
+        version: 5.0.6
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^4.1.6
+        version: 4.1.6(@opentelemetry/api@1.9.0)(@types/node@25.8.0)(jsdom@29.1.1(@noble/hashes@2.4.0))(msw@2.12.10(@types/node@25.8.0)(typescript@5.9.3))(vite@7.3.7(@types/node@25.8.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0))
 
   packages/libs:
     devDependencies:
@@ -4497,6 +4525,9 @@ packages:
   '@types/statuses@2.0.6':
     resolution: {integrity: sha512-xMAgYwceFhRA2zY+XbEA7mxYbA093wdiW8Vu6gZPGWy9cmOyU9XesH1tNcEWsKFd5Vzrqx5T3D38PWx1FIIXkA==}
 
+  '@types/turndown@5.0.6':
+    resolution: {integrity: sha512-ru00MoyeeouE5BX4gRL+6m/BsDfbRayOskWqUvh7CLGW+UXxHQItqALa38kKnOiZPqJrtzJUgAC2+F0rL1S4Pg==}
+
   '@types/unist@2.0.11':
     resolution: {integrity: sha512-CmBKiL6NNo/OqgmMn95Fk9Whlp2mtvIv+KNpQKN2F4SjvrEesubTRWGYSg+BnWZOnlCaSTU1sMpsBOzgbYhnsA==}
 
@@ -8196,10 +8227,6 @@ packages:
     resolution: {integrity: sha512-u9r3uZC0bdpGOXtlxUIdwf9pkmvhqJdrVCH9fapQtgy/OeTTMZ1nqH7agtvEfmGui6e1XxjcdrlxvxJvc3sMqw==}
     engines: {node: '>=18'}
 
-  tinyexec@1.1.2:
-    resolution: {integrity: sha512-dAqSqE/RabpBKI8+h26GfLq6Vb3JVXs30XYQjdMjaj/c2tS8IYYMbIzP599KtRj7c57/wYApb3QjgRgXmrCukA==}
-    engines: {node: '>=18'}
-
   tinyexec@1.2.3:
     resolution: {integrity: sha512-g62dB+w1/OEFnPvmX0yd/HnetYITOL+1nJW7kitOycOeAvmbWC/nu0fwmmQ/kupNojqExzyC/T++pST/jRJ2mQ==}
     engines: {node: '>=18'}
@@ -9954,7 +9981,7 @@ snapshots:
       '@commitlint/types': 19.8.1
       git-raw-commits: 4.0.0
       minimist: 1.2.8
-      tinyexec: 1.0.2
+      tinyexec: 1.2.3
 
   '@commitlint/resolve-extends@19.8.1':
     dependencies:
@@ -13986,6 +14013,8 @@ snapshots:
 
   '@types/statuses@2.0.6': {}
 
+  '@types/turndown@5.0.6': {}
+
   '@types/unist@2.0.11': {}
 
   '@types/unist@3.0.3': {}
@@ -17141,7 +17170,7 @@ snapshots:
       consola: 3.4.2
       pathe: 2.0.3
       pkg-types: 2.3.0
-      tinyexec: 1.0.4
+      tinyexec: 1.2.3
 
   nypm@0.6.6:
     dependencies:
@@ -18711,10 +18740,7 @@ snapshots:
 
   tinyexec@1.0.4: {}
 
-  tinyexec@1.1.2: {}
-
-  tinyexec@1.2.3:
-    optional: true
+  tinyexec@1.2.3: {}
 
   tinyglobby@0.2.15:
     dependencies:
@@ -19208,7 +19234,7 @@ snapshots:
       picomatch: 4.0.4
       std-env: 4.0.0
       tinybench: 2.9.0
-      tinyexec: 1.1.2
+      tinyexec: 1.2.3
       tinyglobby: 0.2.15
       tinyrainbow: 3.1.0
       vite: 7.3.7(@types/node@25.8.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)

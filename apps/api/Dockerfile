@@ -14,6 +14,7 @@ COPY packages/typescript-config/package.json ./packages/typescript-config/
 COPY packages/email/package.json ./packages/email/
 COPY packages/libs/package.json ./packages/libs/
 COPY packages/permissions/package.json ./packages/permissions/
+COPY packages/importers/package.json ./packages/importers/
 COPY apps/api/package.json ./apps/api/
 
 # Install dependencies
@@ -24,6 +25,7 @@ COPY packages/typescript-config ./packages/typescript-config
 COPY packages/email ./packages/email
 COPY packages/libs ./packages/libs
 COPY packages/permissions ./packages/permissions
+COPY packages/importers ./packages/importers
 COPY apps/api ./apps/api
 
 # Build email package first
@@ -32,6 +34,10 @@ RUN pnpm run build
 
 # Build permissions package
 WORKDIR /app/packages/permissions
+RUN pnpm run build
+
+# Build importers package
+WORKDIR /app/packages/importers
 RUN pnpm run build
 
 # Fix TypeScript config and build API
@@ -57,6 +63,7 @@ COPY --from=builder /app/packages/typescript-config/package.json ./packages/type
 COPY --from=builder /app/packages/libs/package.json ./packages/libs/
 COPY --from=builder /app/packages/email/package.json ./packages/email/
 COPY --from=builder /app/packages/permissions/package.json ./packages/permissions/
+COPY --from=builder /app/packages/importers/package.json ./packages/importers/
 
 # Install production dependencies only
 RUN sed -i 's/"prepare": "husky"/"prepare": ""/g' package.json && \
@@ -69,6 +76,7 @@ COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/drizzle ./apps/api/drizzle
 COPY --from=builder /app/packages/email ./packages/email
 COPY --from=builder /app/packages/permissions ./packages/permissions
+COPY --from=builder /app/packages/importers ./packages/importers
 
 # Set environment variables
 ENV NODE_ENV=production

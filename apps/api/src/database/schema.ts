@@ -13,6 +13,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import type { ImportRunProject } from "../import/import-run-project";
 import type { SprintCompletionSnapshot } from "../sprint/completion-snapshot";
 import type { TaskRecurrence } from "../task/recurrence/schema";
 export const userTable = pgTable("user", {
@@ -56,8 +57,13 @@ export const sessionTable = pgTable(
     activeOrganizationId: text("active_organization_id"),
     activeTeamId: text("active_team_id"),
     impersonatedBy: text("impersonated_by"),
+    // OIDC "sid" of the provider session, for back-channel logout.
+    oidcSid: text("oidc_sid"),
   },
-  (table) => [index("session_userId_idx").on(table.userId)],
+  (table) => [
+    index("session_userId_idx").on(table.userId),
+    index("session_oidcSid_idx").on(table.oidcSid),
+  ],
 );
 
 export const accountTable = pgTable(
@@ -118,6 +124,36 @@ export const workspaceTable = pgTable("workspace", {
   metadata: text("metadata"),
   description: text("description"),
   createdAt: timestamp("created_at", { mode: "date" }).notNull(),
+  archivedAt: timestamp("archived_at", { mode: "date" }),
+  archivedBy: text("archived_by").references(() => userTable.id, {
+    onDelete: "set null",
+    onUpdate: "cascade",
+  }),
+});
+
+// Single row (id "instance") of settings an instance admin can change at
+// runtime; environment variables still act as hard overrides.
+export const instanceSettingsTable = pgTable("instance_settings", {
+  id: text("id").primaryKey().default("instance"),
+  instanceName: text("instance_name"),
+  registrationEnabled: boolean("registration_enabled").default(true).notNull(),
+  passwordRegistrationEnabled: boolean("password_registration_enabled")
+    .default(true)
+    .notNull(),
+  requireEmailVerification: boolean("require_email_verification")
+    .default(false)
+    .notNull(),
+  workspaceCreationRestricted: boolean("workspace_creation_restricted")
+    .default(false)
+    .notNull(),
+  disabledIntegrations: text("disabled_integrations")
+    .array()
+    .notNull()
+    .default(sql`'{}'`),
+  updatedAt: timestamp("updated_at", { mode: "date" })
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });
 
 export const workspaceUserTable = pgTable(
@@ -1498,4 +1534,40 @@ export const organizationRoleRelations = relations(
       references: [workspace.id],
     }),
   }),
+);
+
+export const importRunTable = pgTable(
+  "import_run",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaceTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    userId: text("user_id").references(() => userTable.id, {
+      onDelete: "set null",
+      onUpdate: "cascade",
+    }),
+    source: text("source").notNull(),
+    status: text("status").notNull().default("running"),
+    includeComments: boolean("include_comments").notNull().default(true),
+    message: text("message"),
+    projects: jsonb("projects").$type<ImportRunProject[]>().notNull(),
+    error: text("error"),
+    heartbeatAt: timestamp("heartbeat_at", { mode: "date" })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    finishedAt: timestamp("finished_at", { mode: "date" }),
+  },
+  (table) => [
+    index("import_run_workspace_created_idx").on(
+      table.workspaceId,
+      table.createdAt,
+    ),
+  ],
 );

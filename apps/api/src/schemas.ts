@@ -269,6 +269,9 @@ export const configSchema = v.object({
   hasCustomOAuth: v.nullable(v.boolean()),
   hasGuestAccess: v.nullable(v.boolean()),
   customOAuthLogoutUrl: v.nullable(v.string()),
+  instanceName: v.string(),
+  workspaceCreationRestricted: v.boolean(),
+  disabledIntegrations: v.array(v.string()),
 });
 
 export const workspaceDashboardSchema = v.object({

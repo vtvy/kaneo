@@ -1,6 +1,7 @@
 import { and, eq, gt } from "drizzle-orm";
 import db from "../database";
 import { invitationTable, userTable, workspaceTable } from "../database/schema";
+import { getInstanceSettings } from "../instance-settings/get-instance-settings";
 
 type RegistrationCheckResult = {
   allowed: boolean;
@@ -20,7 +21,9 @@ export async function checkRegistrationAllowed(
   email?: string,
   invitationId?: string,
 ): Promise<RegistrationCheckResult> {
-  const isRegistrationDisabled = process.env.DISABLE_REGISTRATION === "true";
+  // DISABLE_REGISTRATION=true wins over the database setting.
+  const isRegistrationDisabled = !(await getInstanceSettings())
+    .registrationEnabled;
 
   if (!isRegistrationDisabled) {
     return {

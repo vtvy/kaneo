@@ -4,7 +4,13 @@ import {
   Outlet,
   useLocation,
 } from "@tanstack/react-router";
-import { ScrollText, Users } from "lucide-react";
+import {
+  Activity,
+  Building2,
+  ScrollText,
+  SlidersHorizontal,
+  Users,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import useAuth from "@/components/providers/auth-provider/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -44,6 +50,21 @@ function RouteComponent() {
       title: t("settings:adminPanel.users"),
       url: "/dashboard/settings/admin/users",
       icon: Users,
+    },
+    {
+      title: t("settings:adminPanel.workspaces.title"),
+      url: "/dashboard/settings/admin/workspaces",
+      icon: Building2,
+    },
+    {
+      title: t("settings:adminPanel.instanceSettings.title"),
+      url: "/dashboard/settings/admin/settings",
+      icon: SlidersHorizontal,
+    },
+    {
+      title: t("settings:adminPanel.system.title"),
+      url: "/dashboard/settings/admin/system",
+      icon: Activity,
     },
     {
       title: t("settings:adminPanel.auditLog.title"),

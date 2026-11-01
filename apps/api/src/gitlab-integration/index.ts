@@ -389,7 +389,7 @@ const gitlabIntegration = new Hono<{
 
       return next();
     },
-    requireWorkspacePermission({ task: ["create"] }),
+    requireWorkspacePermission({ task: ["create", "update"] }),
     async (c) => {
       const { projectId } = c.req.valid("json");
       const result = await importGitlabIssues(projectId);

@@ -18,6 +18,7 @@ import {
   APIError,
   createAuthMiddleware,
   getSessionFromCtx,
+  isAPIError,
 } from "better-auth/api";
 import {
   admin as adminPlugin,
@@ -35,24 +36,44 @@ import type { AccessControl } from "better-auth/plugins/access";
 import type { UserWithAnonymous } from "better-auth/plugins/anonymous";
 import { config } from "dotenv-mono";
 import { count, eq, sql } from "drizzle-orm";
+import { assertBackchannelLogoutEnv } from "./backchannel-logout/config";
+import {
+  rememberSignInSessionId,
+  takeSignInSessionId,
+} from "./backchannel-logout/sign-in-session-id";
 import db, { schema } from "./database";
 import { publishEvent } from "./events";
+import { assertCanCreateWorkspace } from "./instance-settings/assert-can-create-workspace";
+import { emailVerificationContext } from "./instance-settings/email-verification-context";
+import { getInstanceSettings } from "./instance-settings/get-instance-settings";
 import { resolveAuthSecret } from "./utils/auth-secret";
 import { checkRegistrationAllowed } from "./utils/check-registration-allowed";
 import { checkWorkspaceName } from "./utils/check-workspace-name";
+import {
+  mapCustomOAuthProfileToUser,
+  parseManagedProfileFields,
+} from "./utils/custom-oauth-profile";
+import {
+  refreshManagedProfile,
+  rememberCustomOAuthProfile,
+  takeCustomOAuthProfile,
+} from "./utils/custom-oauth-sign-in";
 import { generateDemoName } from "./utils/generate-demo-name";
 import { getGithubSsoOAuthCredentials } from "./utils/github-sso-env";
 import { isCloud } from "./utils/is-cloud";
 import { isDisposableEmail } from "./utils/is-disposable-email";
 import { verifyTurnstile } from "./utils/verify-turnstile";
+import { assertOrganizationWritable } from "./workspace/archive/assert-organization-writable";
+import {
+  closeSocketsForApiKey,
+  closeSocketsForSession,
+  closeSocketsForUser,
+  recheckSocketAccess,
+} from "./ws";
 
 config();
 
 const githubSso = getGithubSsoOAuthCredentials();
-
-const isRegistrationDisabled = process.env.DISABLE_REGISTRATION === "true";
-const isPasswordRegistrationDisabled =
-  process.env.DISABLE_PASSWORD_REGISTRATION === "true";
 
 const apiUrl = process.env.KANEO_API_URL || "http://localhost:1337";
 const clientUrl = process.env.KANEO_CLIENT_URL || "http://localhost:5173";
@@ -103,6 +124,14 @@ const authSecret = (() => {
     process.exit(1);
   }
 })();
+
+try {
+  parseManagedProfileFields();
+  assertBackchannelLogoutEnv();
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+}
 
 async function getUserLocale(email: string) {
   const [user] = await db
@@ -363,11 +392,22 @@ export const auth = betterAuth({
       },
       allowUserToCreateOrganization: true,
       organizationHooks: {
-        beforeCreateOrganization: async ({ organization }) => {
+        beforeCreateOrganization: async ({ organization, user }) => {
+          await assertCanCreateWorkspace(user?.id);
           const check = checkWorkspaceName(organization.name ?? "");
           if (!check.ok) {
             throw new APIError("BAD_REQUEST", { message: check.reason });
           }
+        },
+        afterRemoveMember: async ({ member }) => {
+          await recheckSocketAccess(member.userId, {
+            workspaceId: member.organizationId,
+          });
+        },
+        afterUpdateMemberRole: async ({ member }) => {
+          await recheckSocketAccess(member.userId, {
+            workspaceId: member.organizationId,
+          });
         },
         afterCreateOrganization: async ({ organization, user }) => {
           // Seed the editable default roles for this workspace. Each
@@ -460,6 +500,10 @@ export const auth = betterAuth({
           responseType: process.env.CUSTOM_OAUTH_RESPONSE_TYPE || "code",
           discoveryUrl: process.env.CUSTOM_OAUTH_DISCOVERY_URL || "",
           pkce: process.env.CUSTOM_AUTH_PKCE !== "false",
+          mapProfileToUser: async (profile) => {
+            await rememberCustomOAuthProfile(profile);
+            return mapCustomOAuthProfileToUser(profile);
+          },
         },
       ],
     }),
@@ -485,9 +529,22 @@ export const auth = betterAuth({
     openAPI(),
   ],
   session: {
+    additionalFields: {
+      // The custom OIDC provider's session ID, for back-channel logout.
+      oidcSid: {
+        type: "string",
+        required: false,
+        input: false,
+        returned: false,
+      },
+    },
+    // Off so revocation is immediate: with the cookie cache a revoked or
+    // banned browser session kept working until the signed cache cookie
+    // expired (5 min). Without it each getSession is one indexed lookup of
+    // the session token joined to its user, which is small next to the
+    // per-request workspace/permission queries the API already makes.
     cookieCache: {
-      enabled: true,
-      maxAge: 5 * 60,
+      enabled: false,
     },
   },
   rateLimit: {
@@ -506,7 +563,52 @@ export const auth = betterAuth({
     },
   },
   databaseHooks: {
+    session: {
+      create: {
+        before: async (session, ctx) => {
+          // Custom OIDC sign-in: sync the managed profile fields of the
+          // linked user and store the provider session ID.
+          const profile = takeCustomOAuthProfile(ctx);
+          if (profile) {
+            await refreshManagedProfile(session.userId, profile).catch(
+              (error) => {
+                console.error(
+                  "Managed profile refresh failed:",
+                  error instanceof Error ? error.name : typeof error,
+                );
+              },
+            );
+          }
+          const oidcSid = takeSignInSessionId(ctx);
+          if (oidcSid) return { data: { oidcSid } };
+        },
+      },
+      // Every Better Auth session delete (sign-out, revoke-session(s),
+      // revoke-other-sessions, admin plugin, expiry) closes its sockets.
+      delete: {
+        after: async (session) => {
+          await closeSocketsForSession(session.id);
+        },
+      },
+    },
+    account: {
+      create: {
+        before: async (account, ctx) => {
+          rememberSignInSessionId(account.idToken, ctx);
+        },
+      },
+      update: {
+        before: async (account, ctx) => {
+          rememberSignInSessionId(account.idToken, ctx);
+        },
+      },
+    },
     user: {
+      delete: {
+        after: async (user) => {
+          await closeSocketsForUser(user.id);
+        },
+      },
       create: {
         before: async (user, ctx) => {
           // Accounts created by an instance admin (server-side only; the
@@ -626,6 +728,13 @@ export const auth = betterAuth({
         }
       }
 
+      // Archived workspaces are read-only, including Better Auth org writes.
+      await assertOrganizationWritable(ctx);
+
+      if (ctx.path === "/sign-in/email") {
+        return emailVerificationContext(ctx);
+      }
+
       const isSignUpPath =
         ctx.path === "/sign-up/email" ||
         ctx.path.startsWith("/callback/") ||
@@ -640,9 +749,14 @@ export const auth = betterAuth({
         .from(schema.userTable);
       const existingUserCount = userCountRows[0]?.value ?? 0;
       const isInstanceAdminSetup = existingUserCount === 0;
+      // Environment variables win over the database settings.
+      const instanceSettings = await getInstanceSettings();
 
       if (ctx.path === "/sign-up/email") {
-        if (isPasswordRegistrationDisabled && !isInstanceAdminSetup) {
+        if (
+          !instanceSettings.passwordRegistrationEnabled &&
+          !isInstanceAdminSetup
+        ) {
           throw new APIError("FORBIDDEN", {
             message:
               "Password registration is currently disabled. Please use a configured social or OIDC sign-in method.",
@@ -675,8 +789,8 @@ export const auth = betterAuth({
         }
       }
 
-      if (!isRegistrationDisabled || isInstanceAdminSetup) {
-        return;
+      if (instanceSettings.registrationEnabled || isInstanceAdminSetup) {
+        return emailVerificationContext(ctx);
       }
 
       const email =
@@ -696,8 +810,32 @@ export const auth = betterAuth({
           });
         }
       }
+      return emailVerificationContext(ctx);
     }),
     after: createAuthMiddleware(async (ctx) => {
+      if (
+        (ctx.path === "/api-key/delete" || ctx.path === "/api-key/update") &&
+        !isAPIError(ctx.context.returned)
+      ) {
+        const body = ctx.body as { keyId?: unknown; enabled?: unknown };
+        if (
+          typeof body?.keyId === "string" &&
+          (ctx.path === "/api-key/delete" || body.enabled === false)
+        ) {
+          await closeSocketsForApiKey(body.keyId);
+        }
+      }
+      if (
+        ctx.path === "/organization/leave" &&
+        !isAPIError(ctx.context.returned)
+      ) {
+        const userId = ctx.context.session?.user.id;
+        const workspaceId = (ctx.body as { organizationId?: unknown })
+          ?.organizationId;
+        if (userId && typeof workspaceId === "string") {
+          await recheckSocketAccess(userId, { workspaceId });
+        }
+      }
       if (ctx.path.startsWith("/sign-up") || ctx.path.startsWith("/sign-in")) {
         const newSession = ctx.context.newSession;
         if (newSession) {

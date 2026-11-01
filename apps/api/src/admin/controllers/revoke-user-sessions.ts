@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import db, { schema } from "../../database";
+import { closeSocketsForSession } from "../../ws";
 import type { AdminAuditRequest } from "../audit/admin-audit-request";
 import { recordAdminAction } from "../audit/record-admin-action";
 import { findTargetUser } from "../users/find-target-user";
@@ -13,7 +14,7 @@ export async function revokeUserSessions(
   userId: string,
   sessionId?: string,
 ) {
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const target = await findTargetUser(userId, tx);
     const revoked = await tx
       .delete(session)
@@ -40,8 +41,10 @@ export async function revokeUserSessions(
       tx,
     );
 
-    return { revoked: revoked.length };
+    return { revoked: revoked.length, sessionIds: revoked.map((r) => r.id) };
   });
+  await closeSocketsForSession(result.sessionIds);
+  return { revoked: result.revoked };
 }
 
 export default revokeUserSessions;

@@ -1,6 +1,7 @@
 import { and, count, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import db, { schema } from "../../database";
+import { closeSocketsForUser } from "../../ws";
 import type { AdminAuditRequest } from "../audit/admin-audit-request";
 import { recordAdminAction } from "../audit/record-admin-action";
 import {
@@ -13,7 +14,7 @@ import { findTargetUser } from "../users/find-target-user";
 export async function deleteUser(request: AdminAuditRequest, userId: string) {
   assertNotSelf(request.actorUserId, userId);
 
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     await lockAdminChanges(tx);
     const target = await findTargetUser(userId, tx, { forUpdate: true });
     await assertAdminRemovable(tx, request.actorUserId, target);
@@ -53,6 +54,8 @@ export async function deleteUser(request: AdminAuditRequest, userId: string) {
 
     return { id: target.id, deleted: true };
   });
+  await closeSocketsForUser(result.id);
+  return result;
 }
 
 export default deleteUser;

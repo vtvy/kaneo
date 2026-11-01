@@ -1,13 +1,38 @@
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { isBanActive } from "../admin/users/is-ban-active";
 import { auth } from "../auth";
 import { verifyApiKey } from "./verify-api-key";
+
+type SessionResult = Awaited<ReturnType<typeof auth.api.getSession>>;
+
+/**
+ * Sessions are read from the database on every request (cookieCache is off in
+ * auth.ts), so this user row is current: a ban applies to the very next
+ * request even if a session row somehow survived it.
+ */
+function rejectBanned(result: SessionResult): SessionResult {
+  // The admin plugin adds these columns; the inferred user type omits them.
+  const user = result?.user as
+    | { banned?: boolean | null; banExpires?: Date | string | null }
+    | undefined;
+  if (
+    user &&
+    isBanActive({
+      banned: user.banned ?? null,
+      banExpires: user.banExpires ? new Date(user.banExpires) : null,
+    })
+  ) {
+    return null;
+  }
+  return result;
+}
 
 async function getSessionFromBearerOnlyHeaders(c: Context) {
   const headers = new Headers(c.req.raw.headers);
   headers.delete("cookie");
 
-  return auth.api.getSession({ headers });
+  return rejectBanned(await auth.api.getSession({ headers }));
 }
 
 function parseBearerToken(authHeader: string | undefined): {
@@ -65,9 +90,11 @@ export async function authenticateApiRequest(c: Context): Promise<void> {
     throw new HTTPException(401, { message: "Unauthorized" });
   }
 
-  const sessionResult = await auth.api.getSession({
-    headers: c.req.raw.headers,
-  });
+  const sessionResult = rejectBanned(
+    await auth.api.getSession({
+      headers: c.req.raw.headers,
+    }),
+  );
   c.set("user", sessionResult?.user ?? null);
   c.set("session", sessionResult?.session ?? null);
   c.set("userId", sessionResult?.user?.id ?? "");
@@ -102,9 +129,11 @@ export async function resolveAssetBearerOrCookie(c: Context): Promise<{
     throw new HTTPException(401, { message: "Unauthorized" });
   }
 
-  const sessionResult = await auth.api.getSession({
-    headers: c.req.raw.headers,
-  });
+  const sessionResult = rejectBanned(
+    await auth.api.getSession({
+      headers: c.req.raw.headers,
+    }),
+  );
   if (!sessionResult?.user) {
     throw new HTTPException(401, { message: "Unauthorized" });
   }

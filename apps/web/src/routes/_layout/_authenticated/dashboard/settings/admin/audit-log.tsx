@@ -44,6 +44,13 @@ const ACTION_FILTERS = [
   "user.sessions_revoked",
   "user.api_key_revoked",
   "user.api_keys_revoked",
+  "instance.settings_updated",
+  "email.smtp_verified",
+  "email.test_sent",
+  "email.test_failed",
+  "workspace.archived",
+  "workspace.restored",
+  "workspace.deleted",
 ] as const;
 
 function formatDateTime(value: string) {

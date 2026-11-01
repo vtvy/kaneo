@@ -107,6 +107,16 @@ export function getNotificationTitle(
           ...eventData,
           defaultValue: notification.title ?? notification.type,
         });
+      case "sprint_started":
+        return t("notifications:events.sprint_started.title", {
+          ...eventData,
+          defaultValue: notification.title ?? notification.type,
+        });
+      case "sprint_ended":
+        return t("notifications:events.sprint_ended.title", {
+          ...eventData,
+          defaultValue: notification.title ?? notification.type,
+        });
       default:
         break;
     }
@@ -179,6 +189,16 @@ export function getNotificationContent(
               ...eventData,
               defaultValue: notification.content ?? "",
             });
+      case "sprint_started":
+        return t("notifications:events.sprint_started.content", {
+          ...eventData,
+          defaultValue: notification.content ?? "",
+        });
+      case "sprint_ended":
+        return t("notifications:events.sprint_ended.content", {
+          ...eventData,
+          defaultValue: notification.content ?? "",
+        });
       default:
         break;
     }
