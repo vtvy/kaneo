@@ -79,6 +79,7 @@ import {
   CustomFieldCell,
   CustomFieldColumnsMenu,
   CustomFieldFilterChips,
+  CustomFieldFilterStatus,
   CustomFieldFilterSubmenus,
   useBacklogCustomFields,
 } from "./custom-field-columns";
@@ -226,6 +227,7 @@ function BacklogTable({
     fields: customFields,
     valuesByTask,
     valuesLoaded,
+    valuesStatus,
   } = useBacklogCustomFields(
     projectId,
     customFieldColumns.length > 0 || hasCustomFieldFilters,
@@ -1085,6 +1087,10 @@ function BacklogTable({
                 fields={customFields}
                 filters={customFieldFilters}
                 onClear={clearCustomFieldFilter}
+              />
+              <CustomFieldFilterStatus
+                active={hasCustomFieldFilters}
+                status={valuesStatus}
               />
             </div>
           </div>
