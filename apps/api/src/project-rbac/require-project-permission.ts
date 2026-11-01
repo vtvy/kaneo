@@ -107,6 +107,17 @@ async function projectIdFromComment(id: string): Promise<string | undefined> {
   return row?.taskId ? projectIdFromTask(row.taskId) : undefined;
 }
 
+async function projectIdFromCustomField(
+  id: string,
+): Promise<string | undefined> {
+  const [row] = await db
+    .select({ projectId: schema.customFieldDefinitionTable.projectId })
+    .from(schema.customFieldDefinitionTable)
+    .where(eq(schema.customFieldDefinitionTable.id, id))
+    .limit(1);
+  return row?.projectId;
+}
+
 export const projectPermission = {
   fromParam: (perms: ProjectPermissionMap, key = "projectId") =>
     requireProjectPermission(perms, (c) => c.req.param(key)),
@@ -176,5 +187,11 @@ export const projectPermission = {
     requireProjectPermission(perms, (c) => {
       const id = c.req.param(key);
       return id ? projectIdFromTimeEntry(id) : undefined;
+    }),
+
+  fromCustomField: (perms: ProjectPermissionMap, key = "id") =>
+    requireProjectPermission(perms, (c) => {
+      const id = c.req.param(key);
+      return id ? projectIdFromCustomField(id) : undefined;
     }),
 };

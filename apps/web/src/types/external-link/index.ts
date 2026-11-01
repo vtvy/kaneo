@@ -5,7 +5,14 @@ export type ExternalLinkMetadata = {
   draft?: boolean;
   branch?: string;
   author?: string;
-  createdFrom?: "github" | "kaneo" | "gitea" | "gitea-import" | "github-import";
+  createdFrom?:
+    | "github"
+    | "kaneo"
+    | "gitea"
+    | "gitea-import"
+    | "github-import"
+    | "gitlab"
+    | "gitlab-import";
   lastCommit?: {
     sha: string;
     message: string;
@@ -28,6 +35,5 @@ export type ExternalLink = {
   integration?: {
     id: string;
     type: string;
-    config: string;
   };
 };

@@ -13,6 +13,8 @@ export type TaskCreatedEvent = {
   priority: string | null;
   status: string;
   number: number;
+  /** When true, the GitLab plugin creates a linked issue (opt-in toggle). */
+  createGitlabIssue?: boolean;
 };
 
 export type TaskStatusChangedEvent = {

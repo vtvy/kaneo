@@ -6,6 +6,8 @@ import {
   assetTable,
   columnTable,
   commentTable,
+  customFieldDefinitionTable,
+  customFieldValueTable,
   documentTable,
   externalLinkTable,
   folderTable,
@@ -123,6 +125,7 @@ export const projectTableRelations = relations(
     notificationWorkspaceProjects: many(userNotificationWorkspaceProjectTable),
     members: many(projectMemberTable),
     roles: many(projectRoleTable),
+    customFields: many(customFieldDefinitionTable),
   }),
 );
 
@@ -180,6 +183,7 @@ export const taskTableRelations = relations(taskTable, ({ one, many }) => ({
   externalLinks: many(externalLinkTable),
   sourceRelations: many(taskRelationTable, { relationName: "sourceTask" }),
   targetRelations: many(taskRelationTable, { relationName: "targetTask" }),
+  customFieldValues: many(customFieldValueTable),
   remindersSent: many(taskReminderSentTable),
   involvements: many(taskInvolvementTable),
   sprintMemberships: many(taskSprintTable),
@@ -545,3 +549,28 @@ export const documentTableRelations = relations(documentTable, ({ one }) => ({
     references: [userTable.id],
   }),
 }));
+
+export const customFieldDefinitionTableRelations = relations(
+  customFieldDefinitionTable,
+  ({ one, many }) => ({
+    project: one(projectTable, {
+      fields: [customFieldDefinitionTable.projectId],
+      references: [projectTable.id],
+    }),
+    values: many(customFieldValueTable),
+  }),
+);
+
+export const customFieldValueTableRelations = relations(
+  customFieldValueTable,
+  ({ one }) => ({
+    field: one(customFieldDefinitionTable, {
+      fields: [customFieldValueTable.fieldId],
+      references: [customFieldDefinitionTable.id],
+    }),
+    task: one(taskTable, {
+      fields: [customFieldValueTable.taskId],
+      references: [taskTable.id],
+    }),
+  }),
+);

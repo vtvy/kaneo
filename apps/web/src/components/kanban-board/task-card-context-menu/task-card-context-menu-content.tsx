@@ -29,6 +29,7 @@ import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-
 import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { getColumnIcon } from "@/lib/column";
+import { copyText } from "@/lib/copy-text";
 import { getPriorityLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
 import { taskLink } from "@/lib/short-task-link";
@@ -157,7 +158,7 @@ export default function TaskCardContextMenuContent({
   }, [workspaceUsers]);
 
   const handleCopyTaskLink = () => {
-    navigator.clipboard.writeText(
+    copyText(
       taskLink({
         workspaceId: taskCardContext.worskpaceId,
         workspaceSlug:

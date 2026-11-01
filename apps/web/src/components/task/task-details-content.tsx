@@ -13,6 +13,7 @@ import useGetProject from "@/hooks/queries/project/use-get-project";
 import useGetTask from "@/hooks/queries/task/use-get-task";
 import useGetTaskRelations from "@/hooks/queries/task-relation/use-get-task-relations";
 import type { ExternalLink } from "@/types/external-link";
+import PushToGitlabButton from "./push-to-gitlab-button";
 import TaskDescription from "./task-description";
 import TaskRelations from "./task-relations";
 import TaskSprintHistory from "./task-sprint-history";
@@ -80,6 +81,7 @@ export default function TaskDetailsContent({
         <TaskSprintHistory taskId={taskId} />
         <TaskTitle taskId={taskId} />
         <TaskDescription taskId={taskId} />
+        <PushToGitlabButton taskId={taskId} projectId={projectId} />
       </div>
       {!isLoadingExternalLinks && externalLinks.length > 0 && (
         <div className="mt-4">

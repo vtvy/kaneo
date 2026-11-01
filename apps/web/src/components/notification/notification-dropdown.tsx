@@ -50,7 +50,7 @@ function getEventDataRecord(
   return eventData as Record<string, unknown>;
 }
 
-function getNotificationTitle(
+export function getNotificationTitle(
   notification: Notification,
   t: (key: string, options?: Record<string, unknown>) => string,
 ) {
@@ -115,7 +115,7 @@ function getNotificationTitle(
   return notification.title ?? notification.type;
 }
 
-function getNotificationContent(
+export function getNotificationContent(
   notification: Notification,
   t: (key: string, options?: Record<string, unknown>) => string,
 ) {

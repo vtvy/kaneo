@@ -3,6 +3,7 @@ import {
   ChevronRight,
   FolderGit,
   Github,
+  Gitlab,
   GitMerge,
   GitPullRequest,
 } from "lucide-react";
@@ -27,6 +28,14 @@ function isGiteaResourceLink(link: ExternalLink) {
   }
   const from = link.metadata?.createdFrom;
   return from === "gitea" || from === "gitea-import";
+}
+
+function isGitlabResourceLink(link: ExternalLink) {
+  if (link.integration?.type === "gitlab") {
+    return true;
+  }
+  const from = link.metadata?.createdFrom;
+  return from === "gitlab" || from === "gitlab-import";
 }
 
 export function ExternalLinksAccordion({
@@ -120,16 +129,18 @@ export function ExternalLinksAccordion({
         </Button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="flex flex-col gap-2 mt-2">
+        <div className="flex flex-col gap-1.5 mt-2">
           {linksWithoutRedundantBranches.map((link) => (
             <a
               key={link.id}
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center gap-3 py-2 px-3 rounded-md hover:bg-accent/50 transition-colors"
+              className="group flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent/50 transition-colors"
             >
-              {isGiteaResourceLink(link) ? (
+              {isGitlabResourceLink(link) ? (
+                <Gitlab className="size-4 flex-shrink-0 text-muted-foreground" />
+              ) : isGiteaResourceLink(link) ? (
                 <FolderGit className="size-4 flex-shrink-0 text-muted-foreground" />
               ) : (
                 <Github className="size-4 flex-shrink-0 text-muted-foreground" />

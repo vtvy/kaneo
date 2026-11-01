@@ -10,7 +10,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import useCompleteSprint from "@/hooks/mutations/sprint/use-complete-sprint";
+import {
+  getSprintCompletionReport,
+  type SprintCompletionReport,
+} from "@/lib/sprint";
 import { toast } from "@/lib/toast";
 import type { Sprint } from "@/types/sprint";
 
@@ -32,21 +37,25 @@ function CompleteSprintModal({
 }: CompleteSprintModalProps) {
   const { t } = useTranslation();
   const [target, setTarget] = useState<string>(BACKLOG_VALUE);
+  const [report, setReport] = useState<SprintCompletionReport | null>(null);
   const { mutateAsync: completeSprint, isPending } = useCompleteSprint();
 
   useEffect(() => {
-    if (open) setTarget(BACKLOG_VALUE);
+    if (open) {
+      setTarget(BACKLOG_VALUE);
+      setReport(null);
+    }
   }, [open]);
 
   const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await completeSprint({
+      const completed = await completeSprint({
         id: sprint.id,
         targetSprintId: target === BACKLOG_VALUE ? null : target,
       });
       toast.success(t("common:modals.completeSprint.completedToast"));
-      onClose();
+      setReport(getSprintCompletionReport(completed));
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -55,6 +64,74 @@ function CompleteSprintModal({
       );
     }
   };
+
+  if (report) {
+    return (
+      <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {t("common:modals.sprintReport.title", { name: sprint.name })}
+            </DialogTitle>
+            <DialogDescription>
+              {t("common:modals.sprintReport.description")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 px-6">
+            <div className="flex items-center gap-2">
+              <Progress value={report.percentDone} className="flex-1" />
+              <span className="text-muted-foreground text-xs tabular-nums">
+                {report.percentDone}%
+              </span>
+            </div>
+            <dl className="grid grid-cols-3 gap-2 text-sm">
+              {[
+                {
+                  label: t("common:modals.sprintReport.done"),
+                  tasks: report.doneTasks,
+                  points: report.donePoints,
+                },
+                {
+                  label: t("common:modals.sprintReport.carriedOver"),
+                  tasks: report.carriedOverTasks,
+                  points: report.carriedOverPoints,
+                },
+                {
+                  label: t("common:modals.sprintReport.total"),
+                  tasks: report.totalTasks,
+                  points: report.totalPoints,
+                },
+              ].map((row) => (
+                <div
+                  key={row.label}
+                  className="rounded-lg border border-border px-3 py-2"
+                >
+                  <dt className="text-muted-foreground text-xs">{row.label}</dt>
+                  <dd className="font-medium text-foreground tabular-nums">
+                    {t("common:modals.sprintReport.tasks", {
+                      count: row.tasks,
+                    })}
+                  </dd>
+                  <dd className="text-muted-foreground text-xs tabular-nums">
+                    {t("common:modals.sprintReport.points", {
+                      count: row.points,
+                    })}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" size="sm" onClick={onClose}>
+              {t("common:actions.close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>

@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { copyCustomFieldValues } from "../../custom-field/task-values";
 import db from "../../database";
 import { labelTable, projectTable, taskTable } from "../../database/schema";
 import createTask from "./create-task";
@@ -71,6 +72,12 @@ async function duplicateTask({
       })),
     );
   }
+
+  await copyCustomFieldValues(
+    sourceTask.id,
+    duplicated.id,
+    sourceTask.projectId,
+  );
 
   return duplicated;
 }

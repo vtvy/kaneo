@@ -33,6 +33,7 @@ import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { cn } from "@/lib/cn";
 import { getColumnIcon } from "@/lib/column";
+import { copyText } from "@/lib/copy-text";
 import { dueDateStatusColors, getDueDateStatus } from "@/lib/due-date-status";
 import { formatDateShort } from "@/lib/format";
 import { getPriorityLabel, getStatusDisplayLabel } from "@/lib/i18n/domain";
@@ -40,6 +41,7 @@ import { getPriorityIcon } from "@/lib/priority";
 import { taskLink } from "@/lib/short-task-link";
 import { toast } from "@/lib/toast";
 import TaskSprintPopover from "../sprint/task-sprint-popover";
+import TaskCustomFields from "./custom-fields/task-custom-fields";
 import TaskAssigneePopover from "./task-assignee-popover";
 import TaskDueDatePopover from "./task-due-date-popover";
 import TaskLabelsPopover from "./task-labels-popover";
@@ -124,7 +126,7 @@ export default function TaskPropertiesSidebar({
   const currentSprint = sprints.find((sprint) => sprint.id === task?.sprintId);
 
   const handleCopyTaskLink = () => {
-    navigator.clipboard.writeText(
+    copyText(
       taskLink({
         workspaceId,
         workspaceSlug:
@@ -145,7 +147,7 @@ export default function TaskPropertiesSidebar({
       taskNumber,
       task?.title,
     );
-    navigator.clipboard.writeText(branchName);
+    copyText(branchName);
     toast.message(t("tasks:properties.copyTaskBranch"));
   };
 
@@ -935,6 +937,8 @@ export default function TaskPropertiesSidebar({
             </div>
           </div>
         </div>
+
+        {task && <TaskCustomFields task={task} className="px-3 py-2" />}
       </div>
     </div>
   );

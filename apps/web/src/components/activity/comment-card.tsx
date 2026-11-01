@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Github, Pencil } from "lucide-react";
+import { ExternalLink, FolderGit, Github, Gitlab, Pencil } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import CommentEditor from "@/components/activity/comment-editor";
@@ -21,6 +21,18 @@ import useUpdateComment from "@/hooks/mutations/comment/use-update-comment";
 import { useMentionMembers } from "@/hooks/queries/workspace-users/use-mention-members";
 import { formatDateTime, formatRelativeTime } from "@/lib/format";
 import { toast } from "@/lib/toast";
+
+// Comments mirrored from a git forge show where they came from.
+const forges = {
+  github: { name: "GitHub", Icon: Github },
+  gitea: { name: "Gitea", Icon: FolderGit },
+  gitlab: { name: "GitLab", Icon: Gitlab },
+} as const;
+
+function forgeOf(externalSource: string | null | undefined) {
+  if (!externalSource) return null;
+  return forges[externalSource as keyof typeof forges] ?? null;
+}
 
 type CommentCardProps = {
   commentId: string;
@@ -57,9 +69,12 @@ export default function CommentCard({
   const mentionMembers = useMentionMembers(isEditing ? projectId : undefined);
 
   const canEdit = currentUser?.id === user?.id;
-  const isFromGitHub = externalSource === "github";
+  const forge = forgeOf(externalSource);
+  // Gitea and GitLab profile URLs depend on the instance.
   const githubProfileUrl =
-    isFromGitHub && user?.name ? `https://github.com/${user.name}` : null;
+    externalSource === "github" && user?.name
+      ? `https://github.com/${user.name}`
+      : null;
   const commentUrl = externalUrl || null;
   const fullTimestamp = formatDateTime(createdAt);
 
@@ -142,11 +157,11 @@ export default function CommentCard({
                       {user.email}
                     </p>
                   )}
-                  {isFromGitHub && (
+                  {forge && (
                     <div className="mt-1.5 flex items-center gap-1">
-                      <Github className="size-3 text-muted-foreground" />
+                      <forge.Icon className="size-3 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">
-                        {t("activity:comment.github")}
+                        {forge.name}
                       </span>
                     </div>
                   )}
@@ -186,7 +201,7 @@ export default function CommentCard({
             </TooltipContent>
           </Tooltip>
 
-          {commentUrl && (
+          {commentUrl && forge && (
             <>
               <span className="text-xs text-muted-foreground/40">·</span>
               <a
@@ -195,8 +210,8 @@ export default function CommentCard({
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
-                <Github className="size-3" />
-                {t("activity:comment.commentedOnGithub")}
+                <forge.Icon className="size-3" />
+                {t("activity:comment.commentedOnForge", { forge: forge.name })}
               </a>
             </>
           )}

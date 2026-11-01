@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import type { KaneoClient } from "../kaneo/client.js";
+import { encodeCustomFieldValue } from "../kaneo/custom-field-value.js";
 import { buildFullTaskUpdateBody } from "../kaneo/task-helpers.js";
 import { errorResult, textResult } from "../utils/mcp-result.js";
 
@@ -224,13 +225,71 @@ export function registerTools(
   server.registerTool(
     "get_task",
     {
-      description: "Get a task by ID.",
+      description:
+        "Get a task by ID. Custom field values are not included; use get_task_custom_field_values.",
       inputSchema: z.object({ taskId: nonEmptyString }),
     },
     async (args) =>
       run(() =>
         client.json(`/api/task/${encodeURIComponent(args.taskId)}`, {
           method: "GET",
+        }),
+      ),
+  );
+
+  server.registerTool(
+    "list_project_custom_fields",
+    {
+      description:
+        "List a project's custom field definitions: id, name, type (text, number, date, dropdown, boolean, multiselect), required, options, hiddenOptions, and defaultValue.",
+      inputSchema: z.object({ projectId: nonEmptyString }),
+    },
+    async (args) =>
+      run(() =>
+        client.json(
+          `/api/custom-field/project/${encodeURIComponent(args.projectId)}`,
+        ),
+      ),
+  );
+
+  server.registerTool(
+    "get_task_custom_field_values",
+    {
+      description:
+        "List a task's custom field values with each field's name, type, and options. Fields without a value are omitted. Multiselect values are JSON array strings.",
+      inputSchema: z.object({ taskId: nonEmptyString }),
+    },
+    async (args) =>
+      run(() =>
+        client.json(
+          `/api/custom-field/task/${encodeURIComponent(args.taskId)}`,
+        ),
+      ),
+  );
+
+  server.registerTool(
+    "set_task_custom_field_value",
+    {
+      description:
+        "Set or clear one custom field value on a task. Get fieldId from list_project_custom_fields. Pass dates as YYYY-MM-DD, a dropdown value as one of its options, multiselect values as an array of options, and null to clear the value (required fields can't be cleared; hidden options can't be picked).",
+      inputSchema: z.object({
+        taskId: nonEmptyString,
+        fieldId: nonEmptyString,
+        value: z
+          .union([z.string(), z.number(), z.boolean(), z.array(z.string())])
+          .nullable()
+          .describe("New value, or null to clear it"),
+      }),
+    },
+    async (args) =>
+      run(() =>
+        client.json("/api/custom-field/value", {
+          method: "PUT",
+          body: JSON.stringify({
+            taskId: args.taskId,
+            fieldId: args.fieldId,
+            value: encodeCustomFieldValue(args.value),
+          }),
         }),
       ),
   );

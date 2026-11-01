@@ -12,6 +12,7 @@ import useUpdateProject from "@/hooks/mutations/project/use-update-project";
 import useGetProject from "@/hooks/queries/project/use-get-project";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
+import { copyText } from "@/lib/copy-text";
 import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute(
@@ -142,13 +143,11 @@ function RouteComponent() {
                   size="sm"
                   onClick={() => {
                     if (!publicUrl) return;
-                    navigator.clipboard
-                      .writeText(publicUrl)
-                      .then(() =>
-                        toast.success(
-                          t("settings:projectVisibility.copiedToast"),
-                        ),
-                      );
+                    copyText(publicUrl).then(() =>
+                      toast.success(
+                        t("settings:projectVisibility.copiedToast"),
+                      ),
+                    );
                   }}
                 >
                   {t("settings:projectVisibility.copy")}

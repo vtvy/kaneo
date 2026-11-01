@@ -10,6 +10,7 @@ import createActivity from "./controllers/create-activity";
 import createComment from "./controllers/create-comment";
 import deleteComment from "./controllers/delete-comment";
 import getActivities from "./controllers/get-activities";
+import getWorkspaceActivities from "./controllers/get-workspace-activities";
 import updateComment from "./controllers/update-comment";
 
 const activity = new Hono<{
@@ -17,6 +18,36 @@ const activity = new Hono<{
     userId: string;
   };
 }>()
+  .get(
+    "/workspace/:workspaceId",
+    describeRoute({
+      operationId: "getWorkspaceActivities",
+      tags: ["Activity"],
+      description:
+        "Get the 20 most recent task events from the last 30 days across the active workspace projects the caller can read, newest first. Each event carries a short plain-text excerpt instead of its full content.",
+      responses: {
+        200: {
+          description: "Recent activity in the workspace",
+          content: {
+            "application/json": { schema: resolver(v.array(v.any())) },
+          },
+        },
+      },
+    }),
+    validator(
+      "param",
+      v.object({ workspaceId: v.pipe(v.string(), v.minLength(1)) }),
+    ),
+    workspaceAccess.fromParam("workspaceId"),
+    async (c) => {
+      const { workspaceId } = c.req.valid("param");
+      const activities = await getWorkspaceActivities(
+        workspaceId,
+        c.get("userId"),
+      );
+      return c.json(activities);
+    },
+  )
   .get(
     "/:taskId",
     describeRoute({

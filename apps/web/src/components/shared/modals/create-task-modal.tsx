@@ -40,12 +40,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import pushTaskToGitlab from "@/fetchers/task/push-task-to-gitlab";
 import useCreateLabel from "@/hooks/mutations/label/use-create-label";
 import useAssignTaskToSprint from "@/hooks/mutations/sprint/use-assign-task-to-sprint";
 import useCreateTask from "@/hooks/mutations/task/use-create-task";
 import { useDeleteTask } from "@/hooks/mutations/task/use-delete-task";
 import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
 import { useGetColumns } from "@/hooks/queries/column/use-get-columns";
+import useGetGitlabIntegration from "@/hooks/queries/gitlab-integration/use-get-gitlab-integration";
 import useGetLabelsByWorkspace from "@/hooks/queries/label/use-get-labels-by-workspace";
 import useGetSprintsByProject from "@/hooks/queries/sprint/use-get-sprints-by-project";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
@@ -54,6 +56,10 @@ import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
 import { getColumnIcon } from "@/lib/column";
+import {
+  getCreateTaskPushGitlabPref,
+  setCreateTaskPushGitlabPref,
+} from "@/lib/create-task-gitlab-pref";
 import { formatDateMedium } from "@/lib/format";
 import { getStatusDisplayLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
@@ -205,6 +211,7 @@ function CreateTaskModal({
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [createMore, setCreateMore] = useState(false);
+  const [pushToGitlab, setPushToGitlab] = useState(false);
   const [labels, setLabels] = useState<Label[]>([]);
   const [draftTask, setDraftTask] = useState<Task | null>(null);
 
@@ -227,6 +234,10 @@ function CreateTaskModal({
 
   const { data: projectColumns = [] } = useGetColumns(resolvedProjectId);
   const { data: sprints = [] } = useGetSprintsByProject(resolvedProjectId);
+  const { data: gitlabIntegration } =
+    useGetGitlabIntegration(resolvedProjectId);
+  // Creating a GitLab issue is opt-in, and only offered when connected.
+  const showGitlabToggle = gitlabIntegration?.isActive === true;
   // New tasks default to the project's current sprint (the one current by date).
   const currentSprint = useMemo(() => getCurrentSprint(sprints), [sprints]);
   const selectableSprints = useMemo(
@@ -294,6 +305,11 @@ function CreateTaskModal({
     setSprintId(currentSprint?.id ?? null);
   }, [open, currentSprint?.id]);
 
+  useEffect(() => {
+    if (!open) return;
+    setPushToGitlab(showGitlabToggle ? getCreateTaskPushGitlabPref() : false);
+  }, [open, showGitlabToggle]);
+
   const handleClose = () => {
     const shouldDeleteDraft = draftTask && !didSubmitRef.current;
 
@@ -307,6 +323,7 @@ function CreateTaskModal({
     setStartDate(undefined);
     setDueDate(undefined);
     setCreateMore(false);
+    setPushToGitlab(showGitlabToggle ? getCreateTaskPushGitlabPref() : false);
     setLabels([]);
     setLabelsStep("select");
     setSearchValue("");
@@ -442,6 +459,7 @@ function CreateTaskModal({
     try {
       const taskStatus = selectedStatus || null;
       didSubmitRef.current = true;
+      const shouldPushGitlab = showGitlabToggle && pushToGitlab;
 
       const savedTask = draftTask
         ? normalizeTask(
@@ -470,8 +488,19 @@ function CreateTaskModal({
               status: taskStatus,
               points,
               sprintId,
+              createGitlabIssue: shouldPushGitlab,
             }),
           );
+
+      // A draft task already exists, so the create-time flag never applied.
+      if (shouldPushGitlab && draftTask) {
+        try {
+          await pushTaskToGitlab(savedTask.id);
+        } catch (error) {
+          console.error("Failed to push draft task to GitLab:", error);
+          toast.error(t("common:modals.createTask.pushGitlabError"));
+        }
+      }
 
       // A draft (created early for image uploads) has no sprint yet and the
       // full update route does not carry sprintId, so assign it separately.
@@ -1273,7 +1302,7 @@ function CreateTaskModal({
           </div>
 
           <DialogFooter className="flex-shrink-0 border-t border-border bg-background px-6 py-4">
-            <div className="flex items-center gap-3 mr-auto">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mr-auto">
               <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
                 <input
                   type="checkbox"
@@ -1283,6 +1312,20 @@ function CreateTaskModal({
                 />
                 {t("common:modals.createTask.createMore")}
               </label>
+              {showGitlabToggle ? (
+                <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={pushToGitlab}
+                    onChange={(e) => {
+                      setPushToGitlab(e.target.checked);
+                      setCreateTaskPushGitlabPref(e.target.checked);
+                    }}
+                    className="rounded border-border bg-background text-primary focus:ring-ring focus:ring-offset-0 focus:ring-2 transition-all"
+                  />
+                  {t("common:modals.createTask.pushToGitlab")}
+                </label>
+              ) : null}
             </div>
 
             <Button

@@ -2,6 +2,7 @@ import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { copyText } from "@/lib/copy-text";
 import { toast } from "@/lib/toast";
 
 export function CopyUrlButton() {
@@ -10,7 +11,7 @@ export function CopyUrlButton() {
 
   const handleCopyUrl = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await copyText(window.location.href);
       setCopied(true);
       toast.success(t("publicProject:copyUrl.successToast"));
       setTimeout(() => setCopied(false), 2000);
