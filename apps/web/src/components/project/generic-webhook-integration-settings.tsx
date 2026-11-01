@@ -20,8 +20,10 @@ import {
   useDeleteGenericWebhookIntegration,
   useUpdateGenericWebhookIntegration,
 } from "@/hooks/mutations/generic-webhook-integration/use-generic-webhook-integration";
+import useGetConfig from "@/hooks/queries/config/use-get-config";
 import useGetGenericWebhookIntegration from "@/hooks/queries/generic-webhook-integration/use-get-generic-webhook-integration";
 import { toast } from "@/lib/toast";
+import { DisabledIntegration } from "./disabled-integration";
 
 type GenericWebhookIntegrationFormValues = {
   webhookUrl: string;
@@ -78,6 +80,8 @@ export function GenericWebhookIntegrationSettings({
   projectId: string;
 }) {
   const { t } = useTranslation();
+  const { data: config } = useGetConfig();
+  const disabled = config?.disabledIntegrations.includes("generic-webhook");
   const schema = React.useMemo(
     () =>
       z.object({
@@ -241,6 +245,15 @@ export function GenericWebhookIntegrationSettings({
       </div>
     );
   }
+
+  if (disabled)
+    return (
+      <DisabledIntegration
+        connected={Boolean(integration)}
+        pending={isDeleting}
+        onDisconnect={handleDelete}
+      />
+    );
 
   return (
     <div className="space-y-4">

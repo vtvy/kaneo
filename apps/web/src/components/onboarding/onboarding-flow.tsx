@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import useCreateWorkspace from "@/hooks/queries/workspace/use-create-workspace";
+import { useCanCreateWorkspace } from "@/hooks/use-can-create-workspace";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "@/lib/toast";
 
@@ -39,6 +40,7 @@ const fadeTransition = {
 
 export function OnboardingFlow() {
   const { t } = useTranslation();
+  const canCreateWorkspace = useCanCreateWorkspace();
   const [step, setStep] = useState<OnboardingStep>("workspace");
   const [createdWorkspaceName, setCreatedWorkspaceName] = useState("");
   const navigate = useNavigate();
@@ -97,6 +99,13 @@ export function OnboardingFlow() {
       );
     }
   };
+
+  if (!canCreateWorkspace)
+    return (
+      <p className="p-6 text-muted-foreground">
+        {t("workspace:create.restricted")}
+      </p>
+    );
 
   const renderWorkspaceStep = () => (
     <motion.div

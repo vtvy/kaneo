@@ -236,3 +236,13 @@ If you're still experiencing issues:
 5. Consult the [official documentation](https://kaneo.app/docs) for detailed guides and troubleshooting
 
 For the most up-to-date information on environment variables and configuration, always refer to the [official documentation](https://kaneo.app/docs/core/installation/environment-variables).
+
+## Google Drive documents and feedback
+
+Project Settings → Integrations → Google Drive accepts a Google OAuth web client ID and secret. Enable the Drive API in that Google project, configure the OAuth consent screen, and register the exact callback URL displayed by Kaneo. It is derived from `KANEO_API_URL`; per-user redirect overrides are not accepted. The integration requests Drive and email scopes. Owners must both manage project documents and manage workspace settings to configure a connection. After connecting, select the Drive folder the project may browse. Existing files outside that folder cannot be linked or downloaded through Kaneo.
+
+Uploads can target the server or the selected Drive folder. Linking an existing Drive file never transfers ownership: purging a link preserves the original. Files uploaded by Kaneo are removed from Drive on permanent deletion while connection credentials remain available. Disconnecting preserves Drive files. Google Docs, Sheets and Slides downloads are exported as PDF.
+
+Client secrets and refresh tokens are encrypted at rest with AES-256-GCM, using `DRIVE_TOKEN_ENC_KEY` or `AUTH_SECRET`. Keep this key stable and back it up securely; changing it requires reconnecting integrations. The callback uses a browser nonce, expiring single-use state in PostgreSQL and a fresh permission check. No OAuth tokens are returned by the status API.
+
+Set `FEEDBACK_EMAIL` to the mailbox that should receive feedback, along with the usual SMTP settings. The sidebar button stays hidden until configured. There is no default recipient. Signed-in users may send up to five messages per hour per API instance. Feedback includes the sender and page path, without the page query string or fragment.

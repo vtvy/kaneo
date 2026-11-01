@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import * as v from "valibot";
 import db from "../database";
-import { workspaceTable } from "../database/schema";
+import { workspaceTable, workspaceUserTable } from "../database/schema";
 import { requireWorkspacePermission } from "../utils/require-workspace-permission";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import getWorkspaceMembersCtrl from "./controllers/get-workspace-members";
@@ -22,6 +22,34 @@ const workspace = new Hono<{
     workspaceId: string;
   };
 }>()
+  .get(
+    "/",
+    describeRoute({
+      operationId: "listWorkspaces",
+      tags: ["Workspaces"],
+      description: "List workspaces the authenticated user belongs to",
+      responses: { 200: { description: "Workspace memberships" } },
+    }),
+    async (c) => {
+      const memberships = await db
+        .select({
+          id: workspaceTable.id,
+          name: workspaceTable.name,
+          slug: workspaceTable.slug,
+          logo: workspaceTable.logo,
+          description: workspaceTable.description,
+          createdAt: workspaceTable.createdAt,
+          role: workspaceUserTable.role,
+        })
+        .from(workspaceTable)
+        .innerJoin(
+          workspaceUserTable,
+          eq(workspaceUserTable.workspaceId, workspaceTable.id),
+        )
+        .where(eq(workspaceUserTable.userId, c.get("userId")));
+      return c.json(memberships);
+    },
+  )
   .get(
     "/:workspaceId/archive-status",
     describeRoute({

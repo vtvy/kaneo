@@ -2,7 +2,7 @@ import { eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { documentTable, folderTable } from "../../database/schema";
-import { storage } from "../../storage";
+import { deleteDocumentBlob } from "../providers";
 
 // Permanently deletes a folder and its contents (purge from Trash). Deleting the
 // folder cascades (DB) to child folders + document rows, but NOT to the files on
@@ -45,19 +45,16 @@ async function purgeFolder(id: string) {
 
   // Collect storage keys of every document in the subtree.
   const docs = await db
-    .select({ storageKey: documentTable.storageKey })
+    .select()
     .from(documentTable)
     .where(inArray(documentTable.folderId, [...subtree]));
-  const storageKeys = docs.map((d) => d.storageKey);
 
   // Delete the folder row — the DB self-FK + document FK cascade removes the
   // rest of the subtree and its document rows.
   await db.delete(folderTable).where(eq(folderTable.id, id));
 
   // Best-effort blob cleanup; the DB is the source of truth.
-  await Promise.all(
-    storageKeys.map((key) => storage.delete(key).catch(() => {})),
-  );
+  await Promise.all(docs.map((doc) => deleteDocumentBlob(doc)));
 
   return { success: true };
 }

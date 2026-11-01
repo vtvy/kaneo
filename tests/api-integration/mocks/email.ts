@@ -44,3 +44,11 @@ export async function sendTestEmail(to: string, subject: string) {
 export function getSmtpErrorDetails(_error: unknown) {
   return { code: "UNKNOWN" };
 }
+
+export const sentFeedback: { to: string; message: string }[] = [];
+export async function sendFeedbackEmail(to: string, data: { message: string }) {
+  if (!isSmtpConfigured())
+    return { success: false, reason: "SMTP_NOT_CONFIGURED" as const };
+  sentFeedback.push({ to, message: data.message });
+  return { success: true };
+}

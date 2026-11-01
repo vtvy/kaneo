@@ -1,5 +1,7 @@
 import {
+  Cloud,
   Download,
+  ExternalLink,
   Eye,
   File as FileIcon,
   FileImage,
@@ -248,9 +250,17 @@ export default function DocumentList({
           >
             <FileTypeIcon contentType={doc.contentType} />
             <span className="truncate text-sm">{doc.name}</span>
-            <span className="shrink-0 text-muted-foreground text-xs">
-              {formatSize(doc.size)}
-            </span>
+            {doc.source === "google_drive" && (
+              <Cloud
+                className="size-3.5 shrink-0 text-muted-foreground"
+                aria-label="Google Drive"
+              />
+            )}
+            {doc.size > 0 && (
+              <span className="shrink-0 text-muted-foreground text-xs">
+                {formatSize(doc.size)}
+              </span>
+            )}
           </button>
 
           <span className="hidden w-40 truncate text-muted-foreground text-xs sm:block">
@@ -272,11 +282,25 @@ export default function DocumentList({
             >
               <MoreHorizontal className="size-4" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem onClick={() => onPreview(doc)}>
                 <Eye className="size-3.5" />
                 {t("documents:actions.preview")}
               </DropdownMenuItem>
+              {doc.source === "google_drive" && doc.externalUrl && (
+                <DropdownMenuItem
+                  onClick={() =>
+                    window.open(
+                      doc.externalUrl as string,
+                      "_blank",
+                      "noopener,noreferrer",
+                    )
+                  }
+                >
+                  <ExternalLink className="size-3.5" />
+                  {t("documents:actions.openInDrive")}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => onDownload(doc)}>
                 <Download className="size-3.5" />
                 {t("documents:actions.download")}

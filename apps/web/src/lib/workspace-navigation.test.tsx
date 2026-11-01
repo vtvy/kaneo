@@ -23,6 +23,9 @@ vi.mock("@/hooks/queries/workspace/use-active-workspace", () => ({
 vi.mock("@/hooks/queries/project/use-get-projects", () => ({
   default: () => ({ data: [] }),
 }));
+vi.mock("@/hooks/queries/admin/use-instance-access", () => ({
+  default: () => ({ data: { isAdmin: false, permissions: [] } }),
+}));
 
 import WorkspaceCrumbSelect from "@/components/common/header/workspace-crumb-select";
 import { Route } from "@/routes/_layout/_authenticated/dashboard/settings";

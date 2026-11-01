@@ -7,6 +7,7 @@ vi.mock("../../../apps/api/src/events", () => ({
 }));
 
 import {
+  activateConnection,
   addConnection,
   broadcastToProject,
   initializeWebSocketAdapter,
@@ -68,6 +69,32 @@ describe("broadcastToProject", () => {
     expect(sent.taskId).toBe("t1");
 
     removeConnection("proj-1", conn);
+  });
+
+  it("withholds project data until a registered handshake is authorized", async () => {
+    const ws = makeFakeWs();
+    const send = (ws as { send: ReturnType<typeof vi.fn> }).send;
+    const conn = addConnection("proj-pending", ws, "user-1", "init-1", {
+      pending: true,
+    });
+    broadcastToProject("proj-pending", {
+      type: "TASK_CREATED",
+      projectId: "proj-pending",
+      taskId: "secret",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 160));
+    expect(send).not.toHaveBeenCalled();
+    activateConnection("proj-pending", conn);
+    broadcastToProject("proj-pending", {
+      type: "TASK_CREATED",
+      projectId: "proj-pending",
+      taskId: "allowed",
+    });
+    await vi.waitFor(() => expect(send).toHaveBeenCalledOnce(), {
+      timeout: 400,
+    });
+    expect(JSON.parse(send.mock.calls[0][0]).taskId).toBe("allowed");
+    removeConnection("proj-pending", conn);
   });
 
   it("excludes connections matching excludeInitiatorId", async () => {

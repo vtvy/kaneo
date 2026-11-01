@@ -37,9 +37,11 @@ import {
 } from "@/hooks/mutations/github-integration/use-create-github-integration";
 import useImportGithubIssues from "@/hooks/mutations/github-integration/use-import-github-issues";
 import { useUpdateGithubIntegration } from "@/hooks/mutations/github-integration/use-update-github-integration";
+import useGetConfig from "@/hooks/queries/config/use-get-config";
 import useGetGithubIntegration from "@/hooks/queries/github-integration/use-get-github-integration";
 import { cn } from "@/lib/cn";
 import { toast } from "@/lib/toast";
+import { DisabledIntegration } from "./disabled-integration";
 
 type GithubIntegrationFormValues = {
   repositoryOwner: string;
@@ -52,6 +54,8 @@ export function GitHubIntegrationSettings({
   projectId: string;
 }) {
   const { t } = useTranslation();
+  const { data: config } = useGetConfig();
+  const disabled = config?.disabledIntegrations.includes("github");
   const githubIntegrationSchema = React.useMemo(
     () =>
       z.object({
@@ -261,6 +265,15 @@ export function GitHubIntegrationSettings({
     isConnected &&
     verificationResult?.isInstalled &&
     verificationResult?.hasRequiredPermissions;
+
+  if (disabled)
+    return (
+      <DisabledIntegration
+        connected={Boolean(integration)}
+        pending={isDeleting}
+        onDisconnect={handleDelete}
+      />
+    );
 
   return (
     <div className="space-y-4">

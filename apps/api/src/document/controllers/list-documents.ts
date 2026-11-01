@@ -12,6 +12,8 @@ async function listDocuments(projectId: string, folderId: string | null) {
       projectId: documentTable.projectId,
       folderId: documentTable.folderId,
       name: documentTable.name,
+      source: documentTable.source,
+      externalUrl: documentTable.externalUrl,
       size: documentTable.size,
       contentType: documentTable.contentType,
       createdBy: documentTable.createdBy,

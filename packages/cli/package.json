@@ -1,0 +1,61 @@
+{
+  "name": "@kaneo/cli",
+  "version": "0.1.1",
+  "description": "Official command-line client for Kaneo: sign in, list and update tasks, and script your boards from the terminal",
+  "license": "MIT",
+  "author": "Kaneo (https://kaneo.app)",
+  "homepage": "https://kaneo.app/docs/cli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/usekaneo/kaneo/",
+    "directory": "packages/cli"
+  },
+  "type": "module",
+  "bin": {
+    "kaneo": "dist/kaneo.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "cli",
+    "kanban",
+    "kaneo",
+    "project-management",
+    "tasks",
+    "terminal"
+  ],
+  "scripts": {
+    "build": "esbuild src/bin.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/kaneo.mjs",
+    "dev": "tsx src/bin.ts",
+    "lint": "biome check .",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@kaneo/typescript-config": "workspace:*",
+    "@types/node": "^25.3.5",
+    "@types/pngjs": "^6.0.5",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.5",
+    "esbuild": "0.27.3"
+  },
+  "private": true,
+  "dependencies": {
+    "@effect/platform-node": "4.0.6",
+    "@gabrielbryk/jq-ts": "1.7.0",
+    "@kaneo/mcp": "workspace:*",
+    "effect": "4.0.6",
+    "jpeg-js": "0.4.4",
+    "pngjs": "7.0.0"
+  }
+}

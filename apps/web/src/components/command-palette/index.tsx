@@ -24,6 +24,7 @@ import {
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { shortcuts } from "@/constants/shortcuts";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
+import { useCanCreateWorkspace } from "@/hooks/use-can-create-workspace";
 import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 import CreateProjectModal from "../shared/modals/create-project-modal";
@@ -43,6 +44,7 @@ type PaletteGroup = {
 
 function CommandPalette() {
   const { t } = useTranslation();
+  const canCreateWorkspace = useCanCreateWorkspace();
   const { setTheme } = useUserPreferencesStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -84,7 +86,7 @@ function CommandPalette() {
       },
       [shortcuts.workspace.prefix]: {
         [shortcuts.workspace.create]: () => {
-          setIsCreateWorkspaceOpen(true);
+          if (canCreateWorkspace) setIsCreateWorkspaceOpen(true);
         },
       },
     },
@@ -95,7 +97,7 @@ function CommandPalette() {
     setOpen(false);
   }, []);
 
-  const groupedItems = useMemo<PaletteGroup[]>(
+  const allGroupedItems = useMemo<PaletteGroup[]>(
     () => [
       {
         value: "suggestions",
@@ -154,7 +156,9 @@ function CommandPalette() {
             value: "create-workspace",
             label: t("navigation:commandPalette.createWorkspace"),
             shortcut: `${shortcuts.workspace.prefix} ${shortcuts.workspace.create}`,
-            onRun: () => setIsCreateWorkspaceOpen(true),
+            onRun: () => {
+              if (canCreateWorkspace) setIsCreateWorkspaceOpen(true);
+            },
           },
           {
             value: "theme-light",
@@ -186,8 +190,14 @@ function CommandPalette() {
         ],
       },
     ],
-    [navigate, setTheme, t, workspace?.id],
+    [navigate, setTheme, t, workspace?.id, canCreateWorkspace],
   );
+  const groupedItems = allGroupedItems.map((group) => ({
+    ...group,
+    items: group.items.filter(
+      (item) => canCreateWorkspace || item.value !== "create-workspace",
+    ),
+  }));
 
   const shortcutHandlers = useMemo(() => {
     const handlers = new Map<string, () => void>();

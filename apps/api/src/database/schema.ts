@@ -1311,7 +1311,11 @@ export const documentTable = pgTable(
       onUpdate: "cascade",
     }),
     name: text("name").notNull(),
-    storageKey: text("storage_key").notNull(),
+    storageKey: text("storage_key"),
+    source: text("source").notNull().default("server"),
+    externalId: text("external_id"),
+    externalUrl: text("external_url"),
+    driveManaged: boolean("drive_managed").notNull().default(false),
     size: integer("size").notNull(),
     contentType: text("content_type").notNull(),
     createdBy: text("created_by").references(() => userTable.id, {
@@ -1571,3 +1575,10 @@ export const importRunTable = pgTable(
     ),
   ],
 );
+
+export {
+  instanceRoleAssignmentTable,
+  instanceRoleTable,
+  instanceWebhookDeliveryTable,
+  instanceWebhookTable,
+} from "./admin-schema";

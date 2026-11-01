@@ -258,6 +258,17 @@
 			"description": "This link may be incomplete, or the page may have moved. Return home to open an available workspace.",
 			"home": "Go to home",
 			"back": "Go back"
+		},
+		"feedback": {
+			"button": "Feedback",
+			"title": "Send feedback",
+			"description": "Your message is emailed to the configured feedback inbox.",
+			"placeholder": "What happened, or what would you like changed?",
+			"send": "Send",
+			"sending": "Sending…",
+			"sent": "Feedback sent",
+			"sendError": "Couldn't send feedback",
+			"smtpUnavailable": "Email isn't set up on this server, so feedback can't be sent yet."
 		}
 	},
 	"auth": {
@@ -489,7 +500,8 @@
 				"nameRequired": "Name ist erforderlich",
 				"nameShort": "Der Name muss mindestens 2 Zeichen lang sein",
 				"invalidEmail": "Ungültige E-Mail-Adresse"
-			}
+			},
+			"managedBySso": "Managed by your identity provider"
 		},
 		"notificationsPage": {
 			"pageTitle": "Benachrichtigungen",
@@ -810,7 +822,9 @@
 			"blueprintSectionTitle": "Blueprint Integration",
 			"blueprintSectionSubtitle": "Map this Kaneo project to a Blueprint project/process for Push to Blueprint.",
 			"gitlabSectionTitle": "GitLab Integration",
-			"gitlabSectionSubtitle": "Synchronize tasks with a GitLab instance (issues, merge requests, webhooks)."
+			"gitlabSectionSubtitle": "Synchronize tasks with a GitLab instance (issues, merge requests, webhooks).",
+			"disabledByAdmin": "An administrator has disabled this integration. You can still disconnect an existing connection.",
+			"disconnect": "Disconnect"
 		},
 		"projectVisibility": {
 			"pageTitle": "Projektsichtbarkeit",
@@ -1983,6 +1997,63 @@
 				"deleteConfirmDescription": "This deletes {{name}} with all its projects, tasks and documents, and removes every member's access. Type the workspace name to confirm.",
 				"confirmNameLabel": "Workspace name",
 				"deleted": "Workspace deleted"
+			},
+			"customRoles": {
+				"title": "Instance roles",
+				"hint": "Custom roles grant selected administration permissions. Only built-in administrators can manage roles or privileged accounts.",
+				"name": "Role name (lowercase letters, digits and hyphens)",
+				"permissions": "Permissions",
+				"save": "Save role",
+				"edit": "Edit",
+				"assign": "Assign roles to users",
+				"searchUsers": "Search users by name or email",
+				"none": "No instance role"
+			},
+			"instancePermissions": {
+				"users_read": "View users",
+				"users_create": "Create users",
+				"users_manage": "Manage ordinary users",
+				"sessions_manage": "View and revoke user sessions",
+				"api_keys_manage": "View and revoke API keys",
+				"workspaces_read": "View all workspaces",
+				"workspaces_manage": "Archive and delete workspaces",
+				"instance_read": "View system status",
+				"instance_settings": "Manage instance settings and webhooks",
+				"audit_read": "View audit log"
+			},
+			"webhooks": {
+				"title": "Instance webhooks",
+				"hint": "Send signed administration audit events to public HTTP(S) endpoints. Configure NOTIFICATION_SECRET_ENCRYPTION_KEY on the server first. Failed deliveries retry up to three times. Keep the delivery ID to deduplicate events.",
+				"name": "Name",
+				"url": "Destination URL",
+				"enabled": "Enabled",
+				"disabled": "Disabled",
+				"categories": "Event categories",
+				"save": "Save webhook",
+				"test": "Send test",
+				"rotate": "Rotate signing secret",
+				"history": "Recent deliveries",
+				"emptyHistory": "No deliveries yet",
+				"secretOnce": "Signing secret — copy it now; it is only shown once",
+				"attempts_one": "{{count}} attempt",
+				"attempts_other": "{{count}} attempts",
+				"deliveryError": "Delivery failed; check the endpoint and server configuration"
+			},
+			"webhookCategories": {
+				"user": "Users",
+				"session": "Sessions",
+				"api_key": "API keys",
+				"workspace": "Workspaces",
+				"role": "Instance roles",
+				"instance": "Instance settings",
+				"email": "Email",
+				"webhook": "Webhooks"
+			},
+			"webhookStates": {
+				"pending": "Pending",
+				"succeeded": "Succeeded",
+				"failed": "Failed",
+				"cancelled": "Cancelled"
 			}
 		},
 		"workspaceImport": {
@@ -2060,6 +2131,42 @@
 				"connect": "Could not connect to the source.",
 				"start": "Could not start the import."
 			}
+		},
+		"googleDrive": {
+			"notConnected": "Connect Google Drive to store project documents in Drive and link existing Drive files.",
+			"connect": "Connect Google Drive",
+			"connected": "Connected",
+			"disconnect": "Disconnect",
+			"rootFolder": "Drive folder",
+			"noFolder": "No folder selected",
+			"chooseFolder": "Choose folder",
+			"changeFolder": "Change folder",
+			"pickFolderTitle": "Choose a Google Drive folder",
+			"noSubfolders": "No subfolders here",
+			"useFolder": "Use “{{name}}”",
+			"connectedToast": "Google Drive connected",
+			"disconnectedToast": "Google Drive disconnected",
+			"folderSetToast": "Folder set to “{{name}}”",
+			"norefreshToast": "Google did not return a refresh token. Remove Kaneo's access in your Google account, then reconnect.",
+			"errorToast": "Google Drive connection failed",
+			"credsTitle": "Google credentials",
+			"credsHint": "Add your Google OAuth Client ID and Secret. Create them in Google Cloud Console (APIs & Services → Credentials) with the Drive API enabled.",
+			"credsConfigured": "Credentials saved",
+			"redirectUriLabel": "Authorized redirect URI",
+			"redirectUriHint": "Add this exact URI to your OAuth client's “Authorized redirect URIs” in Google Cloud Console.",
+			"copy": "Copy",
+			"copiedToast": "Copied",
+			"clientIdLabel": "Client ID",
+			"clientSecretLabel": "Client Secret",
+			"clientSecretPlaceholderUpdate": "Enter a new secret to replace the saved one",
+			"saveCreds": "Save credentials",
+			"cancel": "Cancel",
+			"editCreds": "Edit credentials",
+			"credsRequired": "Client ID and Client Secret are required",
+			"credsSavedToast": "Google credentials saved",
+			"credsRemovedToast": "Google credentials removed",
+			"removeCreds": "Remove credentials",
+			"sectionSubtitle": "Connect Google Drive to upload and link project documents"
 		}
 	},
 	"navigation": {
@@ -2974,7 +3081,8 @@
 			"submit": "Workspace erstellen",
 			"success": "Workspace erfolgreich erstellt",
 			"error": "Workspace konnte nicht erstellt werden",
-			"alreadyExists": "A workspace with this name (or URL) already exists. Try a different name."
+			"alreadyExists": "A workspace with this name (or URL) already exists. Try a different name.",
+			"restricted": "Workspace creation is restricted. Ask an administrator to create one or invite you to an existing workspace."
 		},
 		"home": {
 			"pageTitle": "Home",
@@ -3154,7 +3262,8 @@
 			"more": "More",
 			"open": "Open",
 			"close": "Close",
-			"preview": "Preview"
+			"preview": "Preview",
+			"openInDrive": "Open in Drive"
 		},
 		"preview": {
 			"loading": "Loading preview…",
@@ -3218,6 +3327,17 @@
 				"emptied": "Trash emptied",
 				"emptyError": "Failed to empty trash"
 			}
+		},
+		"drive": {
+			"uploadToServer": "Upload to server",
+			"uploadToDrive": "Upload to Google Drive",
+			"addFromDrive": "Add from Google Drive",
+			"pickTitle": "Select files from Google Drive",
+			"rootFolder": "Project folder",
+			"empty": "This folder is empty",
+			"linkSelected": "Link {{count}} file(s)",
+			"linkedToast": "Linked {{count}} file(s) from Drive",
+			"linkError": "Failed to link file"
 		}
 	},
 	"myTasks": {

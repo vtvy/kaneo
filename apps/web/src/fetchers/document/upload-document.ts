@@ -13,10 +13,12 @@ function uploadDocument(
   folderId: string | null,
   workspaceId: string,
   onProgress?: (percent: number) => void,
+  target: "server" | "drive" = "server",
 ): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("target", target);
     if (folderId) {
       formData.append("folderId", folderId);
     }

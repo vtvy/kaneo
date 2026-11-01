@@ -6,6 +6,10 @@ import {
   workspaceTable,
   workspaceUserTable,
 } from "../../database/schema";
+import {
+  cleanupContainerStorage,
+  collectContainerStorage,
+} from "../../storage/cleanup-container";
 import { recheckSocketAccess } from "../../ws";
 import type { AdminAuditRequest } from "../audit/admin-audit-request";
 import { recordAdminAction } from "../audit/record-admin-action";
@@ -22,41 +26,51 @@ async function deleteWorkspace(
   workspaceId: string,
   confirmName: string,
 ) {
-  const { name, memberIds } = await db.transaction(async (tx) => {
-    const workspace = await lockWorkspace(tx, workspaceId);
-    if (confirmName.trim() !== workspace.name.trim()) {
-      throw new HTTPException(400, {
-        message: "Type the workspace name exactly to confirm deletion.",
+  const { name, memberIds, capturedStorage } = await db.transaction(
+    async (tx) => {
+      const workspace = await lockWorkspace(tx, workspaceId);
+      if (confirmName.trim() !== workspace.name.trim()) {
+        throw new HTTPException(400, {
+          message: "Type the workspace name exactly to confirm deletion.",
+        });
+      }
+      const capturedStorage = await collectContainerStorage(tx, {
+        workspaceId,
       });
-    }
-    const members = await tx
-      .select({ userId: workspaceUserTable.userId })
-      .from(workspaceUserTable)
-      .where(eq(workspaceUserTable.workspaceId, workspaceId));
+      const members = await tx
+        .select({ userId: workspaceUserTable.userId })
+        .from(workspaceUserTable)
+        .where(eq(workspaceUserTable.workspaceId, workspaceId));
 
-    await tx
-      .update(sessionTable)
-      .set({ activeOrganizationId: null, activeTeamId: null })
-      .where(eq(sessionTable.activeOrganizationId, workspaceId));
-    await tx.delete(workspaceTable).where(eq(workspaceTable.id, workspaceId));
-    await recordAdminAction(
-      audit,
-      {
-        action: "workspace.deleted",
-        targetType: "workspace",
-        targetId: workspace.id,
-        targetLabel: workspace.name,
-        metadata: { memberCount: members.length },
-      },
-      tx,
-    );
-    return { name: workspace.name, memberIds: members.map((m) => m.userId) };
-  });
+      await tx
+        .update(sessionTable)
+        .set({ activeOrganizationId: null, activeTeamId: null })
+        .where(eq(sessionTable.activeOrganizationId, workspaceId));
+      await tx.delete(workspaceTable).where(eq(workspaceTable.id, workspaceId));
+      await recordAdminAction(
+        audit,
+        {
+          action: "workspace.deleted",
+          targetType: "workspace",
+          targetId: workspace.id,
+          targetLabel: workspace.name,
+          metadata: { memberCount: members.length },
+        },
+        tx,
+      );
+      return {
+        name: workspace.name,
+        memberIds: members.map((m) => m.userId),
+        capturedStorage,
+      };
+    },
+  );
 
   await Promise.all(
     memberIds.map((userId) => recheckSocketAccess(userId, { workspaceId })),
   );
 
+  await cleanupContainerStorage(capturedStorage);
   return { id: workspaceId, name, deleted: true };
 }
 

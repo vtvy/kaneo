@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import useCreateAdminUser from "@/hooks/mutations/admin/use-create-admin-user";
+import useInstanceAccess from "@/hooks/queries/admin/use-instance-access";
 import useGetConfig from "@/hooks/queries/config/use-get-config";
 import { toast } from "@/lib/toast";
 import { Button } from "../ui/button";
@@ -39,6 +40,7 @@ const initialState = {
 export function CreateUserDialog({ open, onClose }: CreateUserDialogProps) {
   const { t } = useTranslation();
   const { data: config } = useGetConfig();
+  const { data: access } = useInstanceAccess();
   const { mutateAsync: createUser, isPending } = useCreateAdminUser();
   const [form, setForm] = useState(initialState);
   const hasSmtp = Boolean(config?.hasSmtp);
@@ -56,7 +58,7 @@ export function CreateUserDialog({ open, onClose }: CreateUserDialogProps) {
         name: form.name,
         email: form.email,
         password: form.password || undefined,
-        role: form.role,
+        role: access?.isAdmin ? form.role : "user",
         sendSetupEmail: hasSmtp && form.sendSetupEmail,
       });
       toast.success(
@@ -166,7 +168,9 @@ export function CreateUserDialog({ open, onClose }: CreateUserDialogProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">{roleLabel("user")}</SelectItem>
-                  <SelectItem value="admin">{roleLabel("admin")}</SelectItem>
+                  {access?.isAdmin && (
+                    <SelectItem value="admin">{roleLabel("admin")}</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>

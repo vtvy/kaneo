@@ -264,6 +264,7 @@ export const configSchema = v.object({
   disablePasswordRegistration: v.nullable(v.boolean()),
   isDemoMode: v.boolean(),
   hasSmtp: v.boolean(),
+  hasFeedback: v.boolean(),
   hasGithubSignIn: v.nullable(v.boolean()),
   hasGoogleSignIn: v.nullable(v.boolean()),
   hasCustomOAuth: v.nullable(v.boolean()),
@@ -272,6 +273,7 @@ export const configSchema = v.object({
   instanceName: v.string(),
   workspaceCreationRestricted: v.boolean(),
   disabledIntegrations: v.array(v.string()),
+  managedProfileFields: v.array(v.picklist(["name", "image"])),
 });
 
 export const workspaceDashboardSchema = v.object({

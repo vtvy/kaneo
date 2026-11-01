@@ -35,7 +35,7 @@ import {
 import type { AccessControl } from "better-auth/plugins/access";
 import type { UserWithAnonymous } from "better-auth/plugins/anonymous";
 import { config } from "dotenv-mono";
-import { count, eq, sql } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 import { assertBackchannelLogoutEnv } from "./backchannel-logout/config";
 import {
   rememberSignInSessionId,
@@ -64,6 +64,7 @@ import { isCloud } from "./utils/is-cloud";
 import { isDisposableEmail } from "./utils/is-disposable-email";
 import { verifyTurnstile } from "./utils/verify-turnstile";
 import { assertOrganizationWritable } from "./workspace/archive/assert-organization-writable";
+import { deleteWorkspaceData } from "./workspace/controllers/delete-workspace-data";
 import {
   closeSocketsForApiKey,
   closeSocketsForSession,
@@ -392,6 +393,12 @@ export const auth = betterAuth({
       },
       allowUserToCreateOrganization: true,
       organizationHooks: {
+        beforeDeleteOrganization: async ({ organization }) => {
+          // Better Auth has already checked organization:delete. Delete the
+          // container and capture its blobs in one transaction before its
+          // idempotent adapter cleanup runs, then remove bytes after commit.
+          await deleteWorkspaceData(organization.id);
+        },
         beforeCreateOrganization: async ({ organization, user }) => {
           await assertCanCreateWorkspace(user?.id);
           const check = checkWorkspaceName(organization.name ?? "");
@@ -698,6 +705,32 @@ export const auth = betterAuth({
         throw new APIError("FORBIDDEN", {
           message: "Use the /api/admin endpoints for instance administration.",
         });
+      }
+
+      if (ctx.path === "/update-user") {
+        const fields = parseManagedProfileFields();
+        if (fields.some((field) => ctx.body?.[field] !== undefined)) {
+          const session = await auth.api.getSession({
+            headers: ctx.headers ?? new Headers(),
+          });
+          if (session?.user.id) {
+            const [linked] = await db
+              .select({ id: schema.accountTable.id })
+              .from(schema.accountTable)
+              .where(
+                and(
+                  eq(schema.accountTable.userId, session.user.id),
+                  eq(schema.accountTable.providerId, "custom"),
+                ),
+              )
+              .limit(1);
+            if (linked)
+              throw new APIError("FORBIDDEN", {
+                message:
+                  "These profile fields are managed by your identity provider.",
+              });
+          }
+        }
       }
 
       // Block invite-member calls on cloud from anonymous users or to

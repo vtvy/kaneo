@@ -17,6 +17,7 @@ import {
 import * as v from "valibot";
 import activity from "./activity";
 import admin from "./admin";
+import { startInstanceWebhookWorker } from "./admin/webhooks/delivery";
 import { auth } from "./auth";
 import {
   handleBackchannelLogoutRoute,
@@ -36,6 +37,7 @@ import discordIntegration from "./discord-integration";
 import document from "./document";
 import { eventContext } from "./events";
 import externalLink from "./external-link";
+import feedback from "./feedback";
 import genericWebhookIntegration from "./generic-webhook-integration";
 import giteaIntegration, { handleGiteaWebhookRoute } from "./gitea-integration";
 import githubIntegration, {
@@ -44,6 +46,9 @@ import githubIntegration, {
 import gitlabIntegration, {
   handleGitlabWebhookRoute,
 } from "./gitlab-integration";
+import googleDriveIntegration, {
+  handleGoogleDriveCallback,
+} from "./google-drive-integration";
 import importRoutes from "./import";
 import { stopActiveImports } from "./import/runs/stop-active-imports";
 import getInstanceStatus from "./instance/controllers/get-instance-status";
@@ -73,6 +78,7 @@ import task from "./task";
 import taskRelation from "./task-relation";
 import telegramIntegration from "./telegram-integration";
 import timeEntry from "./time-entry";
+import user from "./user";
 import {
   authenticateApiRequest,
   resolveAssetBearerOrCookie,
@@ -100,6 +106,7 @@ import { validateWorkspaceAccess } from "./utils/validate-workspace-access";
 import workflowRule from "./workflow-rule";
 import workspace from "./workspace";
 import {
+  activateConnection,
   addConnection,
   initializeWebSocketAdapter,
   removeConnection,
@@ -555,6 +562,7 @@ export function createApp() {
   });
 
   api.route("/", mcpRoutes);
+  api.get("/google-drive-integration/callback", handleGoogleDriveCallback);
 
   api.use("*", async (c, next) => {
     const path = c.req.path;
@@ -579,6 +587,12 @@ export function createApp() {
   });
 
   const oauthApi = api.route("/oauth", oauth);
+  const userApi = api.route("/user", user);
+  const feedbackApi = api.route("/feedback", feedback);
+  const googleDriveIntegrationApi = api.route(
+    "/google-drive-integration",
+    googleDriveIntegration,
+  );
 
   const projectApi = api.route("/project", project);
   const taskApi = api.route("/task", task);
@@ -703,15 +717,47 @@ export function createApp() {
       let conn: ReturnType<typeof addConnection> | null = null;
 
       return {
-        onOpen(_evt, ws) {
+        async onOpen(_evt, ws) {
           if (projectId) {
-            conn = addConnection(
-              projectId,
-              ws,
-              userId,
-              initiatorId,
-              credential,
-            );
+            conn = addConnection(projectId, ws, userId, initiatorId, {
+              ...credential,
+              pending: true,
+            });
+            // Register before checking again so concurrent revocations can
+            // find this socket. Pending sockets receive no project events.
+            try {
+              await authenticateApiRequest(c);
+              if (
+                c.get("userId") !== userId ||
+                c.get("session")?.id !== credential.sessionId ||
+                c.get("apiKey")?.id !== credential.apiKeyId
+              ) {
+                throw new Error("Credential changed during handshake");
+              }
+              const [currentProject] = await db
+                .select({ workspaceId: schema.projectTable.workspaceId })
+                .from(schema.projectTable)
+                .where(eq(schema.projectTable.id, projectId))
+                .limit(1);
+              if (
+                !currentProject ||
+                currentProject.workspaceId !== credential.workspaceId
+              ) {
+                throw new Error("Project changed during handshake");
+              }
+              await validateWorkspaceAccess(
+                userId,
+                currentProject.workspaceId,
+                credential.apiKeyId,
+              );
+              if (!(await canInProject(userId, projectId, "item", "read"))) {
+                throw new Error("Project access revoked during handshake");
+              }
+              activateConnection(projectId, conn);
+            } catch {
+              removeConnection(projectId, conn);
+              ws.close(1008, "Access revoked");
+            }
           }
         },
         onClose() {
@@ -763,6 +809,9 @@ export function createApp() {
     workflowRuleApi,
     workspaceApi,
     oauthApi,
+    userApi,
+    feedbackApi,
+    googleDriveIntegrationApi,
   };
 }
 
@@ -815,6 +864,7 @@ export async function startServer(
     process.exit(1);
   }
 
+  const stopInstanceWebhooks = startInstanceWebhookWorker();
   let shuttingDown = false;
 
   const server = serve(
@@ -836,6 +886,7 @@ export async function startServer(
     shuttingDown = true;
 
     console.log("🛑 Shutting down gracefully...");
+    stopInstanceWebhooks();
     shutdownScheduler();
     await stopActiveImports();
     await shutdownWebSocketAdapter();
@@ -890,6 +941,9 @@ const {
   workflowRuleApi,
   workspaceApi,
   oauthApi,
+  userApi,
+  feedbackApi,
+  googleDriveIntegrationApi,
 } = createdApp;
 
 const isMainModule =
@@ -934,6 +988,9 @@ export type AppType =
   | typeof oauthApi
   | typeof adminApi
   | typeof calendarFeedApi
-  | typeof importApi;
+  | typeof importApi
+  | typeof userApi
+  | typeof feedbackApi
+  | typeof googleDriveIntegrationApi;
 
 export default app;

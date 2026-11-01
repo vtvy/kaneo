@@ -1,8 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronRight,
+  Cloud,
   FolderInput,
   FolderPlus,
+  HardDrive,
   PanelLeftClose,
   PanelLeftOpen,
   Trash2,
@@ -29,15 +31,18 @@ import uploadDocument from "@/fetchers/document/upload-document";
 import useCreateFolder from "@/hooks/mutations/document/use-create-folder";
 import useDeleteDocument from "@/hooks/mutations/document/use-delete-document";
 import useDeleteFolder from "@/hooks/mutations/document/use-delete-folder";
+import useLinkDriveDocument from "@/hooks/mutations/document/use-link-drive-document";
 import useUpdateDocument from "@/hooks/mutations/document/use-update-document";
 import useUpdateFolder from "@/hooks/mutations/document/use-update-folder";
 import useDocuments from "@/hooks/queries/document/use-documents";
 import useFolders from "@/hooks/queries/document/use-folders";
+import useDriveStatus from "@/hooks/queries/google-drive-integration/use-drive-status";
 import { useProjectPermission } from "@/hooks/use-project-permission";
 import { cn } from "@/lib/cn";
 import { toast } from "@/lib/toast";
 import DocumentList from "./document-list";
 import DocumentPreview from "./document-preview";
+import DriveFilePickerDialog from "./drive-file-picker-dialog";
 import FolderTree from "./folder-tree";
 import MoveDialog from "./move-dialog";
 import NameDialog from "./name-dialog";
@@ -88,7 +93,17 @@ export default function DocumentsView({
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkPending, setBulkPending] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [drivePickerOpen, setDrivePickerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // The upload target chosen before opening the native file dialog.
+  const uploadTargetRef = useRef<"server" | "drive">("server");
+
+  const { data: driveData } = useDriveStatus(projectId);
+  const driveConnected = Boolean(
+    (driveData as { connected?: boolean } | undefined)?.connected &&
+      !(driveData as { disabled?: boolean } | undefined)?.disabled,
+  );
+  const linkDrive = useLinkDriveDocument(projectId);
 
   const { data: foldersData } = useFolders(projectId);
   const folders = (foldersData ?? []) as unknown as DocumentFolder[];
@@ -241,7 +256,10 @@ export default function DocumentsView({
   // Fire-and-forget background uploads: each file uploads concurrently with its
   // own progress, so large files never block the UI and the user can keep
   // navigating. Uploads target the folder selected at the time they start.
-  const handleUploadFiles = (files: FileList | File[]) => {
+  const handleUploadFiles = (
+    files: FileList | File[],
+    target: "server" | "drive" = "server",
+  ) => {
     const list = Array.from(files);
     if (list.length === 0) return;
     const targetFolderId = selectedFolderId;
@@ -253,10 +271,16 @@ export default function DocumentsView({
         { id, name: file.name, progress: 0, status: "uploading" },
       ]);
 
-      uploadDocument(projectId, file, targetFolderId, workspaceId, (percent) =>
-        setUploads((prev) =>
-          prev.map((u) => (u.id === id ? { ...u, progress: percent } : u)),
-        ),
+      uploadDocument(
+        projectId,
+        file,
+        targetFolderId,
+        workspaceId,
+        (percent) =>
+          setUploads((prev) =>
+            prev.map((u) => (u.id === id ? { ...u, progress: percent } : u)),
+          ),
+        target,
       )
         .then(() => {
           setUploads((prev) =>
@@ -291,6 +315,32 @@ export default function DocumentsView({
           : t("documents:toast.downloadError"),
       );
     }
+  };
+
+  const handleLinkDriveFiles = async (fileIds: string[]) => {
+    const targetFolderId = selectedFolderId;
+    let linked = 0;
+    for (const driveFileId of fileIds) {
+      try {
+        await linkDrive.mutateAsync({ driveFileId, folderId: targetFolderId });
+        linked += 1;
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : t("documents:drive.linkError"),
+        );
+      }
+    }
+    setDrivePickerOpen(false);
+    if (linked > 0) {
+      toast.success(t("documents:drive.linkedToast", { count: linked }));
+    }
+  };
+
+  const openFilePicker = (target: "server" | "drive") => {
+    uploadTargetRef.current = target;
+    fileInputRef.current?.click();
   };
 
   const handleFolderDialogConfirm = async (value: string) => {
@@ -539,9 +589,29 @@ export default function DocumentsView({
                         <FolderPlus className="size-3.5" />
                         {t("documents:actions.newFolder")}
                       </Button>
+                      {driveConnected && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="xs"
+                            onClick={() => openFilePicker("drive")}
+                          >
+                            <HardDrive className="size-3.5" />
+                            {t("documents:drive.uploadToDrive")}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="xs"
+                            onClick={() => setDrivePickerOpen(true)}
+                          >
+                            <Cloud className="size-3.5" />
+                            {t("documents:drive.addFromDrive")}
+                          </Button>
+                        </>
+                      )}
                       <Button
                         size="xs"
-                        onClick={() => fileInputRef.current?.click()}
+                        onClick={() => openFilePicker("server")}
                       >
                         <Upload className="size-3.5" />
                         {t("documents:actions.upload")}
@@ -553,7 +623,10 @@ export default function DocumentsView({
                         className="hidden"
                         onChange={(e) => {
                           if (e.target.files?.length) {
-                            handleUploadFiles(e.target.files);
+                            handleUploadFiles(
+                              e.target.files,
+                              uploadTargetRef.current,
+                            );
                           }
                           e.target.value = "";
                         }}
@@ -759,6 +832,15 @@ export default function DocumentsView({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add from Google Drive */}
+      <DriveFilePickerDialog
+        open={drivePickerOpen}
+        projectId={projectId}
+        pending={linkDrive.isPending}
+        onConfirm={handleLinkDriveFiles}
+        onClose={() => setDrivePickerOpen(false)}
+      />
 
       {/* Background upload progress */}
       <UploadProgress

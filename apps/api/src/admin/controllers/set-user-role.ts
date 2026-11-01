@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import db, { schema } from "../../database";
+import { instanceRoleAssignmentTable } from "../../database/admin-schema";
 import type { AdminAuditRequest } from "../audit/admin-audit-request";
 import { recordAdminAction } from "../audit/record-admin-action";
 import {
@@ -32,6 +33,9 @@ export async function setUserRole(
       .update(schema.userTable)
       .set({ role })
       .where(eq(schema.userTable.id, target.id));
+    await tx
+      .delete(instanceRoleAssignmentTable)
+      .where(eq(instanceRoleAssignmentTable.userId, target.id));
 
     await recordAdminAction(
       request,

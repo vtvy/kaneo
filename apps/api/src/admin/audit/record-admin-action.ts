@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import db, { schema } from "../../database";
+import { enqueueAuditWebhooks } from "../webhooks/delivery";
 import type { AdminAuditRequest } from "./admin-audit-request";
 import { sanitizeAuditMetadata } from "./sanitize-audit-metadata";
 
@@ -27,26 +28,35 @@ export async function recordAdminAction(
   input: AdminActionInput,
   database: DbOrTx = db,
 ): Promise<void> {
+  if (database === db) {
+    await db.transaction((tx) => recordAdminAction(request, input, tx));
+    return;
+  }
   const actorId = request.actorUserId;
   // Resolved in the insert so a concurrently deleted actor yields NULL
   // instead of a foreign key error.
   const actor = (column: "id" | "name" | "email") =>
     sql`(SELECT ${sql.identifier(column)} FROM "user" WHERE "id" = ${actorId})`;
 
-  await database.insert(schema.adminAuditLogTable).values({
-    actorUserId: actor("id"),
-    actorName: actor("name"),
-    actorEmail: actor("email"),
-    action: input.action,
-    targetType: input.targetType,
-    targetId: input.targetId ?? null,
-    targetLabel: input.targetLabel ?? null,
-    metadata: input.metadata
-      ? (sanitizeAuditMetadata(input.metadata) as Record<string, unknown>)
-      : null,
-    ipAddress: request.ipAddress,
-    userAgent: request.userAgent,
-  });
+  const [entry] = await database
+    .insert(schema.adminAuditLogTable)
+    .values({
+      actorUserId: actor("id"),
+      actorName: actor("name"),
+      actorEmail: actor("email"),
+      action: input.action,
+      targetType: input.targetType,
+      targetId: input.targetId ?? null,
+      targetLabel: input.targetLabel ?? null,
+      metadata: input.metadata
+        ? (sanitizeAuditMetadata(input.metadata) as Record<string, unknown>)
+        : null,
+      ipAddress: request.ipAddress,
+      userAgent: request.userAgent,
+    })
+    .returning({ id: schema.adminAuditLogTable.id });
+  if (!entry) throw new Error("Failed to record administration action");
+  await enqueueAuditWebhooks(database, entry.id);
 }
 
 export default recordAdminAction;

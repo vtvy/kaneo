@@ -16,6 +16,7 @@ import {
 
 type ProjectConnection = RevocableConnection & {
   initiatorId: string;
+  ready: boolean;
 };
 
 /**
@@ -100,6 +101,7 @@ function deliverToLocalConnections(
 
   const payload = JSON.stringify(message);
   for (const conn of connections) {
+    if (!conn.ready) continue;
     if (excludeInitiatorId && conn.initiatorId === excludeInitiatorId) continue;
     try {
       conn.ws.send(payload);
@@ -133,14 +135,26 @@ export function addConnection(
     sessionId?: string;
     apiKeyId?: string;
     workspaceId?: string;
+    pending?: boolean;
   } = {},
 ) {
   if (!projectConnections.has(projectId)) {
     projectConnections.set(projectId, new Set());
   }
-  const conn: ProjectConnection = { ws, userId, initiatorId, ...credential };
+  const conn: ProjectConnection = {
+    ws,
+    userId,
+    initiatorId,
+    ...credential,
+    ready: !credential.pending,
+  };
   projectConnections.get(projectId)?.add(conn);
   return conn;
+}
+
+/** Only activate a connection still registered after its handshake re-check. */
+export function activateConnection(projectId: string, conn: ProjectConnection) {
+  if (projectConnections.get(projectId)?.has(conn)) conn.ready = true;
 }
 
 export function removeConnection(projectId: string, conn: ProjectConnection) {

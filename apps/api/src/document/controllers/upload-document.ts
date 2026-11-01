@@ -5,6 +5,7 @@ import { documentTable, folderTable } from "../../database/schema";
 import { publishEvent } from "../../events";
 import { storage } from "../../storage";
 import { buildDocumentKey } from "../../storage/build-document-key";
+import { deleteDocumentBlob, uploadToDrive } from "../providers";
 
 export const DOCUMENT_MAX_UPLOAD_BYTES = Number(
   process.env.DOCUMENT_MAX_UPLOAD_BYTES ?? 50 * 1024 * 1024,
@@ -51,11 +52,13 @@ async function uploadDocument({
   folderId,
   file,
   currentUserId,
+  target = "server",
 }: {
   projectId: string;
   folderId: string | null;
   file: File;
   currentUserId: string;
+  target?: "server" | "drive";
 }) {
   if (!file || file.size <= 0) {
     throw new HTTPException(400, { message: "Empty file" });
@@ -80,6 +83,46 @@ async function uploadDocument({
     }
   }
 
+  if (target === "drive") {
+    const meta = await uploadToDrive(projectId, file);
+    let committed = false;
+    try {
+      const [created] = await db
+        .insert(documentTable)
+        .values({
+          projectId,
+          folderId,
+          name: meta.name,
+          source: "google_drive",
+          storageKey: null,
+          externalId: meta.externalId,
+          externalUrl: meta.externalUrl,
+          driveManaged: true,
+          size: meta.size,
+          contentType: meta.contentType,
+          createdBy: currentUserId,
+        })
+        .returning();
+      if (!created) throw new Error("Failed to record document");
+      committed = true;
+      await publishEvent("document.created", {
+        documentId: created.id,
+        projectId,
+        currentUserId,
+      });
+      return created;
+    } catch (error) {
+      if (!committed)
+        await deleteDocumentBlob({
+          source: "google_drive",
+          storageKey: null,
+          externalId: meta.externalId,
+          driveManaged: true,
+          projectId,
+        });
+      throw error;
+    }
+  }
   const storageKey = buildDocumentKey(projectId, file.name);
   const buf = Buffer.from(await file.arrayBuffer());
   const contentType = resolveContentType(file);

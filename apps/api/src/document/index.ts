@@ -3,14 +3,15 @@ import { HTTPException } from "hono/http-exception";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import * as v from "valibot";
 import { projectPermission } from "../project-rbac/require-project-permission";
-import { storage } from "../storage";
 import { uploadBodyLimit } from "../utils/body-limit";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import createFolder from "./controllers/create-folder";
 import emptyTrash from "./controllers/empty-trash";
 import getDocument from "./controllers/get-document";
 import getFolders from "./controllers/get-folders";
+import linkDriveDocument from "./controllers/link-drive-document";
 import listDocuments from "./controllers/list-documents";
+import listDriveFiles from "./controllers/list-drive-files";
 import listTrash from "./controllers/list-trash";
 import purgeDocument from "./controllers/purge-document";
 import purgeFolder from "./controllers/purge-folder";
@@ -23,6 +24,7 @@ import updateFolder from "./controllers/update-folder";
 import uploadDocument, {
   DOCUMENT_MAX_UPLOAD_BYTES,
 } from "./controllers/upload-document";
+import { getDocumentStream } from "./providers";
 
 // Builds a safe `attachment` Content-Disposition with both an ASCII fallback
 // and a UTF-8 encoded form for non-ASCII filenames.
@@ -51,6 +53,52 @@ const document = new Hono<{
     userId: string;
   };
 }>()
+  .get(
+    "/drive/:projectId",
+    describeRoute({
+      operationId: "listProjectDriveFiles",
+      tags: ["Documents"],
+      description: "Browse files within the project Drive folder",
+    }),
+    validator("param", v.object({ projectId: v.string() })),
+    validator("query", v.object({ folderId: v.optional(v.string()) })),
+    workspaceAccess.fromProject("projectId"),
+    projectPermission.fromParam({ doc: ["view"] }),
+    async (c) =>
+      c.json(
+        await listDriveFiles(
+          c.req.valid("param").projectId,
+          c.req.valid("query").folderId,
+        ),
+      ),
+  )
+  .post(
+    "/drive/:projectId/link",
+    describeRoute({
+      operationId: "linkDriveDocument",
+      tags: ["Documents"],
+      description: "Link a file from the project Drive folder",
+    }),
+    validator("param", v.object({ projectId: v.string() })),
+    validator(
+      "json",
+      v.object({
+        driveFileId: v.pipe(v.string(), v.regex(/^[a-zA-Z0-9_-]{1,256}$/)),
+        folderId: v.optional(v.nullable(v.string())),
+      }),
+    ),
+    workspaceAccess.fromProject("projectId"),
+    projectPermission.fromParam({ doc: ["upload"] }),
+    async (c) =>
+      c.json(
+        await linkDriveDocument({
+          projectId: c.req.valid("param").projectId,
+          folderId: c.req.valid("json").folderId ?? null,
+          driveFileId: c.req.valid("json").driveFileId,
+          currentUserId: c.get("userId"),
+        }),
+      ),
+  )
   // ── Folders ──────────────────────────────────────────────────────────────
   .get(
     "/folders/:projectId",
@@ -294,8 +342,17 @@ const document = new Hono<{
           ? body.folderId
           : null;
       const currentUserId = c.get("userId");
+      if (body.target && body.target !== "server" && body.target !== "drive")
+        throw new HTTPException(400, { message: "Invalid upload target" });
+      const target = body.target === "drive" ? "drive" : "server";
       return c.json(
-        await uploadDocument({ projectId, folderId, file, currentUserId }),
+        await uploadDocument({
+          projectId,
+          folderId,
+          file,
+          currentUserId,
+          target,
+        }),
       );
     },
   )
@@ -412,13 +469,17 @@ const document = new Hono<{
       const { id } = c.req.valid("param");
       const doc = await getDocument(id);
       try {
-        const object = await storage.get(doc.storageKey);
+        const object = await getDocumentStream(doc);
         return new Response(object.body as BodyInit, {
           headers: {
             "Content-Disposition": contentDisposition(doc.name),
             "Content-Type": doc.contentType,
-            "Content-Length":
-              object.contentLength?.toString() ?? String(doc.size),
+            "X-Content-Type-Options": "nosniff",
+            ...(object.contentLength !== undefined
+              ? { "Content-Length": String(object.contentLength) }
+              : doc.source !== "google_drive"
+                ? { "Content-Length": String(doc.size) }
+                : {}),
             "Cache-Control": "private, max-age=120",
           },
         });

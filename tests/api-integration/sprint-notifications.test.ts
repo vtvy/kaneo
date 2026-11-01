@@ -3,7 +3,10 @@ import { and, eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import db, { schema } from "../../apps/api/src/database";
 import { createApp } from "../../apps/api/src/index";
-import { checkSprintLifecycle } from "../../apps/api/src/sprint/sprint-notifications";
+import {
+  checkSprintLifecycle,
+  notifySprintMembers,
+} from "../../apps/api/src/sprint/sprint-notifications";
 import { mockAuthenticatedSession } from "./helpers/auth";
 import { resetTestDatabase } from "./helpers/database";
 import {
@@ -147,6 +150,29 @@ describe("API integration: sprint start/end notifications", () => {
     await checkSprintLifecycle(now);
     expect(await sprintNotifications("sprint_ended", sprint.id)).toEqual(
       [alice.id, bob.id, owner.user.id].sort(),
+    );
+  });
+
+  it("serializes concurrent scheduler and completion notifications across instances", async () => {
+    const { project, alice, bob } = await seed();
+    const now = new Date();
+    const [sprint] = await db
+      .insert(schema.sprintTable)
+      .values({
+        projectId: project.id,
+        name: "Concurrent sprint",
+        startDate: new Date(now.getTime() - 2 * DAY),
+        endDate: new Date(now.getTime() - HOUR),
+      })
+      .returning();
+    const counts = await Promise.all(
+      Array.from({ length: 8 }, () =>
+        notifySprintMembers(sprint, "sprint_ended"),
+      ),
+    );
+    expect(counts.reduce((sum, count) => sum + count, 0)).toBe(2);
+    expect(await sprintNotifications("sprint_ended", sprint.id)).toEqual(
+      [alice.id, bob.id].sort(),
     );
   });
 

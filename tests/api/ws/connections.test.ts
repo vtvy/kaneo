@@ -8,6 +8,7 @@ vi.mock("../../../apps/api/src/events", () => ({
 }));
 
 import {
+  activateConnection,
   addConnection,
   removeConnection,
 } from "../../../apps/api/src/ws/index";
@@ -53,7 +54,22 @@ describe("addConnection / removeConnection", () => {
       ws,
       userId: "user-1",
       initiatorId: "init-1",
+      ready: true,
     });
+  });
+
+  it("cannot reactivate a pending socket removed by a revocation", () => {
+    const conn = addConnection(
+      "proj-pending",
+      makeFakeWs(),
+      "user-1",
+      "init-1",
+      { pending: true },
+    );
+    expect(conn.ready).toBe(false);
+    removeConnection("proj-pending", conn);
+    activateConnection("proj-pending", conn);
+    expect(conn.ready).toBe(false);
   });
 
   it("allows multiple connections for the same project", () => {
