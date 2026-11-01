@@ -51,6 +51,18 @@ export function toScheduledTask<TTask extends SchedulableTask>(
  * Flattens the board columns plus planned tasks into a date-sorted list.
  * Archived tasks are intentionally excluded from schedule views.
  */
+/** Board tasks stay first. Backlog rows already on a column are not repeated. */
+export function appendUnseenById<
+  TPrimary extends { id: string },
+  TExtra extends { id: string },
+>(
+  primary: readonly TPrimary[],
+  extra: readonly TExtra[],
+): Array<TPrimary | TExtra> {
+  const seen = new Set(primary.map((item) => item.id));
+  return [...primary, ...extra.filter((item) => !seen.has(item.id))];
+}
+
 export function toScheduledTasks<TTask extends SchedulableTask>(
   source: ScheduleSource<TTask> | undefined | null,
 ): Array<Scheduled<TTask>> {

@@ -10,7 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/menu";
+import useGetBacklogTasks from "@/hooks/queries/sprint/use-get-backlog-tasks";
 import { useGetTasks } from "@/hooks/queries/task/use-get-tasks";
+import { appendUnseenById } from "@/lib/task-schedule";
 
 type TaskCrumbSelectProps = {
   projectId: string;
@@ -27,7 +29,9 @@ export default function TaskCrumbSelect({
 }: TaskCrumbSelectProps) {
   const { t } = useTranslation();
   const { data: project } = useGetTasks(projectId);
-  const tasks = project?.columns?.flatMap((column) => column.tasks) ?? [];
+  const { data: backlogTasks = [] } = useGetBacklogTasks(projectId);
+  const onBoard = project?.columns?.flatMap((column) => column.tasks) ?? [];
+  const tasks = appendUnseenById(onBoard, backlogTasks);
 
   return (
     <DropdownMenu>

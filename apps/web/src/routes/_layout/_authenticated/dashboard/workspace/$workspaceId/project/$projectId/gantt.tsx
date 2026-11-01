@@ -20,10 +20,12 @@ import PageTitle from "@/components/page-title";
 import TaskDetailsSheet from "@/components/task/task-details-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import useGetBacklogTasks from "@/hooks/queries/sprint/use-get-backlog-tasks";
 import { useGetTasks } from "@/hooks/queries/task/use-get-tasks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/cn";
 import { getStatusLabel } from "@/lib/i18n/domain";
+import { appendUnseenById } from "@/lib/task-schedule";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 
 type GanttSearchParams = {
@@ -51,6 +53,7 @@ function RouteComponent() {
   const { taskId } = Route.useSearch();
   const navigate = useNavigate();
   const { data: project } = useGetTasks(projectId);
+  const { data: backlogTasks = [] } = useGetBacklogTasks(projectId);
   const weekStartsOn = useUserPreferencesStore((state) => state.weekStartsOn);
   const [searchQuery, setSearchQuery] = useState("");
   const isMobile = useIsMobile();
@@ -72,10 +75,10 @@ function RouteComponent() {
     setIsTaskRailOpen(false);
   }, [isMobile]);
 
-  const allTasks = useMemo(
-    () => project?.columns.flatMap((column) => column.tasks) ?? [],
-    [project],
-  );
+  const allTasks = useMemo(() => {
+    const onBoard = project?.columns.flatMap((column) => column.tasks) ?? [];
+    return appendUnseenById(onBoard, backlogTasks);
+  }, [backlogTasks, project]);
 
   const parsedTasks = useMemo(() => {
     return allTasks

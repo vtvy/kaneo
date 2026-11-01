@@ -1,15 +1,19 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, ScrollView } from "react-native";
+import { Alert, ScrollView, View } from "react-native";
 import { Button, Field, Loading, Notice, Screen } from "@/components/ui";
 import {
   createComment,
+  deleteComment,
   deleteTask,
   getBoard,
   getProject,
   getTask,
   listComments,
   listMembers,
+  listTaskFields,
+  listTaskLabels,
+  updateComment,
   updateTaskAssignee,
   updateTaskDescription,
   updateTaskPriority,
@@ -17,9 +21,16 @@ import {
   updateTaskTitle,
 } from "@/lib/api";
 import { errorMessage, priorityLabel, routeParam } from "@/lib/format";
-import { canAssignTask } from "@/lib/permissions";
+import { canAssignTask, canEditOwnComment } from "@/lib/permissions";
 import { useSession } from "@/lib/session";
-import type { BoardColumn, Comment, Member, TaskDetail } from "@/lib/types";
+import type {
+  BoardColumn,
+  Comment,
+  Member,
+  TaskDetail,
+  TaskFieldValue,
+  TaskLabel,
+} from "@/lib/types";
 import { useProjectAccess } from "@/lib/use-project-access";
 
 const PRIORITIES = ["no-priority", "low", "medium", "high", "urgent"] as const;
@@ -30,6 +41,10 @@ export default function TaskScreen() {
   const { session } = useSession();
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [labels, setLabels] = useState<TaskLabel[]>([]);
+  const [fields, setFields] = useState<TaskFieldValue[]>([]);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [commentDraft, setCommentDraft] = useState("");
   const [columns, setColumns] = useState<BoardColumn[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [title, setTitle] = useState("");
@@ -52,12 +67,19 @@ export default function TaskScreen() {
   const load = useCallback(() => {
     if (!taskId) return;
     setLoading(true);
-    Promise.all([getTask(taskId), listComments(taskId)])
-      .then(([nextTask, nextComments]) => {
+    Promise.all([
+      getTask(taskId),
+      listComments(taskId),
+      listTaskLabels(taskId),
+      listTaskFields(taskId),
+    ])
+      .then(([nextTask, nextComments, nextLabels, nextFields]) => {
         setTask(nextTask);
         setTitle(nextTask.title);
         setDescription(nextTask.description ?? "");
         setComments(nextComments);
+        setLabels(nextLabels);
+        setFields(nextFields);
         setError(null);
       })
       .catch((reason: unknown) => setError(errorMessage(reason)))
@@ -112,6 +134,24 @@ export default function TaskScreen() {
     }
   }
 
+  function confirmDeleteComment(commentId: string) {
+    Alert.alert("Xóa bình luận?", "Bình luận này sẽ bị xóa.", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: () => {
+          void run(async () => {
+            await deleteComment(commentId);
+            if (editingCommentId === commentId) {
+              setEditingCommentId(null);
+              setCommentDraft("");
+            }
+          });
+        },
+      },
+    ]);
+  }
   function confirmDelete() {
     Alert.alert("Xóa việc?", "Việc này sẽ bị xóa.", [
       { text: "Hủy", style: "cancel" },
@@ -221,12 +261,71 @@ export default function TaskScreen() {
                 ))}
               </>
             ) : null}
-            <Notice>Bình luận</Notice>
-            {comments.map((item) => (
-              <Notice key={item.id}>
-                {`${item.user?.name || "Ẩn danh"}: ${item.content}`}
+            {labels.length > 0 ? (
+              <Notice>
+                {`Nhãn: ${labels.map((label) => label.name).join(", ")}`}
               </Notice>
-            ))}
+            ) : null}
+            {fields.length > 0 ? (
+              <>
+                <Notice>Trường tùy chỉnh</Notice>
+                {fields.map((field) => (
+                  <Notice key={field.id}>
+                    {`${field.fieldName}: ${field.value || "—"}`}
+                  </Notice>
+                ))}
+              </>
+            ) : null}
+            <Notice>Bình luận</Notice>
+            {comments.map((item) => {
+              const own = canEditOwnComment(item.userId, session?.user.id);
+              const editing = editingCommentId === item.id;
+              return (
+                <View key={item.id}>
+                  {editing ? (
+                    <Field
+                      label="Sửa bình luận"
+                      onChangeText={setCommentDraft}
+                      value={commentDraft}
+                    />
+                  ) : (
+                    <Notice>
+                      {`${item.user?.name || "Ẩn danh"}: ${item.content}`}
+                    </Notice>
+                  )}
+                  {own && editing ? (
+                    <Button
+                      disabled={busy || !commentDraft.trim()}
+                      label="Lưu bình luận"
+                      onPress={() => {
+                        void run(async () => {
+                          await updateComment(item.id, commentDraft.trim());
+                          setEditingCommentId(null);
+                          setCommentDraft("");
+                        });
+                      }}
+                    />
+                  ) : null}
+                  {own && !editing ? (
+                    <Button
+                      disabled={busy}
+                      label="Sửa bình luận"
+                      onPress={() => {
+                        setEditingCommentId(item.id);
+                        setCommentDraft(item.content);
+                      }}
+                    />
+                  ) : null}
+                  {own ? (
+                    <Button
+                      disabled={busy}
+                      label="Xóa bình luận"
+                      onPress={() => confirmDeleteComment(item.id)}
+                    />
+                  ) : null}
+                </View>
+              );
+            })}
             {comments.length === 0 ? <Notice>Chưa có bình luận.</Notice> : null}
             {canUpdate ? (
               <>
