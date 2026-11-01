@@ -642,7 +642,9 @@
 			"labels": "Мітки",
 			"labelsDescription": "Показувати мітки та теґи завдань",
 			"priority": "Пріоритет",
-			"priorityDescription": "Відображати індикатори пріоритету"
+			"priorityDescription": "Відображати індикатори пріоритету",
+			"checklist": "Checklist",
+			"checklistDescription": "Show checklist progress on task cards and list rows"
 		},
 		"developerPage": {
 			"pageTitle": "Налаштування розробника",
@@ -2662,6 +2664,9 @@
 			"bug": "Bug",
 			"cause": "Cause"
 		},
+		"checklist": {
+			"progress": "{{completed}} of {{total}} checklist items"
+		},
 		"subtasks": {
 			"title": "Підзавдання",
 			"inputPlaceholder": "Назва підзавдання...",
@@ -3045,7 +3050,8 @@
 		"customFields": {
 			"title": "Custom fields",
 			"empty": "Empty",
-			"updateError": "Failed to update the field"
+			"updateError": "Failed to update the field",
+			"clear": "Clear"
 		},
 		"calendar": {
 			"title": "Calendar",

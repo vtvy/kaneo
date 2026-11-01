@@ -9,6 +9,7 @@ import {
   GitMerge,
   GitPullRequest,
   ListTree,
+  SquareCheck,
 } from "lucide-react";
 import { type CSSProperties, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -33,6 +34,7 @@ import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { cn } from "@/lib/cn";
 import { dueDateStatusColors, getDueDateStatus } from "@/lib/due-date-status";
+import { getTaskItemStats } from "@/lib/get-task-item-stats";
 import { PriorityGlyph } from "@/lib/priority";
 import { toast } from "@/lib/toast";
 import queryClient from "@/query-client";
@@ -69,6 +71,7 @@ function TaskCard({ task }: TaskCardProps) {
     showDueDates,
     showLabels,
     showTaskNumbers,
+    showTaskItemCounts,
   } = useUserPreferencesStore();
   const [isDeleteTaskModalOpen, setIsDeleteTaskModalOpen] = useState(false);
   const { data: externalLinks } = useExternalLinks(task.id);
@@ -81,6 +84,10 @@ function TaskCard({ task }: TaskCardProps) {
   } = useBulkSelectionStore();
   const isTaskSelected = isSelected(task.id);
   const isTaskFocused = isFocused(task.id);
+  const taskItemStats = useMemo(
+    () => getTaskItemStats(task.description),
+    [task.description],
+  );
 
   const pullRequests = useMemo(() => {
     if (!externalLinks) return [];
@@ -269,6 +276,24 @@ function TaskCard({ task }: TaskCardProps) {
               {showPriority && (
                 <span className="inline-flex items-center gap-1 rounded border border-border/70 bg-muted/55 px-2 py-1 text-[10px] font-medium text-muted-foreground">
                   <PriorityGlyph priority={task.priority ?? ""} />
+                </span>
+              )}
+
+              {showTaskItemCounts && taskItemStats.total > 0 && (
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] font-medium",
+                    taskItemStats.completed === taskItemStats.total
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                      : "border-border/70 bg-muted/55 text-muted-foreground",
+                  )}
+                  title={t("tasks:checklist.progress", {
+                    completed: taskItemStats.completed,
+                    total: taskItemStats.total,
+                  })}
+                >
+                  <SquareCheck className="h-3 w-3" />
+                  {taskItemStats.completed}/{taskItemStats.total}
                 </span>
               )}
 

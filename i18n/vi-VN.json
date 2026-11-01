@@ -634,7 +634,9 @@
 			"labels": "Nhãn",
 			"labelsDescription": "Hiển thị nhãn công việc",
 			"priority": "Độ ưu tiên",
-			"priorityDescription": "Hiển thị mức độ ưu tiên"
+			"priorityDescription": "Hiển thị mức độ ưu tiên",
+			"checklist": "Checklist",
+			"checklistDescription": "Hiện tiến độ checklist trên thẻ và dòng danh sách"
 		},
 		"developerPage": {
 			"pageTitle": "Cài đặt nhà phát triển",
@@ -2636,6 +2638,9 @@
 			"bug": "Lỗi",
 			"cause": "Nguyên nhân"
 		},
+		"checklist": {
+			"progress": "{{completed}}/{{total}} mục checklist"
+		},
 		"subtasks": {
 			"title": "Công việc con",
 			"inputPlaceholder": "Tiêu đề công việc con...",
@@ -2977,7 +2982,8 @@
 		"customFields": {
 			"title": "Trường tùy chỉnh",
 			"empty": "Trống",
-			"updateError": "Không cập nhật được trường"
+			"updateError": "Không cập nhật được trường",
+			"clear": "Xóa"
 		},
 		"calendar": {
 			"title": "Lịch",

@@ -545,7 +545,9 @@
 			"labels": "Labels",
 			"labelsDescription": "Toon taaklabels en tags",
 			"priority": "Prioriteit",
-			"priorityDescription": "Toon prioriteitsindicatoren"
+			"priorityDescription": "Toon prioriteitsindicatoren",
+			"checklist": "Checklist",
+			"checklistDescription": "Show checklist progress on task cards and list rows"
 		},
 		"developerPage": {
 			"pageTitle": "Ontwikkelaarsinstellingen",
@@ -2636,6 +2638,9 @@
 			"bug": "Bug",
 			"cause": "Cause"
 		},
+		"checklist": {
+			"progress": "{{completed}} of {{total}} checklist items"
+		},
 		"subtasks": {
 			"title": "Subtaken",
 			"inputPlaceholder": "Titel subtaak...",
@@ -2977,7 +2982,8 @@
 		"customFields": {
 			"title": "Custom fields",
 			"empty": "Empty",
-			"updateError": "Failed to update the field"
+			"updateError": "Failed to update the field",
+			"clear": "Clear"
 		},
 		"calendar": {
 			"title": "Calendar",
