@@ -62,11 +62,12 @@ jobs:
       - name: Set up Helm
         uses: azure/setup-helm@bf6a7d304bc2fdb57e0331155b7ebf2c504acf0a # v4
 
+      # The chart refuses to render without an auth secret.
       - name: Lint chart
-        run: helm lint "$CHART_PATH"
+        run: helm lint "$CHART_PATH" --set kaneo.env.authSecret=ci-only-auth-secret-at-least-32-characters
 
       - name: Render chart (${{ matrix.name }})
-        run: helm template kaneo "$CHART_PATH" ${{ matrix.args }}
+        run: helm template kaneo "$CHART_PATH" --set kaneo.env.authSecret=ci-only-auth-secret-at-least-32-characters ${{ matrix.args }}
 
   publish:
     if: github.event_name != 'pull_request'

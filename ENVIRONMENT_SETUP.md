@@ -85,6 +85,8 @@ For sending emails (workspace invitations, magic links, etc.), configure these v
 
 > **Note:** If you're using an SMTP server with a self-signed or invalid TLS certificate, set `SMTP_IGNORE_TLS=true` to bypass certificate validation.
 
+- `REQUIRE_EMAIL_VERIFICATION` - Set to `true` to require new users to confirm their email address with a 6-digit code before they can sign in. Existing users without a verified address are asked for a code at their next sign-in. Requires working SMTP.
+
 #### Cloud-mode abuse mitigations
 
 Hosted multi-tenant instances should enable the cloud abuse gates. Self-hosted instances can leave these unset.

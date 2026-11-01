@@ -31,6 +31,7 @@ const timeEntry = new Hono<{
     }),
     validator("param", v.object({ taskId: v.string() })),
     workspaceAccess.fromTaskId(),
+    projectPermission.fromTask({ item: ["read"] }, "taskId"),
     async (c) => {
       const { taskId } = c.req.valid("param");
       const timeEntries = await getTimeEntriesByTaskId(taskId);
@@ -54,6 +55,7 @@ const timeEntry = new Hono<{
     }),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromTimeEntry(),
+    projectPermission.fromTimeEntry({ item: ["read"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const timeEntry = await getTimeEntry(id);
@@ -85,7 +87,7 @@ const timeEntry = new Hono<{
       }),
     ),
     workspaceAccess.fromTaskId(),
-    projectPermission.fromTask({ item: ["update"] }),
+    projectPermission.fromTaskInBody({ item: ["update"] }, "taskId"),
     async (c) => {
       const { taskId, startTime, endTime, description } = c.req.valid("json");
       const userId = c.get("userId");
@@ -124,7 +126,7 @@ const timeEntry = new Hono<{
       }),
     ),
     workspaceAccess.fromTimeEntry(),
-    projectPermission.fromTask({ item: ["update"] }),
+    projectPermission.fromTimeEntry({ item: ["update"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const { startTime, endTime, description } = c.req.valid("json");

@@ -43,6 +43,7 @@ import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
 import useGetLabelsByWorkspace from "@/hooks/queries/label/use-get-labels-by-workspace";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
 import { formatDateMedium } from "@/lib/format";
@@ -176,7 +177,6 @@ function CreateTaskModal({
     workspace?.id || "",
   );
   const { canManageTasks, canManageLabels } = useWorkspacePermission();
-  const canCreateTaskCapability = canManageTasks();
   const canCreateLabelCapability = canManageLabels();
 
   const [title, setTitle] = useState("");
@@ -198,6 +198,13 @@ function CreateTaskModal({
   const routeProjectId =
     location.pathname.match(/\/project\/([^/]+)/)?.[1] ?? null;
   const resolvedProjectId = projectId || project?.id || routeProjectId || "";
+  const { can: canProject, isCheckingPermissions: isCheckingProjectPerms } =
+    useProjectPermission(resolvedProjectId || undefined);
+  const canCreateTaskCapability =
+    canManageTasks() ||
+    (!!resolvedProjectId &&
+      !isCheckingProjectPerms &&
+      canProject("item", "create"));
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const draftCreationPromiseRef = useRef<Promise<Task> | null>(null);
@@ -482,7 +489,7 @@ function CreateTaskModal({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (!open) return;
+      if (!open || e.isComposing || e.keyCode === 229) return;
 
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();

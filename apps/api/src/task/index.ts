@@ -16,9 +16,11 @@ import { dateStringSchema, taskSchema } from "../schemas";
 import {
   assertTaskImageKeyMatchesContext,
   createTaskImageUploadUrl,
+  getMaxImageUploadBytes,
   isImageContentType,
   validateTaskAssetUploadInput,
 } from "../storage/s3";
+import { uploadBodyLimit } from "../utils/body-limit";
 import { isInstanceAdmin } from "../utils/is-instance-admin";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import bulkUpdateTasks from "./controllers/bulk-update-tasks";
@@ -314,6 +316,7 @@ const task = new Hono<{
     }),
     validator("param", v.object({ projectId: v.string() })),
     workspaceAccess.fromProject("projectId"),
+    projectPermission.fromParam({ item: ["read"] }, "projectId"),
     async (c) => {
       const { projectId } = c.req.valid("param");
 
@@ -339,6 +342,7 @@ const task = new Hono<{
     }),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromTask(),
+    projectPermission.fromTask({ item: ["read"] }),
     async (c) => {
       const { id } = c.req.valid("param");
 
@@ -484,6 +488,7 @@ const task = new Hono<{
     }),
     validator("param", v.object({ projectId: v.string() })),
     workspaceAccess.fromProject("projectId"),
+    projectPermission.fromParam({ item: ["read"] }, "projectId"),
     async (c) => {
       const { projectId } = c.req.valid("param");
 
@@ -996,6 +1001,7 @@ const task = new Hono<{
         },
       },
     }),
+    uploadBodyLimit(getMaxImageUploadBytes()),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromTask(),
     projectPermission.fromTask({ item: ["update"] }),

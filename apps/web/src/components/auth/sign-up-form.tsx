@@ -89,6 +89,18 @@ export function SignUpForm({
 
       toast.success(t("auth:signUpForm.accountCreated"));
 
+      // No session yet: the instance requires a verified email, and a code
+      // has been sent.
+      if (!result.data?.token) {
+        const searchParams = new URLSearchParams({
+          email: data.email,
+          type: "email-verification",
+        });
+        if (invitationId) searchParams.set("invitationId", invitationId);
+        history.push(`/auth/verify-otp?${searchParams.toString()}`);
+        return;
+      }
+
       if (invitationId) {
         history.push(`/invitation/accept/${invitationId}`);
       } else {

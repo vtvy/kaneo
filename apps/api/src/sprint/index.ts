@@ -128,6 +128,7 @@ const sprint = new Hono<{
     }),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromSprint(),
+    projectPermission.fromSprint({ item: ["read"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const result = await getSprint(id);
@@ -151,6 +152,7 @@ const sprint = new Hono<{
     }),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromSprint(),
+    projectPermission.fromSprint({ item: ["read"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const tasks = await getSprintTasks(id);

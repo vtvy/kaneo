@@ -62,6 +62,7 @@ import {
   authenticateApiRequest,
   resolveAssetBearerOrCookie,
 } from "./utils/authenticate-api-request";
+import { defaultBodyLimit, isUploadRoute } from "./utils/body-limit";
 import { getInvitationDetails } from "./utils/check-registration-allowed";
 import { migrateApiKeyReferenceId } from "./utils/migrate-apikey-reference-id";
 import { migrateNotificationPreferencesSchema } from "./utils/migrate-notification-preferences-schema";
@@ -208,6 +209,12 @@ export function createApp() {
   );
 
   const api = new Hono<ApiVariables>();
+
+  api.use("*", (c, next) =>
+    isUploadRoute(c.req.method, c.req.path)
+      ? next()
+      : defaultBodyLimit(c, next),
+  );
 
   api.get("/health", (c) => {
     return c.json({ status: "ok" });

@@ -89,6 +89,15 @@ async function projectIdFromTaskRelation(
   return rel ? projectIdFromTask(rel.sourceTaskId) : undefined;
 }
 
+async function projectIdFromTimeEntry(id: string): Promise<string | undefined> {
+  const [row] = await db
+    .select({ taskId: schema.timeEntryTable.taskId })
+    .from(schema.timeEntryTable)
+    .where(eq(schema.timeEntryTable.id, id))
+    .limit(1);
+  return row?.taskId ? projectIdFromTask(row.taskId) : undefined;
+}
+
 async function projectIdFromComment(id: string): Promise<string | undefined> {
   const [row] = await db
     .select({ taskId: schema.commentTable.taskId })
@@ -161,5 +170,11 @@ export const projectPermission = {
     requireProjectPermission(perms, (c) => {
       const id = c.req.param(key);
       return id ? projectIdFromComment(id) : undefined;
+    }),
+
+  fromTimeEntry: (perms: ProjectPermissionMap, key = "id") =>
+    requireProjectPermission(perms, (c) => {
+      const id = c.req.param(key);
+      return id ? projectIdFromTimeEntry(id) : undefined;
     }),
 };
