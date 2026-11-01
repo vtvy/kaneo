@@ -17,14 +17,17 @@ import WorkspaceInvitationEmail, {
 
 config();
 
+// Credentials are optional: an internal relay may accept mail without AUTH.
+// Passing an auth object with an empty user would make nodemailer attempt a
+// LOGIN anyway, so only send credentials when a user is configured.
+export const getSmtpAuth = (env: NodeJS.ProcessEnv = process.env) =>
+  env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASSWORD } : undefined;
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   secure: process.env.SMTP_SECURE !== "false",
   port: Number(process.env.SMTP_PORT),
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
+  auth: getSmtpAuth(),
   requireTLS: process.env.SMTP_REQUIRE_TLS === "true",
   ignoreTLS: process.env.SMTP_IGNORE_TLS === "true",
 });
@@ -91,15 +94,12 @@ export type EmailResult = {
   reason?: "SMTP_NOT_CONFIGURED";
 };
 
-// Matches the API's `hasSmtp` gate (plus SMTP_FROM, which sending needs):
-// a partially filled .env (e.g. host/user defaults without a password)
-// must be treated as unconfigured, not attempted and failed.
-const isSmtpConfigured = () =>
-  Boolean(process.env.SMTP_HOST) &&
-  Boolean(process.env.SMTP_PORT) &&
-  Boolean(process.env.SMTP_USER) &&
-  Boolean(process.env.SMTP_PASSWORD) &&
-  Boolean(process.env.SMTP_FROM);
+// Matches the API's `hasSmtp` gate (apps/api/src/utils/get-settings.ts):
+// a server (host + port) and a sender address are required. Credentials
+// and SMTP_SECURE are optional, so an unauthenticated relay counts as
+// configured.
+export const isSmtpConfigured = (env: NodeJS.ProcessEnv = process.env) =>
+  Boolean(env.SMTP_HOST) && Boolean(env.SMTP_PORT) && Boolean(env.SMTP_FROM);
 
 export const sendWorkspaceInvitationEmail = async (
   to: string,
@@ -147,6 +147,72 @@ export const sendNotificationEmail = async (
     return { success: true };
   } catch (error) {
     console.error("Error sending notification email", error);
+    throw error;
+  }
+};
+
+export type FeedbackEmailData = {
+  message: string;
+  senderName: string;
+  senderEmail: string;
+  pageUrl?: string;
+};
+
+function singleLine(value: string) {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+export const sendFeedbackEmail = async (
+  to: string,
+  data: FeedbackEmailData,
+): Promise<EmailResult> => {
+  if (!isSmtpConfigured()) {
+    return { success: false, reason: "SMTP_NOT_CONFIGURED" };
+  }
+
+  const senderName =
+    singleLine(data.senderName) || data.senderEmail || "Unknown user";
+  const senderEmail = singleLine(data.senderEmail);
+  const pageUrl = data.pageUrl?.trim() ?? "";
+  const safePageUrl = /^https?:\/\//i.test(pageUrl) ? pageUrl : "";
+  const subject = `Kaneo feedback from ${senderName}`;
+  const text = [
+    data.message.trim(),
+    "",
+    `From: ${senderName}${senderEmail ? ` <${senderEmail}>` : ""}`,
+    safePageUrl ? `Page: ${safePageUrl}` : "",
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+  const html = [
+    `<div style="white-space:pre-wrap;font-family:sans-serif">${escapeHtml(data.message.trim())}</div>`,
+    "<hr />",
+    `<p>From: ${escapeHtml(senderName)}${senderEmail ? ` &lt;${escapeHtml(senderEmail)}&gt;` : ""}</p>`,
+    safePageUrl
+      ? `<p>Page: <a href="${escapeHtml(safePageUrl)}">${escapeHtml(safePageUrl)}</a></p>`
+      : "",
+  ].join("");
+
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM,
+      to,
+      replyTo: senderEmail || undefined,
+      subject,
+      text,
+      html,
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending feedback email", error);
     throw error;
   }
 };

@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { taskRecurrenceSchema } from "./task/recurrence/schema";
 
 // A date input that must be parseable (clients send ISO 8601). Rejecting a
 // garbage string here returns a clean 400 instead of letting `new Date("x")`
@@ -69,6 +70,7 @@ export const taskSchema = v.object({
   points: v.optional(v.nullable(v.number())),
   startDate: v.optional(v.date()),
   dueDate: v.optional(v.date()),
+  recurrence: v.optional(v.nullable(taskRecurrenceSchema)),
   createdAt: v.date(),
   columnId: v.optional(v.nullable(v.string())),
   sprintId: v.optional(v.nullable(v.string())),
@@ -123,6 +125,8 @@ export const notificationSchema = v.object({
     "due_date_reminder",
     "task_overdue",
     "task_deleted",
+    "sprint_started",
+    "sprint_ended",
   ] as const),
   eventData: v.nullable(v.record(v.string(), v.unknown())),
   isRead: v.optional(v.boolean()),
@@ -202,6 +206,22 @@ export const giteaIntegrationSchema = v.object({
   updatedAt: v.date(),
 });
 
+export const gitlabIntegrationSchema = v.object({
+  id: v.string(),
+  projectId: v.string(),
+  baseUrl: v.string(),
+  repositoryOwner: v.string(),
+  repositoryName: v.string(),
+  maskedAccessToken: v.string(),
+  webhookUrl: v.optional(v.string()),
+  webhookSecret: v.optional(v.string()),
+  branchPattern: v.optional(v.string()),
+  commentTaskLinkOnGitlabIssue: v.optional(v.boolean()),
+  isActive: v.nullable(v.boolean()),
+  createdAt: v.date(),
+  updatedAt: v.date(),
+});
+
 export const integrationEventsSchema = v.object({
   taskCreated: v.boolean(),
   taskStatusChanged: v.boolean(),
@@ -244,11 +264,16 @@ export const configSchema = v.object({
   disablePasswordRegistration: v.nullable(v.boolean()),
   isDemoMode: v.boolean(),
   hasSmtp: v.boolean(),
+  hasFeedback: v.boolean(),
   hasGithubSignIn: v.nullable(v.boolean()),
   hasGoogleSignIn: v.nullable(v.boolean()),
   hasCustomOAuth: v.nullable(v.boolean()),
   hasGuestAccess: v.nullable(v.boolean()),
   customOAuthLogoutUrl: v.nullable(v.string()),
+  instanceName: v.string(),
+  workspaceCreationRestricted: v.boolean(),
+  disabledIntegrations: v.array(v.string()),
+  managedProfileFields: v.array(v.picklist(["name", "image"])),
 });
 
 export const workspaceDashboardSchema = v.object({

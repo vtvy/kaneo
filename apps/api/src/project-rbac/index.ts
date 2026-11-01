@@ -1,9 +1,12 @@
+import { and, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { describeRoute, validator } from "hono-openapi";
 import * as v from "valibot";
+import db, { schema } from "../database";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import { resolveProjectStatements } from "./can-in-project";
-import { PROJECT_PERMISSION_CATALOG } from "./catalog";
+import { PROJECT_PERMISSION_CATALOG, PROJECT_SYSTEM_OWNER } from "./catalog";
 import addMemberCtrl from "./controllers/add-member";
 import assignMemberRolesCtrl from "./controllers/assign-member-roles";
 import createRoleCtrl from "./controllers/create-role";
@@ -14,6 +17,50 @@ import removeMemberCtrl from "./controllers/remove-member";
 import searchUserDirectoryCtrl from "./controllers/search-user-directory";
 import updateRoleCtrl from "./controllers/update-role";
 import { projectPermission } from "./require-project-permission";
+
+// member:manage lets a role add people and pick their roles, but only an
+// Owner may hand out Owner; otherwise any manager could promote themselves.
+async function assertCallerIsProjectOwner(
+  userId: string,
+  projectId: string,
+  message = "Only a project Owner can grant the Owner role",
+) {
+  const { isOwner } = await resolveProjectStatements(userId, projectId);
+  if (!isOwner) {
+    throw new HTTPException(403, { message });
+  }
+}
+
+// Creating, editing or deleting roles is Owner-only. role:manage alone would
+// let a holder rewrite the permissions of a role they are assigned to (or
+// create one and get it assigned) and so grant themselves anything; keeping
+// role definitions with the Owner closes that. role:manage still gates
+// reading the role list. (Workspace owners/admins without a project_member
+// row count as Owner, see resolveProjectStatements.)
+async function assertCanEditRoles(userId: string, projectId: string) {
+  await assertCallerIsProjectOwner(
+    userId,
+    projectId,
+    "Only a project Owner can create, edit or delete roles",
+  );
+}
+
+async function includesOwnerRole(projectId: string, roleIds: string[]) {
+  if (roleIds.length === 0) return false;
+  const [ownerRole] = await db
+    .select({ id: schema.projectRoleTable.id })
+    .from(schema.projectRoleTable)
+    .where(
+      and(
+        eq(schema.projectRoleTable.projectId, projectId),
+        inArray(schema.projectRoleTable.id, roleIds),
+        eq(schema.projectRoleTable.name, PROJECT_SYSTEM_OWNER),
+        eq(schema.projectRoleTable.isSystem, true),
+      ),
+    )
+    .limit(1);
+  return Boolean(ownerRole);
+}
 
 const projectRbac = new Hono<{
   Variables: {
@@ -93,6 +140,7 @@ const projectRbac = new Hono<{
     async (c) => {
       const { projectId } = c.req.valid("param");
       const { name, permissions } = c.req.valid("json");
+      await assertCanEditRoles(c.get("userId"), projectId);
       const role = await createRoleCtrl(projectId, name, permissions ?? {});
       return c.json(role);
     },
@@ -117,6 +165,7 @@ const projectRbac = new Hono<{
     async (c) => {
       const { projectId, roleId } = c.req.valid("param");
       const { name, permissions } = c.req.valid("json");
+      await assertCanEditRoles(c.get("userId"), projectId);
       const updated = await updateRoleCtrl(
         projectId,
         roleId,
@@ -138,6 +187,7 @@ const projectRbac = new Hono<{
     projectPermission.fromParam({ role: ["manage"] }),
     async (c) => {
       const { projectId, roleId } = c.req.valid("param");
+      await assertCanEditRoles(c.get("userId"), projectId);
       await deleteRoleCtrl(projectId, roleId);
       return c.json({ success: true });
     },
@@ -151,6 +201,7 @@ const projectRbac = new Hono<{
     }),
     validator("param", v.object({ projectId: v.string() })),
     workspaceAccess.fromProject("projectId"),
+    projectPermission.fromParam({ item: ["read"] }),
     async (c) => {
       const { projectId } = c.req.valid("param");
       const members = await listMembersCtrl(projectId);
@@ -202,6 +253,9 @@ const projectRbac = new Hono<{
     async (c) => {
       const { projectId } = c.req.valid("param");
       const { email, roleNames } = c.req.valid("json");
+      if (roleNames?.includes(PROJECT_SYSTEM_OWNER)) {
+        await assertCallerIsProjectOwner(c.get("userId"), projectId);
+      }
       await addMemberCtrl(projectId, email, roleNames ?? []);
       return c.json({ success: true });
     },
@@ -223,6 +277,9 @@ const projectRbac = new Hono<{
     async (c) => {
       const { projectId, memberId } = c.req.valid("param");
       const { roleIds } = c.req.valid("json");
+      if (await includesOwnerRole(projectId, roleIds)) {
+        await assertCallerIsProjectOwner(c.get("userId"), projectId);
+      }
       await assignMemberRolesCtrl(projectId, memberId, roleIds);
       return c.json({ success: true });
     },

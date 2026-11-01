@@ -414,10 +414,12 @@ function Activity({
   activity,
   step,
   showConnector = false,
+  projectId,
 }: {
   activity: ActivityItem;
   step: number;
   showConnector?: boolean;
+  projectId?: string;
 }) {
   const { t } = useTranslation();
   const { data: workspace } = useActiveWorkspace();
@@ -455,6 +457,7 @@ function Activity({
           <CommentCard
             commentId={activity.id}
             taskId={activity.taskId ?? ""}
+            projectId={projectId}
             content={activity.content || ""}
             user={commentUser}
             createdAt={activity.createdAt}

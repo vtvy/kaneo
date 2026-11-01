@@ -11,6 +11,10 @@ import {
   removeLabelFromGitHub,
   syncLabelToGitHub,
 } from "../../plugins/github/utils/sync-label-to-github";
+import {
+  removeLabelFromGitlab,
+  syncLabelToGitlab,
+} from "../../plugins/gitlab/utils/sync-label-to-gitlab";
 
 async function assignLabelToTask(id: string, taskId: string, userId: string) {
   const label = await db.query.labelTable.findFirst({
@@ -65,6 +69,9 @@ async function assignLabelToTask(id: string, taskId: string, userId: string) {
     removeLabelFromGitea(label.taskId, label.name).catch((error) => {
       console.error("Failed to remove label from Gitea:", error);
     });
+    removeLabelFromGitlab(label.taskId, label.name).catch((error) => {
+      console.error("Failed to remove label from GitLab:", error);
+    });
   }
 
   syncLabelToGitHub(taskId, updatedLabel.name, updatedLabel.color).catch(
@@ -75,6 +82,11 @@ async function assignLabelToTask(id: string, taskId: string, userId: string) {
   syncLabelToGitea(taskId, updatedLabel.name, updatedLabel.color).catch(
     (error) => {
       console.error("Failed to sync label to Gitea:", error);
+    },
+  );
+  syncLabelToGitlab(taskId, updatedLabel.name, updatedLabel.color).catch(
+    (error) => {
+      console.error("Failed to sync label to GitLab:", error);
     },
   );
 

@@ -6,6 +6,8 @@ import {
   assetTable,
   columnTable,
   commentTable,
+  customFieldDefinitionTable,
+  customFieldValueTable,
   documentTable,
   externalLinkTable,
   folderTable,
@@ -24,6 +26,7 @@ import {
   taskInvolvementTable,
   taskRelationTable,
   taskReminderSentTable,
+  taskSprintTable,
   taskTable,
   teamMemberTable,
   teamTable,
@@ -122,6 +125,7 @@ export const projectTableRelations = relations(
     notificationWorkspaceProjects: many(userNotificationWorkspaceProjectTable),
     members: many(projectMemberTable),
     roles: many(projectRoleTable),
+    customFields: many(customFieldDefinitionTable),
   }),
 );
 
@@ -179,8 +183,10 @@ export const taskTableRelations = relations(taskTable, ({ one, many }) => ({
   externalLinks: many(externalLinkTable),
   sourceRelations: many(taskRelationTable, { relationName: "sourceTask" }),
   targetRelations: many(taskRelationTable, { relationName: "targetTask" }),
+  customFieldValues: many(customFieldValueTable),
   remindersSent: many(taskReminderSentTable),
   involvements: many(taskInvolvementTable),
+  sprintMemberships: many(taskSprintTable),
 }));
 
 export const timeEntryTableRelations = relations(timeEntryTable, ({ one }) => ({
@@ -215,7 +221,22 @@ export const sprintTableRelations = relations(sprintTable, ({ one, many }) => ({
   }),
   tasks: many(taskTable),
   activities: many(activityTable),
+  memberships: many(taskSprintTable),
 }));
+
+export const taskSprintTableRelations = relations(
+  taskSprintTable,
+  ({ one }) => ({
+    task: one(taskTable, {
+      fields: [taskSprintTable.taskId],
+      references: [taskTable.id],
+    }),
+    sprint: one(sprintTable, {
+      fields: [taskSprintTable.sprintId],
+      references: [sprintTable.id],
+    }),
+  }),
+);
 
 export const activityTableRelations = relations(activityTable, ({ one }) => ({
   task: one(taskTable, {
@@ -528,3 +549,28 @@ export const documentTableRelations = relations(documentTable, ({ one }) => ({
     references: [userTable.id],
   }),
 }));
+
+export const customFieldDefinitionTableRelations = relations(
+  customFieldDefinitionTable,
+  ({ one, many }) => ({
+    project: one(projectTable, {
+      fields: [customFieldDefinitionTable.projectId],
+      references: [projectTable.id],
+    }),
+    values: many(customFieldValueTable),
+  }),
+);
+
+export const customFieldValueTableRelations = relations(
+  customFieldValueTable,
+  ({ one }) => ({
+    field: one(customFieldDefinitionTable, {
+      fields: [customFieldValueTable.fieldId],
+      references: [customFieldDefinitionTable.id],
+    }),
+    task: one(taskTable, {
+      fields: [customFieldValueTable.taskId],
+      references: [taskTable.id],
+    }),
+  }),
+);

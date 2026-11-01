@@ -16,6 +16,10 @@ function useCreateTask() {
       startDate,
       dueDate,
       priority,
+      points,
+      sprintId,
+      createGitlabIssue,
+      customFields,
     }: CreateTaskRequest) =>
       createTask(
         title,
@@ -26,11 +30,32 @@ function useCreateTask() {
         startDate ? new Date(startDate) : undefined,
         dueDate ? new Date(dueDate) : undefined,
         priority,
+        points,
+        sprintId,
+        createGitlabIssue,
+        customFields,
       ),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
         queryKey: ["tasks", variables.projectId],
       });
+      // The backlog table reads a separate flat list of the project's tasks.
+      void queryClient.invalidateQueries({
+        queryKey: ["all-project-tasks", variables.projectId],
+      });
+      // New tasks get field defaults or the values sent with them.
+      void queryClient.invalidateQueries({
+        queryKey: ["custom-field-project-values", variables.projectId],
+      });
+      // A task created into a sprint changes that sprint's list and totals.
+      if (variables.sprintId) {
+        void queryClient.invalidateQueries({
+          queryKey: ["sprints", variables.projectId],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["sprint-tasks", variables.sprintId],
+        });
+      }
     },
   });
 }

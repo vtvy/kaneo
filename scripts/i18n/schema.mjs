@@ -29,6 +29,10 @@ function buildSchemaNode(value) {
   return {
     type: "object",
     additionalProperties: false,
+    // Locales may add plural categories en-US does not use (e.g. ru `_few`).
+    patternProperties: {
+      "_(zero|one|two|few|many|other)$": { type: "string" },
+    },
     properties: buildProperties(value),
     required: Object.keys(value),
   };

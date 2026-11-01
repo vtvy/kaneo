@@ -255,6 +255,15 @@ function TaskCard({ task }: TaskCardProps) {
                 </span>
               )}
 
+              {task.points != null && (
+                <span
+                  className="inline-flex items-center gap-1 rounded border border-border/70 bg-muted/55 px-2 py-1 text-[10px] font-medium text-muted-foreground"
+                  title={t("tasks:points.label")}
+                >
+                  {t("tasks:points.unit", { n: task.points })}
+                </span>
+              )}
+
               {showDueDates && task.dueDate && (
                 <div
                   className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded ${dueDateStatusColors[getDueDateStatus(task.dueDate)]}`}

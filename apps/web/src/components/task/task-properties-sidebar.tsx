@@ -5,7 +5,9 @@ import {
   CalendarX,
   Copy,
   GitBranch,
+  Hash,
   Plus,
+  Target,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,20 +27,28 @@ import useGetGithubIntegration from "@/hooks/queries/github-integration/use-get-
 import useGetLabelsByTask from "@/hooks/queries/label/use-get-labels-by-task";
 import useGetProject from "@/hooks/queries/project/use-get-project";
 import useGetProjects from "@/hooks/queries/project/use-get-projects";
+import useGetSprintsByProject from "@/hooks/queries/sprint/use-get-sprints-by-project";
 import useGetTask from "@/hooks/queries/task/use-get-task";
+import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { cn } from "@/lib/cn";
 import { getColumnIcon } from "@/lib/column";
+import { copyText } from "@/lib/copy-text";
 import { dueDateStatusColors, getDueDateStatus } from "@/lib/due-date-status";
 import { formatDateShort } from "@/lib/format";
 import { getPriorityLabel, getStatusDisplayLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
+import { taskLink } from "@/lib/short-task-link";
 import { toast } from "@/lib/toast";
+import TaskSprintPopover from "../sprint/task-sprint-popover";
+import TaskCustomFields from "./custom-fields/task-custom-fields";
 import TaskAssigneePopover from "./task-assignee-popover";
 import TaskDueDatePopover from "./task-due-date-popover";
 import TaskLabelsPopover from "./task-labels-popover";
 import TaskMovePopover from "./task-move-popover";
+import TaskPointsPopover from "./task-points-popover";
 import TaskPriorityPopover from "./task-priority-popover";
+import { TaskRecurrenceBadge } from "./task-recurrence-badge";
 import TaskStartDatePopover from "./task-start-date-popover";
 import TaskStatusPopover from "./task-status-popover";
 
@@ -88,6 +98,7 @@ export default function TaskPropertiesSidebar({
   const { data: githubIntegration } = useGetGithubIntegration(projectId);
   const { data: giteaIntegration } = useGetGiteaIntegration(projectId);
   const { data: workspaceProjects = [] } = useGetProjects({ workspaceId });
+  const { data: activeWorkspace } = useActiveWorkspace();
   const canMoveTask =
     Boolean(task) && workspaceProjects.some((p) => p.id !== task?.projectId);
   const statusColumn = columns.find(
@@ -111,9 +122,20 @@ export default function TaskPropertiesSidebar({
     (member) => member.userId === task?.userId,
   );
 
+  const { data: sprints = [] } = useGetSprintsByProject(projectId);
+  const currentSprint = sprints.find((sprint) => sprint.id === task?.sprintId);
+
   const handleCopyTaskLink = () => {
-    navigator.clipboard.writeText(
-      `${window.location.origin}/dashboard/workspace/${workspaceId}/project/${projectId}/task/${taskId}`,
+    copyText(
+      taskLink({
+        workspaceId,
+        workspaceSlug:
+          activeWorkspace?.id === workspaceId ? activeWorkspace.slug : null,
+        projectId,
+        projectSlug,
+        taskId: taskId ?? "",
+        taskNumber,
+      }),
     );
     toast.message(t("tasks:properties.copyTaskLink"));
   };
@@ -125,7 +147,7 @@ export default function TaskPropertiesSidebar({
       taskNumber,
       task?.title,
     );
-    navigator.clipboard.writeText(branchName);
+    copyText(branchName);
     toast.message(t("tasks:properties.copyTaskBranch"));
   };
 
@@ -225,6 +247,24 @@ export default function TaskPropertiesSidebar({
                 </TaskPriorityPopover>
               )}
               {task && (
+                <TaskPointsPopover task={task}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="justify-start h-7 px-1.5 gap-1.5"
+                  >
+                    <Hash className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span
+                      className={`text-xs font-semibold truncate ${task.points != null ? "" : "text-muted-foreground"}`}
+                    >
+                      {task.points != null
+                        ? t("tasks:points.unit", { n: task.points })
+                        : t("tasks:points.none")}
+                    </span>
+                  </Button>
+                </TaskPointsPopover>
+              )}
+              {task && (
                 <TaskAssigneePopover task={task} workspaceId={workspaceId}>
                   <Button
                     variant="ghost"
@@ -256,6 +296,42 @@ export default function TaskPropertiesSidebar({
                     </span>
                   </Button>
                 </TaskAssigneePopover>
+              )}
+              {task && (
+                <TaskSprintPopover task={task}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="justify-start h-7 px-1.5 gap-1.5"
+                  >
+                    <Target className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span
+                      className={`text-xs font-semibold truncate max-w-[100px] ${currentSprint ? "" : "text-muted-foreground"}`}
+                    >
+                      {currentSprint?.name ??
+                        t("common:sprints.noSprintBacklog")}
+                    </span>
+                  </Button>
+                </TaskSprintPopover>
+              )}
+              {task?.reporterId && (
+                <div
+                  className="flex items-center h-7 px-1.5 gap-1.5"
+                  title={t("tasks:properties.reporter")}
+                >
+                  <Avatar className="h-[16px] w-[16px]">
+                    <AvatarImage
+                      src={task.reporterImage ?? ""}
+                      alt={task.reporterName || ""}
+                    />
+                    <AvatarFallback className="text-[9px] font-medium border border-border/30 shrink-0 h-[16px] w-[16px]">
+                      {task.reporterName?.charAt(0).toUpperCase() ?? "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs font-semibold truncate max-w-[100px] text-muted-foreground">
+                    {task.reporterName ?? t("tasks:properties.reporter")}
+                  </span>
+                </div>
               )}
               {task && (
                 <TaskStartDatePopover task={task}>
@@ -303,6 +379,7 @@ export default function TaskPropertiesSidebar({
                         <span className="text-xs font-semibold">
                           {formatDateShort(task.dueDate)}
                         </span>
+                        <TaskRecurrenceBadge task={task} />
                       </>
                     ) : (
                       <>
@@ -413,6 +490,24 @@ export default function TaskPropertiesSidebar({
                   </TaskPriorityPopover>
                 )}
                 {task && (
+                  <TaskPointsPopover task={task}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start h-7 px-1.5 gap-1.5"
+                    >
+                      <Hash className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span
+                        className={`text-xs font-semibold truncate ${task.points != null ? "" : "text-muted-foreground"}`}
+                      >
+                        {task.points != null
+                          ? t("tasks:points.unit", { n: task.points })
+                          : t("tasks:points.none")}
+                      </span>
+                    </Button>
+                  </TaskPointsPopover>
+                )}
+                {task && (
                   <TaskAssigneePopover task={task} workspaceId={workspaceId}>
                     <Button
                       variant="ghost"
@@ -444,6 +539,42 @@ export default function TaskPropertiesSidebar({
                       </span>
                     </Button>
                   </TaskAssigneePopover>
+                )}
+                {task && (
+                  <TaskSprintPopover task={task}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start h-7 px-1.5 gap-1.5"
+                    >
+                      <Target className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span
+                        className={`text-xs font-semibold truncate max-w-[100px] ${currentSprint ? "" : "text-muted-foreground"}`}
+                      >
+                        {currentSprint?.name ??
+                          t("common:sprints.noSprintBacklog")}
+                      </span>
+                    </Button>
+                  </TaskSprintPopover>
+                )}
+                {task?.reporterId && (
+                  <div
+                    className="flex items-center h-7 px-1.5 gap-1.5"
+                    title={t("tasks:properties.reporter")}
+                  >
+                    <Avatar className="h-[16px] w-[16px]">
+                      <AvatarImage
+                        src={task.reporterImage ?? ""}
+                        alt={task.reporterName || ""}
+                      />
+                      <AvatarFallback className="text-[9px] font-medium border border-border/30 shrink-0 h-[16px] w-[16px]">
+                        {task.reporterName?.charAt(0).toUpperCase() ?? "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-semibold truncate max-w-[100px] text-muted-foreground">
+                      {task.reporterName ?? t("tasks:properties.reporter")}
+                    </span>
+                  </div>
                 )}
                 {task && (
                   <TaskStartDatePopover task={task}>
@@ -492,6 +623,7 @@ export default function TaskPropertiesSidebar({
                           <span className="text-xs font-semibold">
                             {formatDateShort(task.dueDate)}
                           </span>
+                          <TaskRecurrenceBadge task={task} />
                         </>
                       ) : (
                         <>
@@ -604,6 +736,24 @@ export default function TaskPropertiesSidebar({
                   </TaskPriorityPopover>
                 )}
                 {task && (
+                  <TaskPointsPopover task={task}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start h-7 px-1.5 gap-1.5 w-full"
+                    >
+                      <Hash className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span
+                        className={`text-xs font-semibold truncate ${task.points != null ? "" : "text-muted-foreground"}`}
+                      >
+                        {task.points != null
+                          ? t("tasks:points.unit", { n: task.points })
+                          : t("tasks:points.none")}
+                      </span>
+                    </Button>
+                  </TaskPointsPopover>
+                )}
+                {task && (
                   <TaskAssigneePopover task={task} workspaceId={workspaceId}>
                     <Button
                       variant="ghost"
@@ -635,6 +785,42 @@ export default function TaskPropertiesSidebar({
                       </span>
                     </Button>
                   </TaskAssigneePopover>
+                )}
+                {task && (
+                  <TaskSprintPopover task={task}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start h-7 px-1.5 gap-1.5 w-full"
+                    >
+                      <Target className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span
+                        className={`text-xs font-semibold truncate ${currentSprint ? "" : "text-muted-foreground"}`}
+                      >
+                        {currentSprint?.name ??
+                          t("common:sprints.noSprintBacklog")}
+                      </span>
+                    </Button>
+                  </TaskSprintPopover>
+                )}
+                {task?.reporterId && (
+                  <div
+                    className="flex items-center h-7 px-1.5 gap-1.5 w-full"
+                    title={t("tasks:properties.reporter")}
+                  >
+                    <Avatar className="h-[16px] w-[16px]">
+                      <AvatarImage
+                        src={task.reporterImage ?? ""}
+                        alt={task.reporterName || ""}
+                      />
+                      <AvatarFallback className="text-[9px] font-medium border border-border/30 shrink-0 h-[16px] w-[16px]">
+                        {task.reporterName?.charAt(0).toUpperCase() ?? "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-semibold truncate text-muted-foreground">
+                      {task.reporterName ?? t("tasks:properties.reporter")}
+                    </span>
+                  </div>
                 )}
                 {task && (
                   <TaskStartDatePopover task={task}>
@@ -683,6 +869,7 @@ export default function TaskPropertiesSidebar({
                           <span className="text-xs font-semibold">
                             {formatDateShort(task.dueDate)}
                           </span>
+                          <TaskRecurrenceBadge task={task} />
                         </>
                       ) : (
                         <>
@@ -750,6 +937,8 @@ export default function TaskPropertiesSidebar({
             </div>
           </div>
         </div>
+
+        {task && <TaskCustomFields task={task} className="px-3 py-2" />}
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import {
   userTable,
   workspaceTable,
 } from "../../database/schema";
+import { truncateText } from "../../utils/truncate-text";
 import type {
   PluginContext,
   TaskCommentCreatedEvent,
@@ -187,8 +188,11 @@ async function sendEvent(
       },
     }));
   } catch (error) {
-    const message =
-      error instanceof Error ? (error.stack ?? error.message) : String(error);
+    // Stored health is returned to API clients: keep it to a short message,
+    // never a stack trace or upstream response text.
+    const message = truncateText(
+      error instanceof Error ? error.message : String(error),
+    );
 
     void persistWebhookHealth(projectId, (currentConfig) => ({
       ...currentConfig,

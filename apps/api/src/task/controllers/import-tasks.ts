@@ -4,6 +4,7 @@ import db from "../../database";
 import { columnTable, projectTable, taskTable } from "../../database/schema";
 import { publishEvent } from "../../events";
 import {
+  assertAssigneeInWorkspace,
   coercePriority,
   coerceStatus,
   getValidTaskStatuses,
@@ -34,6 +35,15 @@ async function importTasks(
     throw new HTTPException(404, {
       message: "Project not found",
     });
+  }
+
+  // Every assignee must belong to the project's workspace; reject the whole
+  // import up front rather than half-importing.
+  const assigneeIds = new Set(
+    tasksToImport.map((t) => t.userId).filter((id): id is string => !!id),
+  );
+  for (const assigneeId of assigneeIds) {
+    await assertAssigneeInWorkspace(assigneeId, projectId);
   }
 
   let taskNumber = await getNextTaskNumber(projectId);

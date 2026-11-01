@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute, resolver, validator } from "hono-openapi";
@@ -16,36 +16,99 @@ import { dateStringSchema, taskSchema } from "../schemas";
 import {
   assertTaskImageKeyMatchesContext,
   createTaskImageUploadUrl,
+  getMaxImageUploadBytes,
   isImageContentType,
   validateTaskAssetUploadInput,
 } from "../storage/s3";
+import { uploadBodyLimit } from "../utils/body-limit";
+import { isInstanceAdmin } from "../utils/is-instance-admin";
+import { validateWorkspaceAccess } from "../utils/validate-workspace-access";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import bulkUpdateTasks from "./controllers/bulk-update-tasks";
 import createTask from "./controllers/create-task";
 import deleteTask from "./controllers/delete-task";
+import duplicateTask from "./controllers/duplicate-task";
 import exportTasks from "./controllers/export-tasks";
 import getAllProjectTasks from "./controllers/get-all-project-tasks";
 import getMyTasks from "./controllers/get-my-tasks";
 import getTask from "./controllers/get-task";
+import getTaskByTicketId, {
+  findWorkspaceIdBySlug,
+} from "./controllers/get-task-by-ticket-id";
 import getTasks from "./controllers/get-tasks";
 import importTasks from "./controllers/import-tasks";
 import moveTask from "./controllers/move-task";
+import pushTaskToGitlab from "./controllers/push-task-to-gitlab";
 import updateTask from "./controllers/update-task";
 import updateTaskAssignee from "./controllers/update-task-assignee";
 import updateTaskDescription from "./controllers/update-task-description";
 import updateTaskDueDate from "./controllers/update-task-due-date";
 import updateTaskPoints from "./controllers/update-task-points";
 import updateTaskPriority from "./controllers/update-task-priority";
+import updateTaskRecurrence from "./controllers/update-task-recurrence";
 import updateTaskStatus from "./controllers/update-task-status";
 import updateTaskTitle from "./controllers/update-task-title";
 import uploadTaskAsset from "./controllers/upload-task-asset";
+import { taskRecurrenceSchema } from "./recurrence/schema";
+import "./recurrence/subscribe";
 import { VALID_PRIORITIES } from "./validate-task-fields";
 
 const task = new Hono<{
   Variables: {
     userId: string;
+    apiKey?: { id: string };
   };
 }>()
+  .get(
+    "/ticket/:ticketId",
+    describeRoute({
+      operationId: "getTaskByTicketId",
+      tags: ["Tasks"],
+      description:
+        "Resolve a short ticket id like PROJ-12 within a workspace (by slug)",
+      responses: {
+        200: {
+          description: "Task resolved from the ticket id",
+          content: {
+            "application/json": {
+              schema: resolver(
+                v.object({ ...taskSchema.entries, workspaceId: v.string() }),
+              ),
+            },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ ticketId: v.string() })),
+    validator("query", v.object({ workspaceSlug: v.string() })),
+    async (c) => {
+      const { ticketId } = c.req.valid("param");
+      const { workspaceSlug } = c.req.valid("query");
+      const userId = c.get("userId");
+      if (!userId) {
+        throw new HTTPException(401, { message: "Unauthorized" });
+      }
+
+      // The workspace comes from a slug, so the workspaceAccess and
+      // projectPermission middlewares cannot resolve it; check both here.
+      const workspaceId = await findWorkspaceIdBySlug(workspaceSlug);
+      await validateWorkspaceAccess(userId, workspaceId, c.get("apiKey")?.id);
+
+      const { taskId, projectId } = await getTaskByTicketId(
+        ticketId,
+        workspaceId,
+      );
+      if (
+        !(await isInstanceAdmin(c)) &&
+        !(await canInProject(userId, projectId, "item", "read"))
+      ) {
+        throw new HTTPException(403, { message: "Insufficient permissions" });
+      }
+
+      const task = await getTask(taskId);
+      return c.json({ ...task, workspaceId });
+    },
+  )
   .get(
     "/tasks/:projectId",
     describeRoute({
@@ -154,6 +217,33 @@ const task = new Hono<{
         });
       }
 
+      // Same project permission the single-task route for this operation needs.
+      const requiredAction =
+        operation === "delete"
+          ? "delete"
+          : operation === "updateStatus"
+            ? "transition"
+            : operation === "updateAssignee"
+              ? "assign"
+              : "update";
+
+      if (!(await isInstanceAdmin(c))) {
+        const projectRows = await db
+          .selectDistinct({ projectId: taskTable.projectId })
+          .from(taskTable)
+          .where(inArray(taskTable.id, taskIds));
+
+        for (const { projectId } of projectRows) {
+          if (
+            !(await canInProject(userId, projectId, "item", requiredAction))
+          ) {
+            throw new HTTPException(403, {
+              message: "Insufficient permissions",
+            });
+          }
+        }
+      }
+
       const result = await bulkUpdateTasks({
         taskIds,
         operation,
@@ -170,7 +260,7 @@ const task = new Hono<{
       operationId: "getMyTasks",
       tags: ["Tasks"],
       description:
-        "Get tasks for the current user in a workspace (assigned or involved)",
+        "Get tasks for the current user in a workspace (assigned or involved), limited to projects the user can read. open=true keeps only unfinished tasks in active projects.",
       responses: {
         200: {
           description: "Tasks for the current user in the workspace",
@@ -185,18 +275,20 @@ const task = new Hono<{
       "query",
       v.object({
         scope: v.optional(v.picklist(["assigned", "involved"] as const)),
+        open: v.optional(v.picklist(["true", "false"] as const)),
       }),
     ),
     workspaceAccess.fromParam("workspaceId"),
     async (c) => {
       const { workspaceId } = c.req.valid("param");
-      const { scope } = c.req.valid("query");
+      const { scope, open } = c.req.valid("query");
       const userId = c.get("userId");
 
       const tasks = await getMyTasks(
         userId,
         workspaceId,
         scope === "involved" ? "involved" : "assigned",
+        { open: open === "true" },
       );
 
       return c.json(tasks);
@@ -207,7 +299,8 @@ const task = new Hono<{
     describeRoute({
       operationId: "createTask",
       tags: ["Tasks"],
-      description: "Create a new task in a project",
+      description:
+        "Create a new task in a project. `customFields` sets values on create (item:create is enough); once sent, required fields without a default must be included.",
       responses: {
         200: {
           description: "Task created successfully",
@@ -233,6 +326,13 @@ const task = new Hono<{
         status: v.optional(v.nullable(v.string())),
         sprintId: v.optional(v.nullable(v.string())),
         userId: v.optional(v.string()),
+        createGitlabIssue: v.optional(v.boolean()),
+        customFields: v.optional(
+          v.pipe(
+            v.array(v.object({ fieldId: v.string(), value: v.string() })),
+            v.maxLength(200),
+          ),
+        ),
       }),
     ),
     workspaceAccess.fromProject("projectId"),
@@ -249,6 +349,8 @@ const task = new Hono<{
         status,
         sprintId,
         userId,
+        createGitlabIssue,
+        customFields,
       } = c.req.valid("json");
 
       const task = await createTask({
@@ -263,9 +365,44 @@ const task = new Hono<{
         points,
         status,
         sprintId,
+        createGitlabIssue,
+        customFields,
       });
 
       return c.json(task);
+    },
+  )
+  .post(
+    "/:id/push-to-gitlab",
+    describeRoute({
+      operationId: "pushTaskToGitlab",
+      tags: ["Tasks"],
+      description: "Create a GitLab issue from an existing task",
+      responses: {
+        200: {
+          description: "GitLab issue created or already linked",
+          content: {
+            "application/json": {
+              schema: resolver(
+                v.object({
+                  taskId: v.string(),
+                  issueNumber: v.string(),
+                  url: v.string(),
+                  created: v.boolean(),
+                }),
+              ),
+            },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    workspaceAccess.fromTask(),
+    projectPermission.fromTask({ item: ["update"] }),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const result = await pushTaskToGitlab(id);
+      return c.json(result);
     },
   )
   .get(
@@ -286,6 +423,7 @@ const task = new Hono<{
     }),
     validator("param", v.object({ projectId: v.string() })),
     workspaceAccess.fromProject("projectId"),
+    projectPermission.fromParam({ item: ["read"] }, "projectId"),
     async (c) => {
       const { projectId } = c.req.valid("param");
 
@@ -311,6 +449,7 @@ const task = new Hono<{
     }),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromTask(),
+    projectPermission.fromTask({ item: ["read"] }),
     async (c) => {
       const { id } = c.req.valid("param");
 
@@ -456,6 +595,7 @@ const task = new Hono<{
     }),
     validator("param", v.object({ projectId: v.string() })),
     workspaceAccess.fromProject("projectId"),
+    projectPermission.fromParam({ item: ["read"] }, "projectId"),
     async (c) => {
       const { projectId } = c.req.valid("param");
 
@@ -707,6 +847,76 @@ const task = new Hono<{
         id,
         dueDate: dueDate ? new Date(dueDate) : null,
         currentUserId,
+      });
+
+      return c.json(task);
+    },
+  )
+
+  .post(
+    "/duplicate/:id",
+    describeRoute({
+      operationId: "duplicateTask",
+      tags: ["Tasks"],
+      description:
+        "Duplicate a task into the same project (fields and labels; not comments, activity or relations)",
+      responses: {
+        200: {
+          description: "Task duplicated successfully",
+          content: {
+            "application/json": { schema: resolver(taskSchema) },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    validator("json", v.object({ title: v.optional(v.string()) })),
+    workspaceAccess.fromTask(),
+    projectPermission.fromTask({ item: ["create"] }),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const { title } = c.req.valid("json");
+
+      const task = await duplicateTask({
+        taskId: id,
+        currentUserId: c.get("userId"),
+        title,
+      });
+
+      return c.json(task);
+    },
+  )
+  .put(
+    "/recurrence/:id",
+    describeRoute({
+      operationId: "updateTaskRecurrence",
+      tags: ["Tasks"],
+      description:
+        "Set or clear a task's repeat rule. When the task moves into a final column, the next task is created with its dates moved forward one interval from the due date.",
+      responses: {
+        200: {
+          description: "Task repeat rule updated successfully",
+          content: {
+            "application/json": { schema: resolver(taskSchema) },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    validator(
+      "json",
+      v.object({ recurrence: v.nullable(taskRecurrenceSchema) }),
+    ),
+    workspaceAccess.fromTask(),
+    projectPermission.fromTask({ item: ["update"] }),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const { recurrence } = c.req.valid("json");
+
+      const task = await updateTaskRecurrence({
+        id,
+        recurrence,
+        currentUserId: c.get("userId"),
       });
 
       return c.json(task);
@@ -968,6 +1178,7 @@ const task = new Hono<{
         },
       },
     }),
+    uploadBodyLimit(getMaxImageUploadBytes()),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromTask(),
     projectPermission.fromTask({ item: ["update"] }),

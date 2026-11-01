@@ -1,7 +1,9 @@
 import {
   CalendarDays,
+  ChartColumn,
   ChevronRight,
   CircleCheck,
+  Hash,
   Pencil,
   Target,
   Trash2,
@@ -29,7 +31,9 @@ import { isCurrentSprint } from "@/lib/sprint";
 import { toast } from "@/lib/toast";
 import type { Sprint } from "@/types/sprint";
 import CompleteSprintModal from "./complete-sprint-modal";
+import SprintEndChip from "./sprint-end-chip";
 import SprintFormModal from "./sprint-form-modal";
+import SprintReportModal from "./sprint-report-modal";
 import SprintTaskRow from "./sprint-task-row";
 
 type SprintCardProps = {
@@ -58,6 +62,7 @@ function SprintCard({
   const [expanded, setExpanded] = useState(isCurrent);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCompleteOpen, setIsCompleteOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const { data: tasks } = useGetSprintTasks(expanded ? sprint.id : "");
@@ -135,9 +140,21 @@ function SprintCard({
               {t("common:sprints.statePlanned")}
             </Badge>
           )}
+          <SprintEndChip sprint={sprint} />
         </button>
 
         <div className="flex shrink-0 items-center gap-1">
+          {sprint.state === "completed" && (
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => setIsReportOpen(true)}
+              className="h-7 gap-1.5 px-2 text-xs"
+            >
+              <ChartColumn className="h-3 w-3" />
+              {t("common:sprints.viewReport")}
+            </Button>
+          )}
           {canManage && isCurrent && (
             <Button
               variant="outline"
@@ -194,6 +211,18 @@ function SprintCard({
             {sprint.endDate ? formatDateMedium(sprint.endDate) : "—"}
           </span>
         )}
+        {sprint.totalTasks != null && sprint.totalTasks > 0 && (
+          <span
+            className="flex items-center gap-1.5"
+            title={t("common:sprints.pointsTotalTitle")}
+          >
+            <Hash className="h-3.5 w-3.5" />
+            {t("common:sprints.pointsTotal", {
+              completed: sprint.completedPoints ?? 0,
+              total: sprint.totalPoints ?? 0,
+            })}
+          </span>
+        )}
       </div>
 
       {expanded && (
@@ -244,6 +273,12 @@ function SprintCard({
         onClose={() => setIsCompleteOpen(false)}
         sprint={sprint}
         futureSprints={futureSprints}
+      />
+
+      <SprintReportModal
+        open={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        sprint={sprint}
       />
 
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>

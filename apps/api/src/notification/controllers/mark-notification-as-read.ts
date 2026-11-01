@@ -3,10 +3,15 @@ import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { notificationTable } from "../../database/schema";
 
-async function markNotificationAsRead(id: string, userId: string) {
+// Scoped to the caller: another user's notification id is "not found".
+export async function setNotificationRead(
+  id: string,
+  userId: string,
+  isRead: boolean,
+) {
   const [notification] = await db
     .update(notificationTable)
-    .set({ isRead: true })
+    .set({ isRead })
     .where(
       and(eq(notificationTable.id, id), eq(notificationTable.userId, userId)),
     )
@@ -19,6 +24,10 @@ async function markNotificationAsRead(id: string, userId: string) {
   }
 
   return notification;
+}
+
+async function markNotificationAsRead(id: string, userId: string) {
+  return setNotificationRead(id, userId, true);
 }
 
 export default markNotificationAsRead;

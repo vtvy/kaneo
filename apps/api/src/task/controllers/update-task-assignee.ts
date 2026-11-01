@@ -3,6 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { taskTable, userTable } from "../../database/schema";
 import { publishEvent } from "../../events";
+import { assertAssigneeInWorkspace } from "../validate-task-fields";
 import { recordAssigneeHandoff } from "./record-task-involvement";
 
 async function updateTaskAssignee({
@@ -29,19 +30,8 @@ async function updateTaskAssignee({
     return existingTask;
   }
 
-  // A provided assignee must exist, otherwise the FK update throws a 500.
-  if (nextAssigneeId) {
-    const [exists] = await db
-      .select({ id: userTable.id })
-      .from(userTable)
-      .where(eq(userTable.id, nextAssigneeId))
-      .limit(1);
-    if (!exists) {
-      throw new HTTPException(400, {
-        message: "Assignee user not found",
-      });
-    }
-  }
+  // A provided assignee must be a member of the task's workspace.
+  await assertAssigneeInWorkspace(nextAssigneeId, existingTask.projectId);
 
   const [updatedTask] = await db
     .update(taskTable)

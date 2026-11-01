@@ -5,7 +5,7 @@ import {
   redirect,
   useLocation,
 } from "@tanstack/react-router";
-import { Settings, Shield } from "lucide-react";
+import { Download, Settings, Shield } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,8 @@ export const Route = createFileRoute(
 
 function RouteComponent() {
   const { t } = useTranslation();
-  const { workspace, role } = useWorkspacePermission();
+  const { workspace, role, canManageWorkspace, canCreateProjects } =
+    useWorkspacePermission();
   const location = useLocation();
   const menuItems = [
     {
@@ -61,6 +62,15 @@ function RouteComponent() {
       url: "/dashboard/settings/workspace/roles",
       icon: Shield,
     },
+    ...(canManageWorkspace() && canCreateProjects()
+      ? [
+          {
+            title: t("settings:workspaceImport.title"),
+            url: "/dashboard/settings/workspace/import",
+            icon: Download,
+          },
+        ]
+      : []),
   ];
   const isActivePath = (path: string) => location.pathname === path;
   const workspaceInitials =

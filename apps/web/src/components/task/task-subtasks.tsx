@@ -23,9 +23,11 @@ import { Input } from "@/components/ui/input";
 import useCreateTask from "@/hooks/mutations/task/use-create-task";
 import { useDeleteTask } from "@/hooks/mutations/task/use-delete-task";
 import useCreateTaskRelation from "@/hooks/mutations/task-relation/use-create-task-relation";
+import { useGetColumns } from "@/hooks/queries/column/use-get-columns";
 import useGetTaskRelations from "@/hooks/queries/task-relation/use-get-task-relations";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { toast } from "@/lib/toast";
 import queryClient from "@/query-client";
@@ -61,8 +63,20 @@ export default function TaskSubtasks({
   const createTask = useCreateTask();
   const createRelation = useCreateTaskRelation();
   const { mutateAsync: deleteTask } = useDeleteTask();
-  const { canManageTasks } = useWorkspacePermission();
-  const canEdit = canManageTasks();
+  const { data: columns = [] } = useGetColumns(projectId);
+  const { canManageTasks, isCheckingPermissions } = useWorkspacePermission();
+  const {
+    can: canProject,
+    isCheckingPermissions: isCheckingProjectPermissions,
+  } = useProjectPermission(projectId);
+  // Adding a subtask creates a task and links it to the parent, so it needs
+  // both item:create and item:update in the project.
+  const canAddSubtask =
+    canManageTasks() ||
+    (!isCheckingPermissions &&
+      !isCheckingProjectPermissions &&
+      canProject("item", "create") &&
+      canProject("item", "update"));
 
   const subtasks = relations
     .filter(
@@ -231,7 +245,9 @@ export default function TaskSubtasks({
         title: newTitle.trim(),
         description: "",
         projectId,
-        status: "to-do",
+        // "to-do" is not a valid column slug in every project (the API 400s).
+        // Use the project's first column, or no status when it has none.
+        status: columns[0]?.slug ?? null,
         priority: "no-priority",
       });
 
@@ -301,7 +317,7 @@ export default function TaskSubtasks({
               </span>
             )}
           </div>
-          {canEdit && (
+          {canAddSubtask && (
             <Button
               variant="ghost"
               size="xs"
@@ -368,6 +384,11 @@ export default function TaskSubtasks({
                   setNewTitle(e.target.value)
                 }
                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (
+                    e.nativeEvent.isComposing ||
+                    e.nativeEvent.keyCode === 229
+                  )
+                    return;
                   if (e.key === "Enter") handleAddSubtask();
                   if (e.key === "Escape") {
                     setIsAdding(false);

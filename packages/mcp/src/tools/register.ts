@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import type { KaneoClient } from "../kaneo/client.js";
+import { encodeCustomFieldValue } from "../kaneo/custom-field-value.js";
 import { buildFullTaskUpdateBody } from "../kaneo/task-helpers.js";
 import { errorResult, textResult } from "../utils/mcp-result.js";
 
@@ -224,13 +225,71 @@ export function registerTools(
   server.registerTool(
     "get_task",
     {
-      description: "Get a task by ID.",
+      description:
+        "Get a task by ID. Custom field values are not included; use get_task_custom_field_values.",
       inputSchema: z.object({ taskId: nonEmptyString }),
     },
     async (args) =>
       run(() =>
         client.json(`/api/task/${encodeURIComponent(args.taskId)}`, {
           method: "GET",
+        }),
+      ),
+  );
+
+  server.registerTool(
+    "list_project_custom_fields",
+    {
+      description:
+        "List a project's custom field definitions: id, name, type (text, number, date, dropdown, boolean, multiselect), required, options, hiddenOptions, and defaultValue.",
+      inputSchema: z.object({ projectId: nonEmptyString }),
+    },
+    async (args) =>
+      run(() =>
+        client.json(
+          `/api/custom-field/project/${encodeURIComponent(args.projectId)}`,
+        ),
+      ),
+  );
+
+  server.registerTool(
+    "get_task_custom_field_values",
+    {
+      description:
+        "List a task's custom field values with each field's name, type, and options. Fields without a value are omitted. Multiselect values are JSON array strings.",
+      inputSchema: z.object({ taskId: nonEmptyString }),
+    },
+    async (args) =>
+      run(() =>
+        client.json(
+          `/api/custom-field/task/${encodeURIComponent(args.taskId)}`,
+        ),
+      ),
+  );
+
+  server.registerTool(
+    "set_task_custom_field_value",
+    {
+      description:
+        "Set or clear one custom field value on a task. Get fieldId from list_project_custom_fields. Pass dates as YYYY-MM-DD, a dropdown value as one of its options, multiselect values as an array of options, and null to clear the value (required fields can't be cleared; hidden options can't be picked).",
+      inputSchema: z.object({
+        taskId: nonEmptyString,
+        fieldId: nonEmptyString,
+        value: z
+          .union([z.string(), z.number(), z.boolean(), z.array(z.string())])
+          .nullable()
+          .describe("New value, or null to clear it"),
+      }),
+    },
+    async (args) =>
+      run(() =>
+        client.json("/api/custom-field/value", {
+          method: "PUT",
+          body: JSON.stringify({
+            taskId: args.taskId,
+            fieldId: args.fieldId,
+            value: encodeCustomFieldValue(args.value),
+          }),
         }),
       ),
   );
@@ -352,6 +411,49 @@ export function registerTools(
           body: JSON.stringify({ status: args.status }),
         }),
       ),
+  );
+
+  server.registerTool(
+    "update_task_recurrence",
+    {
+      description:
+        "Make a task repeat, or omit frequency to stop it repeating. When a repeating task moves into a final column, the next task is created in the first open column, due one step after the completed task's due date.",
+      inputSchema: z.object({
+        taskId: nonEmptyString,
+        frequency: z.enum(["daily", "weekly", "monthly", "yearly"]).optional(),
+        interval: z.number().int().min(1).max(99).default(1),
+        weekdays: z
+          .array(z.number().int().min(0).max(6))
+          .min(1)
+          .max(7)
+          .optional()
+          .describe(
+            "Weekly only: days to repeat on, 0 for Sunday to 6 for Saturday.",
+          ),
+        timeZone: optionalNonEmptyString.describe(
+          "Required with frequency: the user's IANA time zone, such as Europe/Madrid. Weekdays and month ends are matched in this zone, so a wrong one moves the next task to another local day.",
+        ),
+      }),
+    },
+    async (args) => {
+      if (args.frequency && !args.timeZone)
+        return errorResult("timeZone is required with frequency");
+      return run(() =>
+        client.json(`/api/task/recurrence/${encodeURIComponent(args.taskId)}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            recurrence: args.frequency
+              ? {
+                  frequency: args.frequency,
+                  interval: args.interval,
+                  ...(args.weekdays ? { weekdays: args.weekdays } : {}),
+                  timeZone: args.timeZone,
+                }
+              : null,
+          }),
+        }),
+      );
+    },
   );
 
   server.registerTool(

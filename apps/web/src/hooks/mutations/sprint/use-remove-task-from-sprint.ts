@@ -18,6 +18,10 @@ function useRemoveTaskFromSprint() {
       void queryClient.invalidateQueries({
         queryKey: ["tasks", updatedTask.projectId],
       });
+      // Sprint lists carry per-sprint task/point totals.
+      void queryClient.invalidateQueries({
+        queryKey: ["sprints", updatedTask.projectId],
+      });
       // Refresh the backlog table (all-project-tasks) so the actor's backlog
       // reflects the task returning to the backlog immediately after an edit.
       void queryClient.invalidateQueries({
@@ -27,6 +31,9 @@ function useRemoveTaskFromSprint() {
       // reflect that the task is back in the backlog immediately.
       void queryClient.invalidateQueries({
         queryKey: ["task", variables.taskId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["sprint-history", variables.taskId],
       });
     },
   });

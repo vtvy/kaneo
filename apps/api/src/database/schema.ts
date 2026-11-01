@@ -13,6 +13,9 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import type { ImportRunProject } from "../import/import-run-project";
+import type { SprintCompletionSnapshot } from "../sprint/completion-snapshot";
+import type { TaskRecurrence } from "../task/recurrence/schema";
 export const userTable = pgTable("user", {
   id: text("id")
     .$defaultFn(() => createId())
@@ -54,8 +57,13 @@ export const sessionTable = pgTable(
     activeOrganizationId: text("active_organization_id"),
     activeTeamId: text("active_team_id"),
     impersonatedBy: text("impersonated_by"),
+    // OIDC "sid" of the provider session, for back-channel logout.
+    oidcSid: text("oidc_sid"),
   },
-  (table) => [index("session_userId_idx").on(table.userId)],
+  (table) => [
+    index("session_userId_idx").on(table.userId),
+    index("session_oidcSid_idx").on(table.oidcSid),
+  ],
 );
 
 export const accountTable = pgTable(
@@ -116,6 +124,36 @@ export const workspaceTable = pgTable("workspace", {
   metadata: text("metadata"),
   description: text("description"),
   createdAt: timestamp("created_at", { mode: "date" }).notNull(),
+  archivedAt: timestamp("archived_at", { mode: "date" }),
+  archivedBy: text("archived_by").references(() => userTable.id, {
+    onDelete: "set null",
+    onUpdate: "cascade",
+  }),
+});
+
+// Single row (id "instance") of settings an instance admin can change at
+// runtime; environment variables still act as hard overrides.
+export const instanceSettingsTable = pgTable("instance_settings", {
+  id: text("id").primaryKey().default("instance"),
+  instanceName: text("instance_name"),
+  registrationEnabled: boolean("registration_enabled").default(true).notNull(),
+  passwordRegistrationEnabled: boolean("password_registration_enabled")
+    .default(true)
+    .notNull(),
+  requireEmailVerification: boolean("require_email_verification")
+    .default(false)
+    .notNull(),
+  workspaceCreationRestricted: boolean("workspace_creation_restricted")
+    .default(false)
+    .notNull(),
+  disabledIntegrations: text("disabled_integrations")
+    .array()
+    .notNull()
+    .default(sql`'{}'`),
+  updatedAt: timestamp("updated_at", { mode: "date" })
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });
 
 export const workspaceUserTable = pgTable(
@@ -332,6 +370,11 @@ export const sprintTable = pgTable(
     endDate: timestamp("end_date", { mode: "date" }),
     state: text("state").notNull().default("future"),
     completedAt: timestamp("completed_at", { mode: "date" }),
+    // Report captured when the sprint is completed; null for sprints
+    // completed before snapshots existed.
+    completionSnapshot: jsonb(
+      "completion_snapshot",
+    ).$type<SprintCompletionSnapshot>(),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" })
       .defaultNow()
@@ -486,6 +529,8 @@ export const taskTable = pgTable(
     points: integer("points"),
     startDate: timestamp("start_date", { mode: "date" }),
     dueDate: timestamp("due_date", { mode: "date" }),
+    // Repeat rule; completing the task hands it to the next occurrence.
+    recurrence: jsonb("recurrence").$type<TaskRecurrence>(),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" })
       .defaultNow()
@@ -499,6 +544,43 @@ export const taskTable = pgTable(
     index("task_columnId_idx").on(table.columnId),
     index("task_sprintId_idx").on(table.sprintId),
     unique("task_project_number_unique").on(table.projectId, table.number),
+  ],
+);
+
+/**
+ * Every sprint a task has passed through. `removedAt` is null while the task
+ * is still in that sprint; leaving closes the row so history survives moves.
+ */
+export const taskSprintTable = pgTable(
+  "task_sprint",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => taskTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    sprintId: text("sprint_id")
+      .notNull()
+      .references(() => sprintTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    addedAt: timestamp("added_at", { mode: "date" }).defaultNow().notNull(),
+    removedAt: timestamp("removed_at", { mode: "date" }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    unique("task_sprint_task_sprint_unique").on(table.taskId, table.sprintId),
+    index("task_sprint_taskId_idx").on(table.taskId),
+    index("task_sprint_sprintId_idx").on(table.sprintId),
   ],
 );
 
@@ -1106,6 +1188,40 @@ export const apikeyTable = pgTable(
   ],
 );
 
+// Append-only instance administration history (no updatedAt: entries are
+// never edited). Actor and target details are snapshots so entries stay
+// readable after the people or records involved are deleted.
+export const adminAuditLogTable = pgTable(
+  "admin_audit_log",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    actorUserId: text("actor_user_id").references(() => userTable.id, {
+      onDelete: "set null",
+      onUpdate: "cascade",
+    }),
+    actorName: text("actor_name"),
+    actorEmail: text("actor_email"),
+    action: text("action").notNull(),
+    targetType: text("target_type").notNull(),
+    targetId: text("target_id"),
+    targetLabel: text("target_label"),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("admin_audit_log_createdAt_idx").on(
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
+    index("admin_audit_log_actorUserId_idx").on(table.actorUserId),
+    index("admin_audit_log_target_idx").on(table.targetType, table.targetId),
+  ],
+);
+
 export const deviceCodeTable = pgTable(
   "device_code",
   {
@@ -1195,7 +1311,11 @@ export const documentTable = pgTable(
       onUpdate: "cascade",
     }),
     name: text("name").notNull(),
-    storageKey: text("storage_key").notNull(),
+    storageKey: text("storage_key"),
+    source: text("source").notNull().default("server"),
+    externalId: text("external_id"),
+    externalUrl: text("external_url"),
+    driveManaged: boolean("drive_managed").notNull().default(false),
     size: integer("size").notNull(),
     contentType: text("content_type").notNull(),
     createdBy: text("created_by").references(() => userTable.id, {
@@ -1216,6 +1336,110 @@ export const documentTable = pgTable(
   (table) => [
     index("document_projectId_idx").on(table.projectId),
     index("document_folderId_idx").on(table.folderId),
+  ],
+);
+
+export const customFieldDefinitionTable = pgTable(
+  "custom_field_definition",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    name: text("name").notNull(),
+    // 'text' | 'number' | 'date' | 'dropdown' | 'boolean' | 'multiselect'
+    type: text("type").notNull(),
+    required: boolean("required").default(false).notNull(),
+    defaultValue: text("default_value"),
+    options: jsonb("options"),
+    // Options kept for tasks that already use them but no longer offered.
+    hiddenOptions: jsonb("hidden_options")
+      .$type<string[]>()
+      .default([])
+      .notNull(),
+    position: integer("position").default(0).notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("custom_field_def_projectId_idx").on(table.projectId)],
+);
+
+export const customFieldValueTable = pgTable(
+  "custom_field_value",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => taskTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    fieldId: text("field_id")
+      .notNull()
+      .references(() => customFieldDefinitionTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    value: text("value"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("custom_field_value_taskId_idx").on(table.taskId),
+    index("custom_field_value_fieldId_idx").on(table.fieldId),
+    unique("custom_field_value_task_field_unique").on(
+      table.taskId,
+      table.fieldId,
+    ),
+  ],
+);
+
+// Secret iCal subscription links. Only the SHA-256 of the token is stored; the
+// owner's project access is re-checked on every fetch.
+export const calendarFeedTable = pgTable(
+  "calendar_feed",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    tokenHash: text("token_hash").notNull(),
+    labelNames: text("label_names").array().notNull().default([]),
+    timeZone: text("time_zone").notNull().default("UTC"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("calendar_feed_token_hash_unique").on(table.tokenHash),
+    index("calendar_feed_project_user_idx").on(table.projectId, table.userId),
+    index("calendar_feed_userId_idx").on(table.userId),
   ],
 );
 
@@ -1315,3 +1539,46 @@ export const organizationRoleRelations = relations(
     }),
   }),
 );
+
+export const importRunTable = pgTable(
+  "import_run",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaceTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    userId: text("user_id").references(() => userTable.id, {
+      onDelete: "set null",
+      onUpdate: "cascade",
+    }),
+    source: text("source").notNull(),
+    status: text("status").notNull().default("running"),
+    includeComments: boolean("include_comments").notNull().default(true),
+    message: text("message"),
+    projects: jsonb("projects").$type<ImportRunProject[]>().notNull(),
+    error: text("error"),
+    heartbeatAt: timestamp("heartbeat_at", { mode: "date" })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    finishedAt: timestamp("finished_at", { mode: "date" }),
+  },
+  (table) => [
+    index("import_run_workspace_created_idx").on(
+      table.workspaceId,
+      table.createdAt,
+    ),
+  ],
+);
+
+export {
+  instanceRoleAssignmentTable,
+  instanceRoleTable,
+  instanceWebhookDeliveryTable,
+  instanceWebhookTable,
+} from "./admin-schema";

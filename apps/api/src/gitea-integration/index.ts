@@ -150,7 +150,18 @@ const giteaIntegration = new Hono<{
       if (!integration) {
         return c.json(null, 200);
       }
-      return c.json(integration);
+      // Anyone in the workspace can see the link; only settings managers can
+      // see the secret that signs webhook payloads.
+      const canManage = await requireWorkspacePermission({
+        workspace: ["manage_settings"],
+      })(c, async () => {}).then(
+        () => true,
+        () => false,
+      );
+      return c.json({
+        ...integration,
+        webhookSecret: canManage ? integration.webhookSecret : "",
+      });
     },
   )
   .post(
@@ -366,7 +377,7 @@ const giteaIntegration = new Hono<{
 
       return next();
     },
-    requireWorkspacePermission({ task: ["create"] }),
+    requireWorkspacePermission({ task: ["create", "update"] }),
     async (c) => {
       const { projectId } = c.req.valid("json");
       const result = await importGiteaIssues(projectId);

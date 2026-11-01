@@ -4,7 +4,10 @@ import db from "../../database";
 import { columnTable, taskTable } from "../../database/schema";
 import { publishEvent } from "../../events";
 import { deleteOrphanedAssets } from "../../storage/cleanup-assets";
-import { assertValidTaskStatus } from "../validate-task-fields";
+import {
+  assertAssigneeInWorkspace,
+  assertValidTaskStatus,
+} from "../validate-task-fields";
 import { recordAssigneeHandoff } from "./record-task-involvement";
 
 async function updateTask(
@@ -31,10 +34,24 @@ async function updateTask(
     });
   }
 
+  // Moving between projects goes through /task/move, which checks access to
+  // the destination. This route only checks the task's current project.
+  if (projectId !== existingTask.projectId) {
+    throw new HTTPException(400, {
+      message: "Use the move endpoint to change a task's project",
+    });
+  }
+
   // A task may have no status ("No status" / backlog). Normalize empty to null.
   const resolvedStatus = status ? status : null;
 
   await assertValidTaskStatus(resolvedStatus, projectId);
+
+  // Only validate a changed assignee, so editing other fields of a task whose
+  // assignee has since left the workspace keeps working.
+  if ((userId || null) !== existingTask.userId) {
+    await assertAssigneeInWorkspace(userId, projectId);
+  }
 
   const column = resolvedStatus
     ? await db.query.columnTable.findFirst({

@@ -8,6 +8,7 @@ import mkMK from "./mk-MK.json";
 import nlNL from "./nl-NL.json";
 import ruRU from "./ru-RU.json";
 import ukUA from "./uk-UA.json";
+import viVN from "./vi-VN.json";
 
 export const supportedLocales = [
   "mk-MK",
@@ -20,6 +21,7 @@ export const supportedLocales = [
   "ko-KR",
   "ru-RU",
   "uk-UA",
+  "vi-VN",
 ] as const;
 
 export type AppLocale = (typeof supportedLocales)[number];
@@ -37,4 +39,5 @@ export const resources = {
   "ko-KR": koKR,
   "ru-RU": ruRU,
   "uk-UA": ukUA,
+  "vi-VN": viVN,
 } as const;

@@ -39,6 +39,7 @@ export function initializeEventSubscriptions(): void {
     status: string;
     number: number;
     projectId: string;
+    createGitlabIssue?: boolean;
   }>("task.created", async (data) => {
     await broadcastTaskCreated({
       taskId: data.taskId,
@@ -50,6 +51,7 @@ export function initializeEventSubscriptions(): void {
       priority: data.priority,
       status: data.status,
       number: data.number,
+      createGitlabIssue: data.createGitlabIssue,
     });
   });
 

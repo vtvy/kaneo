@@ -49,8 +49,10 @@ import {
 } from "@/components/ui/menu";
 import { useUpdateTaskDescription } from "@/hooks/mutations/task/use-update-task-description";
 import useGetTask from "@/hooks/queries/task/use-get-task";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
+import { copyText } from "@/lib/copy-text";
 import debounce from "@/lib/debounce";
 import { parseTaskListMarkdownToNodes } from "@/lib/editor-task-list-paste";
 import {
@@ -258,7 +260,12 @@ export default function TaskDescription({ taskId }: TaskDescriptionProps) {
   const { data: task } = useGetTask(taskId);
   const { mutateAsync: updateTaskDescription } = useUpdateTaskDescription();
   const { canManageTasks } = useWorkspacePermission();
-  const canEdit = canManageTasks();
+  const { can: canProject, isCheckingPermissions } = useProjectPermission(
+    task?.projectId,
+  );
+  const canEdit =
+    canManageTasks() ||
+    (!isCheckingPermissions && canProject("item", "update"));
 
   const editorShellRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -1266,7 +1273,7 @@ export default function TaskDescription({ taskId }: TaskDescriptionProps) {
     if (!content) return;
 
     try {
-      await navigator.clipboard.writeText(content);
+      await copyText(content);
       setIsCodeCopied(true);
       if (codeCopyResetTimeoutRef.current !== null) {
         window.clearTimeout(codeCopyResetTimeoutRef.current);

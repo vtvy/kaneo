@@ -1,6 +1,12 @@
 import { useNavigate } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
-import { ChevronRight, LayoutDashboard, ListChecks } from "lucide-react";
+import {
+  ChevronRight,
+  Home,
+  Inbox,
+  LayoutDashboard,
+  ListChecks,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   Collapsible,
@@ -16,6 +22,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { usePendingInvitations } from "@/hooks/queries/invitation/use-pending-invitations";
+import useGetNotifications from "@/hooks/queries/notification/use-get-notifications";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 
 export function NavMain() {
@@ -23,10 +30,13 @@ export function NavMain() {
   const { data: workspace } = useActiveWorkspace();
   const navigate = useNavigate();
   const { data: invitations = [] } = usePendingInvitations();
+  const { data: notifications = [] } = useGetNotifications();
 
   if (!workspace) return null;
 
   const pendingCount = invitations.length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const workspaceRoot = `/dashboard/workspace/${workspace.id}`;
 
   const navItems: {
     title: string;
@@ -35,6 +45,22 @@ export function NavMain() {
     badge: number | null;
     icon?: LucideIcon;
   }[] = [
+    {
+      title: t("navigation:sidebar.home"),
+      url: workspaceRoot,
+      isActive:
+        window.location.pathname === workspaceRoot ||
+        window.location.pathname === `${workspaceRoot}/`,
+      badge: null,
+      icon: Home,
+    },
+    {
+      title: t("navigation:sidebar.inbox"),
+      url: `${workspaceRoot}/inbox`,
+      isActive: window.location.pathname === `${workspaceRoot}/inbox`,
+      badge: unreadCount > 0 ? unreadCount : null,
+      icon: Inbox,
+    },
     {
       title: t("dashboard:title"),
       url: `/dashboard/workspace/${workspace.id}/overview`,
@@ -55,9 +81,8 @@ export function NavMain() {
     },
     {
       title: t("navigation:sidebar.projects"),
-      url: `/dashboard/workspace/${workspace.id}`,
-      isActive:
-        window.location.pathname === `/dashboard/workspace/${workspace.id}`,
+      url: `${workspaceRoot}/projects`,
+      isActive: window.location.pathname === `${workspaceRoot}/projects`,
       badge: null,
     },
     {

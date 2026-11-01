@@ -1,4 +1,5 @@
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
+import { useRouter } from "@tanstack/react-router";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -34,6 +35,7 @@ const signInSchema = z.object({
 
 export function SignInForm({ onSuccess, defaultEmail }: SignInFormProps) {
   const { t } = useTranslation();
+  const { history } = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const form = useForm<SignInFormValues>({
@@ -51,6 +53,20 @@ export function SignInForm({ onSuccess, defaultEmail }: SignInFormProps) {
         email: data.email,
         password: data.password,
       });
+
+      // The instance requires a verified email; signing in just sent a code.
+      if (result.error?.code === "EMAIL_NOT_VERIFIED") {
+        const searchParams = new URLSearchParams({
+          email: data.email,
+          type: "email-verification",
+        });
+        const redirect = new URLSearchParams(window.location.search).get(
+          "redirect",
+        );
+        if (redirect) searchParams.set("redirect", redirect);
+        history.push(`/auth/verify-otp?${searchParams.toString()}`);
+        return;
+      }
 
       if (result.error) {
         toast.error(result.error.message || t("auth:signInForm.failedSignIn"));

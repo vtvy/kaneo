@@ -3,14 +3,24 @@ import { produce } from "immer";
 import {
   CalendarIcon,
   Check,
+  Circle,
+  Hash,
   Plus,
   Search,
+  SquircleDashed,
   Tag,
+  Target,
   UserIcon,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import CreateTaskCustomFields from "@/components/task/custom-fields/create-task-custom-fields";
+import {
+  type CreateTaskFieldValues,
+  missingRequiredFields,
+  toCustomFieldPayload,
+} from "@/components/task/custom-fields/create-task-field-values";
 import TaskDescriptionEditor from "@/components/task/task-description-editor";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -36,17 +46,32 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import pushTaskToGitlab from "@/fetchers/task/push-task-to-gitlab";
+import useSetCustomFieldValue from "@/hooks/mutations/custom-field/use-set-custom-field-value";
 import useCreateLabel from "@/hooks/mutations/label/use-create-label";
+import useAssignTaskToSprint from "@/hooks/mutations/sprint/use-assign-task-to-sprint";
 import useCreateTask from "@/hooks/mutations/task/use-create-task";
 import { useDeleteTask } from "@/hooks/mutations/task/use-delete-task";
 import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
+import { useGetColumns } from "@/hooks/queries/column/use-get-columns";
+import useGetCustomFieldsByProject from "@/hooks/queries/custom-field/use-get-custom-fields-by-project";
+import useGetGitlabIntegration from "@/hooks/queries/gitlab-integration/use-get-gitlab-integration";
 import useGetLabelsByWorkspace from "@/hooks/queries/label/use-get-labels-by-workspace";
+import useGetSprintsByProject from "@/hooks/queries/sprint/use-get-sprints-by-project";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
+import { getColumnIcon } from "@/lib/column";
+import {
+  getCreateTaskPushGitlabPref,
+  setCreateTaskPushGitlabPref,
+} from "@/lib/create-task-gitlab-pref";
 import { formatDateMedium } from "@/lib/format";
+import { getStatusDisplayLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
+import { getCurrentSprint, isCurrentSprint } from "@/lib/sprint";
 import { toast } from "@/lib/toast";
 import useProjectStore from "@/store/project";
 import type Task from "@/types/task";
@@ -82,6 +107,8 @@ type Label = {
 
 type PopoverStep = "select" | "color";
 
+const POINTS_OPTIONS = [1, 2, 3, 5, 8, 13, 21] as const;
+
 function normalizeTask(
   task: Partial<Task> &
     Pick<Task, "id" | "title" | "status" | "projectId" | "createdAt">,
@@ -91,6 +118,8 @@ function normalizeTask(
     number: task.number ?? null,
     description: task.description ?? null,
     priority: task.priority ?? null,
+    points: task.points ?? null,
+    sprintId: task.sprintId ?? null,
     startDate: task.startDate ?? null,
     dueDate: task.dueDate ?? null,
     position: task.position ?? 0,
@@ -176,18 +205,25 @@ function CreateTaskModal({
     workspace?.id || "",
   );
   const { canManageTasks, canManageLabels } = useWorkspacePermission();
-  const canCreateTaskCapability = canManageTasks();
   const canCreateLabelCapability = canManageLabels();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Priority>("no-priority");
+  const [points, setPoints] = useState<number | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string>(
+    status ?? "to-do",
+  );
+  const [sprintId, setSprintId] = useState<string | null>(null);
   const [assigneeId, setAssigneeId] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [createMore, setCreateMore] = useState(false);
+  const [pushToGitlab, setPushToGitlab] = useState(false);
   const [labels, setLabels] = useState<Label[]>([]);
   const [draftTask, setDraftTask] = useState<Task | null>(null);
+  const [customFieldValues, setCustomFieldValues] =
+    useState<CreateTaskFieldValues>({});
 
   const [labelsOpen, setLabelsOpen] = useState(false);
   const [labelsStep, setLabelsStep] = useState<PopoverStep>("select");
@@ -198,14 +234,55 @@ function CreateTaskModal({
   const routeProjectId =
     location.pathname.match(/\/project\/([^/]+)/)?.[1] ?? null;
   const resolvedProjectId = projectId || project?.id || routeProjectId || "";
+  const { can: canProject, isCheckingPermissions: isCheckingProjectPerms } =
+    useProjectPermission(resolvedProjectId || undefined);
+  const canCreateTaskCapability =
+    canManageTasks() ||
+    (!!resolvedProjectId &&
+      !isCheckingProjectPerms &&
+      canProject("item", "create"));
+
+  const { data: projectColumns = [] } = useGetColumns(resolvedProjectId);
+  const { data: sprints = [] } = useGetSprintsByProject(resolvedProjectId);
+  const { data: customFields = [] } =
+    useGetCustomFieldsByProject(resolvedProjectId);
+  const { data: gitlabIntegration } =
+    useGetGitlabIntegration(resolvedProjectId);
+  // Creating a GitLab issue is opt-in, and only offered when connected.
+  const showGitlabToggle = gitlabIntegration?.isActive === true;
+  // New tasks default to the project's current sprint (the one current by date).
+  const currentSprint = useMemo(() => getCurrentSprint(sprints), [sprints]);
+  const selectableSprints = useMemo(
+    () => sprints.filter((sprint) => sprint.state !== "completed"),
+    [sprints],
+  );
+  const statusOptions = useMemo(
+    () =>
+      projectColumns.map((column) => ({
+        value: column.slug,
+        label: getStatusDisplayLabel(column.slug, column.name),
+        icon: getColumnIcon(column.slug, column.isFinal, column.icon),
+      })),
+    [projectColumns],
+  );
+  // Column "+" presets the status; otherwise keep the previous "to-do" default
+  // when the project has it, else fall back to the first column.
+  const defaultStatus =
+    status ??
+    (statusOptions.length === 0 ||
+    statusOptions.some((option) => option.value === "to-do")
+      ? "to-do"
+      : (statusOptions[0]?.value ?? "to-do"));
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const draftCreationPromiseRef = useRef<Promise<Task> | null>(null);
   const didSubmitRef = useRef(false);
 
   const { mutateAsync: createTask } = useCreateTask();
+  const { mutateAsync: assignTaskToSprint } = useAssignTaskToSprint();
   const { mutateAsync: updateTask } = useUpdateTask();
   const { mutateAsync: deleteTask } = useDeleteTask();
+  const { mutateAsync: setCustomFieldValue } = useSetCustomFieldValue();
 
   const filteredLabels = (() => {
     const searchFiltered = workspaceLabels.filter((label) =>
@@ -229,17 +306,39 @@ function CreateTaskModal({
       (label) => label.name.toLowerCase() === searchValue.toLowerCase(),
     );
 
+  // Seed the status/sprint pickers each time the modal opens (and once the
+  // columns / current sprint resolve while it is open).
+  useEffect(() => {
+    if (!open) return;
+    setSelectedStatus(defaultStatus);
+  }, [open, defaultStatus]);
+
+  useEffect(() => {
+    if (!open) return;
+    setSprintId(currentSprint?.id ?? null);
+  }, [open, currentSprint?.id]);
+
+  useEffect(() => {
+    if (!open) return;
+    setPushToGitlab(showGitlabToggle ? getCreateTaskPushGitlabPref() : false);
+  }, [open, showGitlabToggle]);
+
   const handleClose = () => {
     const shouldDeleteDraft = draftTask && !didSubmitRef.current;
 
     setTitle("");
     setDescription("");
     setPriority("no-priority");
+    setPoints(null);
+    setSelectedStatus(defaultStatus);
+    setSprintId(currentSprint?.id ?? null);
     setAssigneeId("");
     setStartDate(undefined);
     setDueDate(undefined);
     setCreateMore(false);
+    setPushToGitlab(showGitlabToggle ? getCreateTaskPushGitlabPref() : false);
     setLabels([]);
+    setCustomFieldValues({});
     setLabelsStep("select");
     setSearchValue("");
     setSelectedColor("gray");
@@ -371,9 +470,27 @@ function CreateTaskModal({
     e.preventDefault();
     if (!title.trim() || !resolvedProjectId || !workspace?.id) return;
 
+    const missingFields = missingRequiredFields(
+      customFields,
+      customFieldValues,
+    );
+    if (missingFields.length > 0) {
+      toast.error(
+        t("common:modals.createTask.requiredFieldsMissing", {
+          fields: missingFields.join(", "),
+        }),
+      );
+      return;
+    }
+    const customFieldPayload = toCustomFieldPayload(
+      customFields,
+      customFieldValues,
+    );
+
     try {
-      const taskStatus = status ?? "to-do";
+      const taskStatus = selectedStatus || null;
       didSubmitRef.current = true;
+      const shouldPushGitlab = showGitlabToggle && pushToGitlab;
 
       const savedTask = draftTask
         ? normalizeTask(
@@ -384,6 +501,7 @@ function CreateTaskModal({
               userId: assigneeId || null,
               status: taskStatus,
               priority,
+              points,
               startDate: startDate ? startDate.toISOString() : null,
               dueDate: dueDate ? dueDate.toISOString() : null,
               projectId: resolvedProjectId,
@@ -399,8 +517,52 @@ function CreateTaskModal({
               startDate: startDate ? startDate.toISOString() : undefined,
               dueDate: dueDate ? dueDate.toISOString() : undefined,
               status: taskStatus,
+              points,
+              sprintId,
+              createGitlabIssue: shouldPushGitlab,
+              customFields: customFieldPayload,
             }),
           );
+
+      // A draft was created without field values; set them now.
+      if (draftTask) {
+        for (const entry of customFieldPayload) {
+          try {
+            await setCustomFieldValue({ taskId: savedTask.id, ...entry });
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : t("tasks:customFields.updateError"),
+            );
+          }
+        }
+      }
+
+      // A draft task already exists, so the create-time flag never applied.
+      if (shouldPushGitlab && draftTask) {
+        try {
+          await pushTaskToGitlab(savedTask.id);
+        } catch (error) {
+          console.error("Failed to push draft task to GitLab:", error);
+          toast.error(t("common:modals.createTask.pushGitlabError"));
+        }
+      }
+
+      // A draft (created early for image uploads) has no sprint yet and the
+      // full update route does not carry sprintId, so assign it separately.
+      if (draftTask && sprintId) {
+        try {
+          await assignTaskToSprint({ id: sprintId, taskId: savedTask.id });
+          savedTask.sprintId = sprintId;
+        } catch (error) {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : t("common:sprints.taskAssignError"),
+          );
+        }
+      }
 
       for (const label of labels) {
         try {
@@ -427,10 +589,12 @@ function CreateTaskModal({
         setTitle("");
         setDescription("");
         setPriority("no-priority");
+        setPoints(null);
         setAssigneeId("");
         setStartDate(undefined);
         setDueDate(undefined);
         setLabels([]);
+        setCustomFieldValues({});
         setLabelsStep("select");
         setSearchValue("");
         setSelectedColor("gray");
@@ -464,12 +628,10 @@ function CreateTaskModal({
 
   const selectedPriority = priorityOptions.find((p) => p.value === priority);
 
-  const statusLabel = useMemo(() => {
-    if (status) {
-      return t(`tasks:status.${status}`);
-    }
-    return t("tasks:status.in-progress");
-  }, [status, t]);
+  const selectedStatusOption = statusOptions.find(
+    (option) => option.value === selectedStatus,
+  );
+  const selectedSprint = sprints.find((sprint) => sprint.id === sprintId);
   const selectedUser = workspaceUsers?.members?.find(
     (u) => u.userId === assigneeId,
   );
@@ -482,7 +644,7 @@ function CreateTaskModal({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (!open) return;
+      if (!open || e.isComposing || e.keyCode === 229) return;
 
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
@@ -663,10 +825,130 @@ function CreateTaskModal({
             )}
 
             <div className="flex flex-wrap items-center gap-2 py-2">
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-accent/50 text-foreground rounded-md text-xs font-medium border border-border">
-                <div className="w-1.5 h-1.5 bg-foreground rounded-full" />
-                {statusLabel}
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors border border-border hover:bg-accent/50",
+                      selectedStatus
+                        ? "bg-accent/30 text-foreground"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {selectedStatusOption ? (
+                      selectedStatusOption.icon
+                    ) : selectedStatus ? (
+                      <div className="w-1.5 h-1.5 bg-foreground rounded-full" />
+                    ) : (
+                      <Circle className="w-3.5 h-3.5" />
+                    )}
+                    <span className="max-w-32 truncate">
+                      {selectedStatus
+                        ? (selectedStatusOption?.label ??
+                          getStatusDisplayLabel(selectedStatus))
+                        : t("common:modals.createTask.noStatus")}
+                    </span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-1" align="start">
+                  <div className="max-h-80 space-y-1 overflow-y-auto">
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent/50 text-left transition-colors h-8"
+                      onClick={() => setSelectedStatus("")}
+                    >
+                      <Circle className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-sm">
+                        {t("common:modals.createTask.noStatus")}
+                      </span>
+                      {!selectedStatus && <Check className="ml-auto h-4 w-4" />}
+                    </button>
+                    {statusOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent/50 text-left transition-colors h-8"
+                        onClick={() => setSelectedStatus(option.value)}
+                      >
+                        {option.icon}
+                        <span className="text-sm truncate">{option.label}</span>
+                        {selectedStatus === option.value && (
+                          <Check className="ml-auto h-4 w-4 shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {resolvedProjectId && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors border border-border hover:bg-accent/50",
+                        selectedSprint
+                          ? "bg-accent/30 text-foreground"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {selectedSprint ? (
+                        <Target className="w-3.5 h-3.5" />
+                      ) : (
+                        <SquircleDashed className="w-3.5 h-3.5" />
+                      )}
+                      <span className="max-w-32 truncate">
+                        {selectedSprint
+                          ? selectedSprint.name
+                          : t("common:modals.createTask.noSprint")}
+                      </span>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-1" align="start">
+                    <div className="max-h-80 space-y-1 overflow-y-auto">
+                      <button
+                        type="button"
+                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent/50 text-left transition-colors h-8"
+                        onClick={() => setSprintId(null)}
+                      >
+                        <SquircleDashed className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="text-sm">
+                          {t("common:modals.createTask.noSprint")}
+                        </span>
+                        {!sprintId && (
+                          <Check className="ml-auto h-4 w-4 shrink-0" />
+                        )}
+                      </button>
+                      {selectableSprints.map((sprint) => (
+                        <button
+                          key={sprint.id}
+                          type="button"
+                          className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent/50 text-left transition-colors h-8"
+                          onClick={() => setSprintId(sprint.id)}
+                        >
+                          <Target className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="text-sm truncate">
+                            {sprint.name}
+                          </span>
+                          {isCurrentSprint(sprint) && (
+                            <Badge
+                              variant="secondary"
+                              className="ml-1 px-1.5 py-0 text-[10px] font-medium"
+                            >
+                              {t("common:sprints.current")}
+                            </Badge>
+                          )}
+                          {sprintId === sprint.id && (
+                            <Check className="ml-auto h-4 w-4 shrink-0" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
 
               <Popover>
                 <PopoverTrigger asChild>
@@ -745,6 +1027,56 @@ function CreateTaskModal({
                         )}
                       </button>
                     ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors border border-border hover:bg-accent/50",
+                      points != null
+                        ? "bg-accent/30 text-foreground"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    <Hash className="w-3.5 h-3.5" />
+                    <span>
+                      {points != null
+                        ? t("tasks:points.unit", { n: points })
+                        : t("tasks:points.label")}
+                    </span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-1" align="start">
+                  <div className="space-y-1">
+                    {POINTS_OPTIONS.map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent/50 text-left transition-colors h-8"
+                        onClick={() => setPoints(value)}
+                      >
+                        <Hash className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-sm">
+                          {t("tasks:points.value", { n: value })}
+                        </span>
+                        {points === value && (
+                          <Check className="ml-auto h-4 w-4" />
+                        )}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent/50 text-left transition-colors h-8"
+                      onClick={() => setPoints(null)}
+                    >
+                      <Hash className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-sm">{t("tasks:points.none")}</span>
+                      {points == null && <Check className="ml-auto h-4 w-4" />}
+                    </button>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -1015,10 +1347,18 @@ function CreateTaskModal({
                 </PopoverContent>
               </Popover>
             </div>
+
+            <CreateTaskCustomFields
+              fields={customFields}
+              values={customFieldValues}
+              onChange={(fieldId, value) =>
+                setCustomFieldValues((prev) => ({ ...prev, [fieldId]: value }))
+              }
+            />
           </div>
 
           <DialogFooter className="flex-shrink-0 border-t border-border bg-background px-6 py-4">
-            <div className="flex items-center gap-3 mr-auto">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mr-auto">
               <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
                 <input
                   type="checkbox"
@@ -1028,6 +1368,20 @@ function CreateTaskModal({
                 />
                 {t("common:modals.createTask.createMore")}
               </label>
+              {showGitlabToggle ? (
+                <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={pushToGitlab}
+                    onChange={(e) => {
+                      setPushToGitlab(e.target.checked);
+                      setCreateTaskPushGitlabPref(e.target.checked);
+                    }}
+                    className="rounded border-border bg-background text-primary focus:ring-ring focus:ring-offset-0 focus:ring-2 transition-all"
+                  />
+                  {t("common:modals.createTask.pushToGitlab")}
+                </label>
+              ) : null}
             </div>
 
             <Button

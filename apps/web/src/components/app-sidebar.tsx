@@ -14,6 +14,7 @@ import { VersionDisplay } from "@/components/version-display";
 import { WorkspaceSwitcher } from "@/components/workspace-switcher";
 import { shortcuts } from "@/constants/shortcuts";
 import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { FeedbackButton } from "./feedback/feedback-dialog";
 import Search from "./search";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -43,6 +44,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavProjects />
       </SidebarContent>
       <SidebarFooter>
+        <FeedbackButton />
         <div className="flex items-center justify-between">
           <VersionDisplay />
           <ThemeToggleDropdown />

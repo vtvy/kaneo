@@ -4,14 +4,18 @@ import * as v from "valibot";
 import { projectPermission } from "../project-rbac/require-project-permission";
 import { dateStringSchema, sprintSchema, taskSchema } from "../schemas";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
+import { sprintCompletionSnapshotSchema } from "./completion-snapshot";
 import assignTaskToSprint from "./controllers/assign-task-to-sprint";
 import completeSprint from "./controllers/complete-sprint";
 import createSprint from "./controllers/create-sprint";
 import deleteSprint from "./controllers/delete-sprint";
+import exportProjectSprints from "./controllers/export-project-sprints";
 import getBacklogTasks from "./controllers/get-backlog-tasks";
 import getSprint from "./controllers/get-sprint";
+import getSprintReport from "./controllers/get-sprint-report";
 import getSprintTasks from "./controllers/get-sprint-tasks";
 import getSprintsByProject from "./controllers/get-sprints-by-project";
+import getTaskSprintHistory from "./controllers/get-task-sprint-history";
 import removeTaskFromSprint from "./controllers/remove-task-from-sprint";
 import updateSprint from "./controllers/update-sprint";
 
@@ -66,6 +70,72 @@ const sprint = new Hono<{
       const { projectId } = c.req.valid("param");
       const tasks = await getBacklogTasks(projectId);
       return c.json(tasks);
+    },
+  )
+  .get(
+    "/project/:projectId/export",
+    describeRoute({
+      operationId: "exportProjectSprints",
+      tags: ["Sprints"],
+      description:
+        "Download an Excel workbook with one sheet per sprint and every task that passed through it",
+      responses: {
+        200: {
+          description: "Excel workbook",
+          content: {
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+              {},
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ projectId: v.string() })),
+    workspaceAccess.fromProject("projectId"),
+    projectPermission.fromParam({ item: ["read"] }, "projectId"),
+    async (c) => {
+      const { projectId } = c.req.valid("param");
+      const { filename, buffer } = await exportProjectSprints(projectId);
+      return c.body(new Uint8Array(buffer), 200, {
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      });
+    },
+  )
+  .get(
+    "/task/:taskId/history",
+    describeRoute({
+      operationId: "getTaskSprintHistory",
+      tags: ["Sprints"],
+      description: "Sprints a task has passed through, oldest first",
+      responses: {
+        200: {
+          description: "Sprint membership history",
+          content: {
+            "application/json": {
+              schema: resolver(
+                v.array(
+                  v.object({
+                    sprintId: v.string(),
+                    name: v.string(),
+                    state: v.string(),
+                    addedAt: v.string(),
+                    removedAt: v.nullable(v.string()),
+                  }),
+                ),
+              ),
+            },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ taskId: v.string() })),
+    workspaceAccess.fromTaskId(),
+    projectPermission.fromTask({ item: ["read"] }, "taskId"),
+    async (c) => {
+      const { taskId } = c.req.valid("param");
+      const history = await getTaskSprintHistory(taskId);
+      return c.json(history);
     },
   )
   .post(
@@ -128,6 +198,7 @@ const sprint = new Hono<{
     }),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromSprint(),
+    projectPermission.fromSprint({ item: ["read"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const result = await getSprint(id);
@@ -151,10 +222,46 @@ const sprint = new Hono<{
     }),
     validator("param", v.object({ id: v.string() })),
     workspaceAccess.fromSprint(),
+    projectPermission.fromSprint({ item: ["read"] }),
     async (c) => {
       const { id } = c.req.valid("param");
       const tasks = await getSprintTasks(id);
       return c.json(tasks);
+    },
+  )
+  .get(
+    "/:id/report",
+    describeRoute({
+      operationId: "getSprintReport",
+      tags: ["Sprints"],
+      description:
+        "Get the completion report stored when the sprint was completed (snapshot is null when none was recorded)",
+      responses: {
+        200: {
+          description: "Sprint completion report",
+          content: {
+            "application/json": {
+              schema: resolver(
+                v.object({
+                  sprintId: v.string(),
+                  state: v.string(),
+                  completedAt: v.nullable(v.string()),
+                  completedByName: v.nullable(v.string()),
+                  snapshot: v.nullable(sprintCompletionSnapshotSchema),
+                }),
+              ),
+            },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    workspaceAccess.fromSprint(),
+    projectPermission.fromSprint({ item: ["read"] }),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const report = await getSprintReport(id);
+      return c.json(report);
     },
   )
   .post(

@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import useUpdateUserProfile from "@/hooks/mutations/use-update-user-profile";
+import { useManagedProfileFields } from "@/hooks/use-managed-profile-fields";
 import { toast } from "@/lib/toast";
 
 type ProfileSetupStep = "profile" | "success";
@@ -43,6 +44,8 @@ export function ProfileSetupFlow() {
   const queryClient = useQueryClient();
   const { mutateAsync: updateProfile, isPending } = useUpdateUserProfile();
   const { user } = useAuth();
+  const managed = useManagedProfileFields();
+  const nameLocked = managed.loading || managed.fields.includes("name");
 
   const profileSchema = useMemo(
     () =>
@@ -64,9 +67,11 @@ export function ProfileSetupFlow() {
 
   const onSubmit = async (data: ProfileFormValues) => {
     try {
-      await updateProfile({
-        name: data.name.trim(),
-      });
+      if (managed.loading) return;
+      if (!nameLocked)
+        await updateProfile({
+          name: data.name.trim(),
+        });
 
       await queryClient.invalidateQueries({ queryKey: ["session"] });
       setUserName(data.name);
@@ -128,6 +133,7 @@ export function ProfileSetupFlow() {
                     <Input
                       placeholder={t("auth:profileSetup.namePlaceholder")}
                       autoFocus
+                      disabled={nameLocked}
                       {...field}
                     />
                   </FormControl>
@@ -136,7 +142,11 @@ export function ProfileSetupFlow() {
               )}
             />
 
-            <Button type="submit" disabled={isPending} className="w-full mt-6">
+            <Button
+              type="submit"
+              disabled={isPending || managed.loading}
+              className="w-full mt-6"
+            >
               {isPending
                 ? t("auth:profileSetup.saving")
                 : t("auth:profileSetup.continue")}

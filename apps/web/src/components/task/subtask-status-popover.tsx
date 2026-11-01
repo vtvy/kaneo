@@ -11,6 +11,7 @@ import { ShortcutNumber } from "@/components/ui/shortcut-number";
 import { useUpdateTaskStatus } from "@/hooks/mutations/task/use-update-task-status";
 import { useGetColumns } from "@/hooks/queries/column/use-get-columns";
 import { useNumberedShortcuts } from "@/hooks/use-numbered-shortcuts";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { getColumnIcon } from "@/lib/column";
 import { getStatusDisplayLabel } from "@/lib/i18n/domain";
@@ -39,7 +40,11 @@ export default function SubtaskStatusPopover({
   }));
   const { mutateAsync: updateTaskStatus } = useUpdateTaskStatus();
   const { canManageTasks } = useWorkspacePermission();
-  const canEdit = canManageTasks();
+  const { can: canProject, isCheckingPermissions } =
+    useProjectPermission(projectId);
+  const canEdit =
+    canManageTasks() ||
+    (!isCheckingPermissions && canProject("item", "transition"));
 
   const allSameStatus =
     tasks.length > 0 && tasks.every((t) => t.status === tasks[0].status);

@@ -1,11 +1,15 @@
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import db, { schema } from "../../database";
+import { recheckSocketAccess } from "../../ws";
 import { PROJECT_SYSTEM_OWNER } from "../catalog";
 
 async function removeMember(projectId: string, memberId: string) {
   const [member] = await db
-    .select({ id: schema.projectMemberTable.id })
+    .select({
+      id: schema.projectMemberTable.id,
+      userId: schema.projectMemberTable.userId,
+    })
     .from(schema.projectMemberTable)
     .where(
       and(
@@ -47,6 +51,8 @@ async function removeMember(projectId: string, memberId: string) {
   await db
     .delete(schema.projectMemberTable)
     .where(eq(schema.projectMemberTable.id, memberId));
+
+  await recheckSocketAccess(member.userId, { projectId });
 }
 
 export default removeMember;

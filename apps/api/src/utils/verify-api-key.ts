@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { and, eq, gt, isNull, or } from "drizzle-orm";
+import { isBanActive } from "../admin/users/is-ban-active";
 import db, { schema } from "../database";
 
 async function hashApiKey(key: string): Promise<string> {
@@ -30,6 +31,19 @@ export async function verifyApiKey(key: string) {
     .limit(1);
 
   if (!apiKey) {
+    return null;
+  }
+
+  // A banned user's keys stop working along with their sessions.
+  const [owner] = await db
+    .select({
+      banned: schema.userTable.banned,
+      banExpires: schema.userTable.banExpires,
+    })
+    .from(schema.userTable)
+    .where(eq(schema.userTable.id, apiKey.referenceId))
+    .limit(1);
+  if (owner && isBanActive(owner)) {
     return null;
   }
 

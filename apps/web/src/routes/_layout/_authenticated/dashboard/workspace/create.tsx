@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import useCreateWorkspace from "@/hooks/queries/workspace/use-create-workspace";
+import { useCanCreateWorkspace } from "@/hooks/use-can-create-workspace";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "@/lib/toast";
 
@@ -19,6 +20,7 @@ export const Route = createFileRoute(
 
 function RouteComponent() {
   const { t } = useTranslation();
+  const canCreateWorkspace = useCanCreateWorkspace();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -60,6 +62,13 @@ function RouteComponent() {
       );
     }
   };
+
+  if (!canCreateWorkspace)
+    return (
+      <p className="p-6 text-muted-foreground">
+        {t("workspace:create.restricted")}
+      </p>
+    );
 
   return (
     <>

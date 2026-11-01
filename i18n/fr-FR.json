@@ -144,7 +144,10 @@
 				"status": "Status",
 				"noStatus": "No status",
 				"sprint": "Sprint",
-				"noSprint": "No sprint"
+				"noSprint": "No sprint",
+				"pushToGitlab": "Also create GitLab issue",
+				"pushGitlabError": "Task created, but creating the GitLab issue failed",
+				"requiredFieldsMissing": "Fill in required fields: {{fields}}"
 			},
 			"sprint": {
 				"breadcrumbProjectFallback": "PROJECT",
@@ -172,6 +175,26 @@
 				"completeButton": "Complete sprint",
 				"completedToast": "Sprint completed",
 				"completeError": "Failed to complete sprint"
+			},
+			"sprintReport": {
+				"title": "“{{name}}” report",
+				"description": "Sprint completed. Unfinished work was carried over.",
+				"done": "Done",
+				"carriedOver": "Carried over",
+				"total": "Total",
+				"tasks_one": "{{count}} task",
+				"tasks_other": "{{count}} tasks",
+				"points_one": "{{count}} point",
+				"points_other": "{{count}} points",
+				"historyDescription": "Snapshot taken when the sprint was completed.",
+				"completedOn": "Completed {{date}}",
+				"completedOnBy": "Completed {{date}} by {{name}}",
+				"doneTasksHeading": "Done tasks",
+				"carriedOverTasksHeading": "Carried-over tasks",
+				"listTruncated": "Showing the first {{shown}} of {{total}}",
+				"noReport": "No report available",
+				"noReportDescription": "This sprint was completed before sprint reports were stored.",
+				"loadError": "Could not load the sprint report."
 			}
 		},
 		"sprints": {
@@ -184,6 +207,10 @@
 			"loading": "Loading…",
 			"backlogEmpty": "No tasks in the backlog. Tasks without a sprint appear here.",
 			"sprintTasksEmpty": "No tasks in this sprint yet.",
+			"history": "Sprint history",
+			"exportExcel": "Export sprints (Excel)",
+			"exportingExcel": "Exporting…",
+			"exportError": "Couldn't export the sprint workbook",
 			"noGoal": "No goal set",
 			"start": "Start",
 			"complete": "Complete",
@@ -217,7 +244,31 @@
 			"taskCount_one": "{{count}} task",
 			"taskCount_other": "{{count}} tasks",
 			"showingActiveSprint": "Showing active sprint",
-			"filterToActiveSprint": "Filter to active sprint"
+			"filterToActiveSprint": "Filter to active sprint",
+			"pointsTotal": "{{completed}}/{{total}} pts",
+			"pointsTotalTitle": "Completed / total story points",
+			"overdue": "Overdue",
+			"endsToday": "Ends today",
+			"endsInDays_one": "Ends in {{count}} day",
+			"endsInDays_other": "Ends in {{count}} days",
+			"viewReport": "View report"
+		},
+		"notFound": {
+			"title": "Page not found",
+			"description": "This link may be incomplete, or the page may have moved. Return home to open an available workspace.",
+			"home": "Go to home",
+			"back": "Go back"
+		},
+		"feedback": {
+			"button": "Feedback",
+			"title": "Send feedback",
+			"description": "Your message is emailed to the configured feedback inbox.",
+			"placeholder": "What happened, or what would you like changed?",
+			"send": "Send",
+			"sending": "Sending…",
+			"sent": "Feedback sent",
+			"sendError": "Couldn't send feedback",
+			"smtpUnavailable": "Email isn't set up on this server, so feedback can't be sent yet."
 		}
 	},
 	"auth": {
@@ -282,7 +333,7 @@
 			"toggleMessage": "Vous avez déjà un compte?",
 			"toggleLink": "Se connecter",
 			"instanceStatusError": "Couldn't reach the server. Please retry in a moment.",
-			"instanceAdminTitle": "Set up your Hailey instance",
+			"instanceAdminTitle": "Set up your Kaneo instance",
 			"instanceAdminSubtitle": "This account becomes the instance administrator with full access."
 		},
 		"verifyOtp": {
@@ -449,7 +500,8 @@
 				"nameRequired": "Le nom est requis",
 				"nameShort": "Le nom doit contenir au moins 2 caractères",
 				"invalidEmail": "Adresse email invalide"
-			}
+			},
+			"managedBySso": "Managed by your identity provider"
 		},
 		"notificationsPage": {
 			"pageTitle": "Notifications",
@@ -729,7 +781,25 @@
 			"importExportTasks": "Importation/Exportation",
 			"importExportTasksDescription": "Importation/Exportation des Tâches",
 			"sprintCycleLabel": "Sprint cycle (weeks)",
-			"sprintCycleHint": "Default length used when suggesting dates for new sprints."
+			"sprintCycleHint": "Default length used when suggesting dates for new sprints.",
+			"move": {
+				"title": "Move to workspace",
+				"description": "Move this project and its tasks to another workspace you can create projects in.",
+				"action": "Move",
+				"targetsError": "Couldn't load the workspaces you can move this project to.",
+				"dialogTitle": "Move \"{{name}}\" to another workspace?",
+				"dialogDescription": "The project, its tasks, sprints, documents and settings move with it. Before you confirm:",
+				"consequenceMembers": "Project members who aren't in the target workspace lose access to the project.",
+				"consequenceAssignees": "Tasks assigned to or reported by people outside the target workspace become unassigned. Their history is kept.",
+				"consequenceLabels": "Task labels are matched to the target workspace's labels by name; missing labels are created there.",
+				"consequenceIntegrations": "Integrations (Git, chat, webhooks) are turned off and must be reviewed and re-enabled in the target workspace.",
+				"targetLabel": "Target workspace",
+				"targetPlaceholder": "Select a workspace",
+				"confirm": "Move project",
+				"moving": "Moving...",
+				"toastMoved": "Project moved to {{workspace}} ({{taskCount}} tasks unassigned, {{memberCount}} members removed)",
+				"toastError": "Failed to move project"
+			}
 		},
 		"projectIntegrations": {
 			"pageTitle": "Intégrations du projet",
@@ -750,7 +820,11 @@
 			"googleChatSectionTitle": "Google Chat",
 			"googleChatSectionSubtitle": "Post task updates to a Google Chat Space via an incoming webhook.",
 			"blueprintSectionTitle": "Blueprint Integration",
-			"blueprintSectionSubtitle": "Map this Kaneo project to a Blueprint project/process for Push to Blueprint."
+			"blueprintSectionSubtitle": "Map this Kaneo project to a Blueprint project/process for Push to Blueprint.",
+			"gitlabSectionTitle": "GitLab Integration",
+			"gitlabSectionSubtitle": "Synchronize tasks with a GitLab instance (issues, merge requests, webhooks).",
+			"disabledByAdmin": "An administrator has disabled this integration. You can still disconnect an existing connection.",
+			"disconnect": "Disconnect"
 		},
 		"projectVisibility": {
 			"pageTitle": "Visibilité du projet",
@@ -1455,7 +1529,8 @@
 						"description": "Add, remove, and assign roles to project members."
 					}
 				}
-			}
+			},
+			"ownerOnly": "Only the project Owner can edit roles"
 		},
 		"security": "Security",
 		"securityPage": {
@@ -1582,6 +1657,516 @@
 					}
 				}
 			}
+		},
+		"gitlabIntegration": {
+			"validation": {
+				"baseUrlRequired": "GitLab base URL is required",
+				"baseUrlInvalid": "Enter a valid URL (e.g. https://gitlab.example.com)",
+				"ownerRequired": "Namespace is required",
+				"ownerInvalid": "Invalid namespace (use nested groups like group/subgroup)",
+				"nameRequired": "Repository name is required",
+				"nameInvalid": "Invalid repository name format"
+			},
+			"toast": {
+				"verifyOk": "GitLab token can access this repository",
+				"verifyWarning": "Check token permissions or repository access",
+				"repoNotFound": "Repository not found or not accessible",
+				"verifyError": "Failed to verify GitLab access",
+				"tokenRequired": "Personal access token is required",
+				"tokenRequiredVerify": "Enter a token to verify",
+				"verifyFirst": "Verify access failed — check URL, token, and repository",
+				"updated": "GitLab integration saved",
+				"updateError": "Failed to save GitLab integration",
+				"removed": "GitLab integration removed",
+				"removeError": "Failed to remove GitLab integration",
+				"issuesImported": "Issues imported successfully",
+				"importError": "Failed to import issues",
+				"commentOnEnabled": "Kaneo will comment with a task link on new issues",
+				"commentOnDisabled": "Task link comments on new issues are turned off",
+				"settingsUpdateError": "Failed to update GitLab integration",
+				"secretCopied": "Copied",
+				"unableToCopySecret": "Unable to copy secret"
+			},
+			"webhookShow": "Show",
+			"webhookHide": "Hide",
+			"webhookCopy": "Copy",
+			"connectionStatus": "Connection status",
+			"connectedActive": "Repository connected and active",
+			"notConnectedHint": "No GitLab repository connected",
+			"badgeConnected": "Connected",
+			"badgeNotConnected": "Not connected",
+			"repository": "Repository",
+			"repositoryHint": "Linked GitLab repository",
+			"commentTaskLinkTitle": "Comment Kaneo link on new issues",
+			"commentTaskLinkHint": "When enabled, Kaneo posts a comment on each new issue with a link to the task.",
+			"webhookTitle": "Webhook",
+			"webhookHint": "In your GitLab project, go to Settings > Webhooks and add a webhook with this URL. Paste the secret below into the Secret token field, then enable push, issue, comment and merge request events.",
+			"webhookSecretLabel": "Secret token (must match the webhook secret token in GitLab)",
+			"baseUrlLabel": "GitLab URL",
+			"baseUrlHint": "Root URL of your GitLab instance",
+			"tokenLabel": "Personal access token",
+			"tokenHint": "Personal, project, or group access token with the api scope",
+			"tokenPlaceholder": "Paste token",
+			"tokenPlaceholderUpdate": "Paste new token to rotate",
+			"currentToken": "stored",
+			"ownerLabel": "Namespace",
+			"ownerHint": "User, group, or nested group path (e.g. group/subgroup)",
+			"repoNameLabel": "Repository name",
+			"repoNameHint": "Repository name only (no owner)",
+			"actionsTitle": "Actions",
+			"actionsHint": "Verify access and connect",
+			"browse": "Browse",
+			"verify": "Verify",
+			"update": "Update",
+			"connect": "Connect",
+			"disconnect": "Disconnect",
+			"importSectionTitle": "Import GitLab issues",
+			"importSectionHint": "Import open issues and pull requests from the repository",
+			"importing": "Importing…",
+			"importIssues": "Import issues",
+			"importDisabledHint": "Verify the repository above to enable importing",
+			"browseModalTitle": "Your repositories",
+			"browseModalHint": "Repositories your token can access",
+			"searchRepos": "Search…",
+			"browseNeedsCredentials": "Enter GitLab URL and token to browse",
+			"loadingRepos": "Loading repositories…",
+			"retry": "Retry"
+		},
+		"projectCustomFields": {
+			"pageTitle": "Custom Fields",
+			"title": "Custom fields",
+			"subtitle": "Add your own fields to every task in this project.",
+			"addField": "Add field",
+			"empty": "No custom fields yet.",
+			"required": "Required",
+			"hiddenCount_one": "{{count}} hidden",
+			"hiddenCount_other": "{{count}} hidden",
+			"edit": "Edit field",
+			"delete": "Delete field",
+			"types": {
+				"text": "Text",
+				"number": "Number",
+				"date": "Date",
+				"dropdown": "Dropdown",
+				"boolean": "Checkbox",
+				"multiselect": "Multi-select"
+			},
+			"dialog": {
+				"createTitle": "New custom field",
+				"editTitle": "Edit custom field",
+				"description": "Fields appear on every task in this project.",
+				"nameLabel": "Name",
+				"namePlaceholder": "e.g. Customer",
+				"typeLabel": "Type",
+				"typeLocked": "The type can't change after the field is created. Dropdowns can still allow several options.",
+				"optionsLabel": "Options",
+				"allowMultiple": "Allow several",
+				"renameOption": "Rename option",
+				"moveUp": "Move up",
+				"moveDown": "Move down",
+				"hideOption": "Hide option",
+				"showOption": "Show option",
+				"removeOption": "Remove option",
+				"addOption": "Add",
+				"addOptionPlaceholder": "New option",
+				"hiddenHint": "Hidden options stay on tasks that already use them but can't be picked anew.",
+				"requiredLabel": "Required",
+				"requiredHint": "Every task needs a value. Tasks without one get the default.",
+				"defaultLabel": "Default value",
+				"defaultChecked": "Checked by default",
+				"noDefault": "No default",
+				"cancel": "Cancel",
+				"save": "Save",
+				"create": "Create field"
+			},
+			"issues": {
+				"nameRequired": "Enter a name.",
+				"optionsRequired": "Add at least one option.",
+				"moreOptionsRequired": "Add at least two options.",
+				"defaultRequired": "Required fields need a default value."
+			},
+			"deleteDialog": {
+				"title": "Delete custom field?",
+				"description": "\"{{name}}\" and its values on every task will be removed. This can't be undone.",
+				"confirm": "Delete"
+			},
+			"toast": {
+				"created": "Custom field created",
+				"updated": "Custom field updated",
+				"deleted": "Custom field deleted",
+				"saveError": "Failed to save the custom field",
+				"deleteError": "Failed to delete the custom field",
+				"reorderError": "Failed to reorder custom fields"
+			}
+		},
+		"adminPanel": {
+			"title": "Administration",
+			"notAuthorized": "Only instance administrators can view this page.",
+			"loading": "Loading...",
+			"users": "Users",
+			"usersSubtitle": "Create, manage and restrict the accounts on this instance.",
+			"noUsers": "No users match these filters.",
+			"totalUsers_one": "{{count}} user",
+			"totalUsers_other": "{{count}} users",
+			"pageOf": "Page {{page}} of {{count}}",
+			"previous": "Previous",
+			"next": "Next",
+			"roles": {
+				"admin": "Admin",
+				"user": "User"
+			},
+			"status": {
+				"active": "Active",
+				"banned": "Banned"
+			},
+			"filters": {
+				"searchPlaceholder": "Search by name or email",
+				"allRoles": "All roles",
+				"allStatuses": "All statuses"
+			},
+			"columns": {
+				"user": "User",
+				"role": "Role",
+				"status": "Status",
+				"lastActive": "Last active",
+				"created": "Created"
+			},
+			"createUser": {
+				"title": "Create user",
+				"description": "Add an account to this instance. Leave the password empty to let the user sign in with SSO or a magic link, or to email them a setup link.",
+				"name": "Name",
+				"email": "Email",
+				"password": "Password (optional)",
+				"passwordHintSmtp": "At least 8 characters. Leave empty to email a link where the user sets their own password.",
+				"passwordHintNoSmtp": "At least 8 characters. Leave empty if the user signs in with SSO; email is not configured, so no setup link can be sent.",
+				"sendSetupEmail": "Email a password setup link",
+				"role": "Role",
+				"submit": "Create user",
+				"created": "User created",
+				"createdWithEmail": "User created and setup email sent",
+				"failed": "Failed to create user"
+			},
+			"manage": {
+				"open": "Manage",
+				"failed": "Action failed",
+				"selfNotice": "You cannot change the role of, ban or delete your own account.",
+				"role": "Instance role",
+				"roleUpdated": "Role updated",
+				"access": "Access",
+				"ban": "Ban",
+				"banReasonPlaceholder": "Reason (optional)",
+				"bannedToast": "User banned and signed out",
+				"banned": "This user is banned.",
+				"bannedWithReason": "This user is banned: {{reason}}",
+				"unban": "Lift ban",
+				"unbanned": "Ban lifted",
+				"sessions": "Active sessions",
+				"noSessions": "No active sessions.",
+				"unknownDevice": "Unknown device",
+				"currentSession": "Your session",
+				"lastActive": "Last active {{date}}",
+				"revoke": "Revoke",
+				"revokeAll": "Revoke all",
+				"sessionRevoked": "Session revoked",
+				"sessionsRevoked": "All sessions revoked",
+				"apiKeys": "API keys",
+				"noApiKeys": "No API keys.",
+				"unnamedKey": "Unnamed key",
+				"lastUsed": "Last used {{date}}",
+				"apiKeyRevoked": "API key revoked",
+				"apiKeysRevoked": "All API keys revoked",
+				"dangerZone": "Danger zone",
+				"deleteUser": "Delete user",
+				"deleteConfirmTitle": "Delete this user?",
+				"deleteConfirmDescription": "{{email}} and everything that belongs only to them will be permanently deleted. This cannot be undone.",
+				"deleted": "User deleted"
+			},
+			"auditLog": {
+				"title": "Audit log",
+				"subtitle": "A permanent record of administrative actions on this instance.",
+				"allActions": "All actions",
+				"empty": "No administrative actions recorded yet.",
+				"deletedActor": "Deleted user",
+				"columns": {
+					"time": "Time",
+					"actor": "Administrator",
+					"action": "Action",
+					"target": "Target",
+					"details": "Details"
+				},
+				"actions": {
+					"user_created": "Created user",
+					"user_role_changed": "Changed role",
+					"user_banned": "Banned user",
+					"user_unbanned": "Lifted ban",
+					"user_deleted": "Deleted user",
+					"user_session_revoked": "Revoked session",
+					"user_sessions_revoked": "Revoked all sessions",
+					"user_api_key_revoked": "Revoked API key",
+					"user_api_keys_revoked": "Revoked all API keys",
+					"instance_settings_updated": "Instance settings changed",
+					"email_smtp_verified": "SMTP connection verified",
+					"email_test_sent": "Test email sent",
+					"email_test_failed": "Test email failed",
+					"workspace_archived": "Workspace archived",
+					"workspace_restored": "Workspace restored",
+					"workspace_deleted": "Workspace deleted"
+				}
+			},
+			"system": {
+				"title": "System",
+				"subtitle": "Version, uptime and the health of the services this instance depends on.",
+				"status": {
+					"ok": "Healthy",
+					"down": "Unreachable",
+					"not_configured": "Not configured"
+				},
+				"version": "Kaneo version",
+				"node": "Node.js",
+				"uptime": "Uptime",
+				"database": "Database",
+				"migrations": "Migrations applied",
+				"redis": "Redis",
+				"storage": "File storage",
+				"storageS3": "{{driver}} (documents), S3 (images)",
+				"email": "Email (SMTP)",
+				"emailConfigured": "Sending through {{host}}",
+				"verifySmtp": "Verify connection",
+				"sendTestEmail": "Send test email to me",
+				"smtpOk": "Connected to the mail server",
+				"smtpNotConfigured": "Email is not configured. Set SMTP_HOST, SMTP_PORT and SMTP_FROM.",
+				"smtpFailed": "The mail server refused the connection ({{code}})",
+				"testEmailSent": "Test email sent to {{email}}"
+			},
+			"instanceSettings": {
+				"title": "Settings",
+				"subtitle": "Instance-wide options. Environment variables still win over these values.",
+				"saved": "Settings saved",
+				"save": "Save",
+				"instanceName": "Instance name",
+				"instanceNameHint": "Shown in page titles. Leave empty to use Kaneo.",
+				"lockedByEnv": "Set by {{variable}}; change it in the environment.",
+				"needsSmtp": "Needs email delivery (SMTP) to be configured.",
+				"registrationEnabled": "Allow registration",
+				"registrationEnabledHint": "When off, only people with a valid invitation can create an account.",
+				"passwordRegistrationEnabled": "Allow password sign-up",
+				"passwordRegistrationEnabledHint": "When off, new accounts must use a social or OIDC provider.",
+				"requireEmailVerification": "Require email verification",
+				"requireEmailVerificationHint": "Password users confirm their email with a code before they can sign in.",
+				"workspaceCreationRestricted": "Only admins create workspaces",
+				"workspaceCreationRestrictedHint": "When on, only instance administrators can create new workspaces.",
+				"integrations": "Integrations",
+				"integrationsHint": "Turned-off providers are hidden from projects and can't be connected or changed.",
+				"integrationNames": {
+					"github": "GitHub",
+					"gitea": "Gitea",
+					"gitlab": "GitLab",
+					"generic-webhook": "Generic webhook",
+					"discord": "Discord",
+					"slack": "Slack",
+					"telegram": "Telegram"
+				}
+			},
+			"workspaces": {
+				"title": "Workspaces",
+				"subtitle": "Archive, restore or delete the workspaces on this instance.",
+				"searchPlaceholder": "Search by name or slug",
+				"status": {
+					"all": "All workspaces",
+					"active": "Active",
+					"archived": "Archived"
+				},
+				"empty": "No workspaces match these filters.",
+				"columns": {
+					"name": "Workspace",
+					"members": "Members",
+					"projects": "Projects",
+					"created": "Created"
+				},
+				"archivedBadge": "Archived",
+				"archive": "Archive",
+				"unarchive": "Restore",
+				"delete": "Delete",
+				"archiveConfirmTitle": "Archive workspace?",
+				"archiveConfirmDescription": "{{name}} becomes read-only for everyone. Members can still view it until you restore it.",
+				"unarchiveConfirmTitle": "Restore workspace?",
+				"unarchiveConfirmDescription": "{{name}} becomes editable again for its members.",
+				"archived": "Workspace archived",
+				"unarchived": "Workspace restored",
+				"deleteConfirmTitle": "Delete workspace permanently?",
+				"deleteConfirmDescription": "This deletes {{name}} with all its projects, tasks and documents, and removes every member's access. Type the workspace name to confirm.",
+				"confirmNameLabel": "Workspace name",
+				"deleted": "Workspace deleted"
+			},
+			"customRoles": {
+				"title": "Instance roles",
+				"hint": "Custom roles grant selected administration permissions. Only built-in administrators can manage roles or privileged accounts.",
+				"name": "Role name (lowercase letters, digits and hyphens)",
+				"permissions": "Permissions",
+				"save": "Save role",
+				"edit": "Edit",
+				"assign": "Assign roles to users",
+				"searchUsers": "Search users by name or email",
+				"none": "No instance role"
+			},
+			"instancePermissions": {
+				"users_read": "View users",
+				"users_create": "Create users",
+				"users_manage": "Manage ordinary users",
+				"sessions_manage": "View and revoke user sessions",
+				"api_keys_manage": "View and revoke API keys",
+				"workspaces_read": "View all workspaces",
+				"workspaces_manage": "Archive and delete workspaces",
+				"instance_read": "View system status",
+				"instance_settings": "Manage instance settings and webhooks",
+				"audit_read": "View audit log"
+			},
+			"webhooks": {
+				"title": "Instance webhooks",
+				"hint": "Send signed administration audit events to public HTTP(S) endpoints. Configure NOTIFICATION_SECRET_ENCRYPTION_KEY on the server first. Failed deliveries retry up to three times. Keep the delivery ID to deduplicate events.",
+				"name": "Name",
+				"url": "Destination URL",
+				"enabled": "Enabled",
+				"disabled": "Disabled",
+				"categories": "Event categories",
+				"save": "Save webhook",
+				"test": "Send test",
+				"rotate": "Rotate signing secret",
+				"history": "Recent deliveries",
+				"emptyHistory": "No deliveries yet",
+				"secretOnce": "Signing secret — copy it now; it is only shown once",
+				"attempts_one": "{{count}} attempt",
+				"attempts_other": "{{count}} attempts",
+				"deliveryError": "Delivery failed; check the endpoint and server configuration"
+			},
+			"webhookCategories": {
+				"user": "Users",
+				"session": "Sessions",
+				"api_key": "API keys",
+				"workspace": "Workspaces",
+				"role": "Instance roles",
+				"instance": "Instance settings",
+				"email": "Email",
+				"webhook": "Webhooks"
+			},
+			"webhookStates": {
+				"pending": "Pending",
+				"succeeded": "Succeeded",
+				"failed": "Failed",
+				"cancelled": "Cancelled"
+			}
+		},
+		"workspaceImport": {
+			"pageTitle": "Import",
+			"title": "Import",
+			"subtitle": "Move projects in from PLANKA or Jira. Each selected project becomes a new project in this workspace.",
+			"notAllowed": "Only members who can manage workspace settings and create projects can import.",
+			"credentialsNotice": "Your credentials are used only to read the projects you pick. Kaneo never stores or logs them.",
+			"toastStarted": "Import started",
+			"source": {
+				"label": "Import from"
+			},
+			"connect": {
+				"title": "Connect",
+				"subtitle": "Sign in to the tool you are moving from."
+			},
+			"fields": {
+				"url": "Address",
+				"email": "Account email",
+				"apiToken": "API token",
+				"apiKey": "API key",
+				"signIn": "Sign in with",
+				"username": "Username or email",
+				"password": "Password"
+			},
+			"hints": {
+				"plankaUrl": "The address you open PLANKA at, including https://.",
+				"jiraUrl": "Your Jira site, e.g. https://your-site.atlassian.net, or your Jira Data Center address.",
+				"jiraEmail": "Required for Jira Cloud. Leave empty for Jira Data Center.",
+				"jiraToken": "A Jira Cloud API token, or a personal access token for Jira Data Center.",
+				"plankaApiKey": "Create an API key in your PLANKA account settings."
+			},
+			"projects": {
+				"title": "Choose projects",
+				"subtitle": "Pick the projects to import. Each one becomes a new project.",
+				"empty": "This account cannot see any projects to import.",
+				"includeComments": "Import comments",
+				"includeCommentsHint": "Comments are kept with the name of their original author.",
+				"tooMany": "Pick at most {{max}} projects per import."
+			},
+			"actions": {
+				"connect": "Connect",
+				"connecting": "Connecting…",
+				"back": "Back",
+				"start_one": "Import {{count}} project",
+				"start_other": "Import {{count}} projects",
+				"importMore": "Import more"
+			},
+			"run": {
+				"title": "Import from {{source}}",
+				"progress": "{{done}} of {{total}} projects done"
+			},
+			"status": {
+				"pending": "Waiting",
+				"running": "Importing",
+				"completed": "Done",
+				"failed": "Failed"
+			},
+			"counts": {
+				"tasks_one": "{{count}} task",
+				"tasks_other": "{{count}} tasks",
+				"columns_one": "{{count}} column",
+				"columns_other": "{{count}} columns",
+				"labels_one": "{{count}} label",
+				"labels_other": "{{count}} labels",
+				"comments_one": "{{count}} comment",
+				"comments_other": "{{count}} comments"
+			},
+			"history": {
+				"title": "Recent imports",
+				"subtitle": "The last 20 imports in this workspace.",
+				"empty": "No imports yet."
+			},
+			"errors": {
+				"connect": "Could not connect to the source.",
+				"start": "Could not start the import."
+			}
+		},
+		"googleDrive": {
+			"notConnected": "Connect Google Drive to store project documents in Drive and link existing Drive files.",
+			"connect": "Connect Google Drive",
+			"connected": "Connected",
+			"disconnect": "Disconnect",
+			"rootFolder": "Drive folder",
+			"noFolder": "No folder selected",
+			"chooseFolder": "Choose folder",
+			"changeFolder": "Change folder",
+			"pickFolderTitle": "Choose a Google Drive folder",
+			"noSubfolders": "No subfolders here",
+			"useFolder": "Use “{{name}}”",
+			"connectedToast": "Google Drive connected",
+			"disconnectedToast": "Google Drive disconnected",
+			"folderSetToast": "Folder set to “{{name}}”",
+			"norefreshToast": "Google did not return a refresh token. Remove Kaneo's access in your Google account, then reconnect.",
+			"errorToast": "Google Drive connection failed",
+			"credsTitle": "Google credentials",
+			"credsHint": "Add your Google OAuth Client ID and Secret. Create them in Google Cloud Console (APIs & Services → Credentials) with the Drive API enabled.",
+			"credsConfigured": "Credentials saved",
+			"redirectUriLabel": "Authorized redirect URI",
+			"redirectUriHint": "Add this exact URI to your OAuth client's “Authorized redirect URIs” in Google Cloud Console.",
+			"copy": "Copy",
+			"copiedToast": "Copied",
+			"clientIdLabel": "Client ID",
+			"clientSecretLabel": "Client Secret",
+			"clientSecretPlaceholderUpdate": "Enter a new secret to replace the saved one",
+			"saveCreds": "Save credentials",
+			"cancel": "Cancel",
+			"editCreds": "Edit credentials",
+			"credsRequired": "Client ID and Client Secret are required",
+			"credsSavedToast": "Google credentials saved",
+			"credsRemovedToast": "Google credentials removed",
+			"removeCreds": "Remove credentials",
+			"sectionSubtitle": "Connect Google Drive to upload and link project documents"
 		}
 	},
 	"navigation": {
@@ -1613,7 +2198,9 @@
 			"members": "Membres",
 			"invitations": "Invitations",
 			"more": "Plus",
-			"backToBoard": "Retour au tableau"
+			"backToBoard": "Retour au tableau",
+			"home": "Home",
+			"inbox": "Inbox"
 		},
 		"projectList": {
 			"viewProject": "Voir le projet",
@@ -1751,6 +2338,30 @@
 			"task_deleted": {
 				"title": "Task deleted",
 				"content": "{{deletedByName}} deleted task \"{{taskTitle}}\""
+			},
+			"sprint_started": {
+				"title": "Sprint started",
+				"content": "{{sprintName}} has started in {{projectName}}."
+			},
+			"sprint_ended": {
+				"title": "Sprint ended",
+				"content": "{{sprintName}} has ended in {{projectName}}."
+			}
+		},
+		"inbox": {
+			"pageTitle": "Inbox",
+			"markRead": "Mark as read",
+			"markUnread": "Mark as unread",
+			"delete": "Delete notification",
+			"clearRead": "Clear read",
+			"loadError": "Could not load notifications. Please try again.",
+			"emptyFiltered": "Nothing here",
+			"today": "Today",
+			"earlier": "Earlier",
+			"filters": {
+				"all": "All",
+				"unread": "Unread",
+				"mentions": "Mentions"
 			}
 		}
 	},
@@ -1852,7 +2463,8 @@
 					"yaml": "YAML"
 				},
 				"mentionEmpty": "No people found"
-			}
+			},
+			"commentedOnForge": "commented on {{forge}}"
 		}
 	},
 	"tasks": {
@@ -2096,6 +2708,29 @@
 			},
 			"points": {
 				"updateError": "Failed to update estimate"
+			},
+			"recurrence": {
+				"repeat": "Repeat",
+				"repeats": "Repeats",
+				"every": "Every",
+				"interval": "Interval",
+				"unitLabel": "Unit",
+				"onDays": "On",
+				"hint": "When this task is completed, the next one is created with its due date moved forward.",
+				"updateError": "Failed to update the repeat rule",
+				"pattern": {
+					"daily": "Daily",
+					"weekly": "Weekly",
+					"monthly": "Monthly",
+					"yearly": "Yearly",
+					"periodically": "Periodically"
+				},
+				"unit": {
+					"days": "days",
+					"weeks": "weeks",
+					"months": "months",
+					"years": "years"
+				}
 			}
 		},
 		"backlog": {
@@ -2145,6 +2780,7 @@
 			"allPriorities": "Toutes les priorités",
 			"allAssignees": "Tous les assignés",
 			"allDueDates": "Toutes les dates d'échéance",
+			"allCreatedDates": "All created dates",
 			"allLabels": "Tous les labels",
 			"selectedCount": "{{count}} sélectionné",
 			"subjects": {
@@ -2152,9 +2788,16 @@
 				"priority": "Priorité",
 				"assignee": "Assigné",
 				"dueDate": "Date d'échéance",
+				"createdAt": "Created date",
 				"labels": "Labels",
 				"creator": "Creator",
 				"relatedToMe": "Related to me"
+			},
+			"createdDate": {
+				"createdToday": "Created today",
+				"createdThisWeek": "Created this week",
+				"createdLastWeek": "Created last week",
+				"createdLast30Days": "Created in last 30 days"
 			},
 			"operators": {
 				"isAnyOf": "est l'un des",
@@ -2229,7 +2872,9 @@
 		},
 		"contextMenu": {
 			"copyLink": "Copier le lien",
-			"copyLinkSuccess": "Lien de la tâche copié !"
+			"copyLinkSuccess": "Lien de la tâche copié !",
+			"sprint": "Sprint",
+			"duplicate": "Duplicate"
 		},
 		"actions": {
 			"archive": "Archiver",
@@ -2266,7 +2911,9 @@
 			"actions": "Actions",
 			"searchActions": "Rechercher des actions...",
 			"noActionsFound": "Aucune action trouvée.",
-			"changeStatus": "Changer le statut"
+			"changeStatus": "Changer le statut",
+			"addToSprint": "Add to sprint",
+			"addToSprintError": "Failed to add tasks to sprint"
 		},
 		"blueprint": {
 			"pushToBlueprint": "Push to Blueprint",
@@ -2295,6 +2942,72 @@
 			"none": "No estimate",
 			"unit": "{{n}} pts",
 			"value": "{{n}} points"
+		},
+		"duplicate": {
+			"success": "Task duplicated",
+			"error": "Failed to duplicate task"
+		},
+		"shortLink": {
+			"resolving": "Opening task…",
+			"resolveError": "Couldn't open this task link"
+		},
+		"recurrence": {
+			"everyInterval": "Every {{interval}} {{unit}}",
+			"onDays": "{{rule}} on {{days}}"
+		},
+		"gitlab": {
+			"pushToGitlab": "Push to GitLab",
+			"pushing": "Pushing…",
+			"pushSuccess": "GitLab issue created",
+			"pushAlreadyLinked": "Task already linked to a GitLab issue",
+			"pushError": "Failed to create GitLab issue"
+		},
+		"customFields": {
+			"title": "Custom fields",
+			"empty": "Empty",
+			"updateError": "Failed to update the field"
+		},
+		"calendar": {
+			"title": "Calendar",
+			"previousMonth": "Previous month",
+			"nextMonth": "Next month",
+			"today": "Today",
+			"noTasks": "No scheduled tasks",
+			"noTasksSubtitle": "Add a start date, due date, or both to tasks to place them on the calendar.",
+			"noTasksThisMonth": "Nothing scheduled this month",
+			"moreTasks": "+{{count}} more",
+			"dayTasksAriaLabel": "Show all tasks for {{date}}",
+			"taskAriaLabel": "{{title}}, {{range}}: open task",
+			"loadError": "Failed to load tasks.",
+			"feeds": {
+				"subscribe": "Subscribe",
+				"title": "Subscribe to calendar",
+				"description": "Create a private iCal link for your calendar app. It shows the titles and dates of scheduled tasks you can read in this project, and stops working if you lose access.",
+				"linkReady": "Your calendar link",
+				"linkLabel": "Calendar feed link",
+				"linkOnce": "Copy this link now. For your security it won't be shown again; regenerate the feed if you lose it. Anyone with the link can see these task titles and dates.",
+				"copy": "Copy link",
+				"copiedLabel": "Copied",
+				"copied": "Link copied to clipboard.",
+				"copyError": "Could not copy the link. Select the URL and copy it manually.",
+				"labels": "Only include labels",
+				"noLabels": "No labels in this workspace.",
+				"labelsHint": "Leave empty to include every scheduled task.",
+				"create": "Create feed",
+				"creating": "Creating…",
+				"created": "Calendar feed created.",
+				"createError": "Could not create the calendar feed.",
+				"activeFeeds": "Your feeds",
+				"empty": "You have no calendar feeds for this project yet.",
+				"allScheduledTasks": "All scheduled tasks",
+				"createdOn": "Created {{date}} · {{timeZone}}",
+				"regenerate": "Regenerate link",
+				"regenerated": "New link generated. The old link no longer works.",
+				"regenerateError": "Could not regenerate the link.",
+				"revoke": "Revoke feed",
+				"revoked": "Calendar feed revoked.",
+				"revokeError": "Could not revoke the calendar feed."
+			}
 		}
 	},
 	"invitations": {
@@ -2368,7 +3081,48 @@
 			"submit": "Créer un workspace",
 			"success": "Workspace créé avec succès",
 			"error": "Échec de la création du workspace",
-			"alreadyExists": "A workspace with this name (or URL) already exists. Try a different name."
+			"alreadyExists": "A workspace with this name (or URL) already exists. Try a different name.",
+			"restricted": "Workspace creation is restricted. Ask an administrator to create one or invite you to an existing workspace."
+		},
+		"home": {
+			"pageTitle": "Home",
+			"greeting": {
+				"morning": "Good morning",
+				"afternoon": "Good afternoon",
+				"evening": "Good evening"
+			},
+			"due": {
+				"today": "Today",
+				"tomorrow": "Tomorrow",
+				"overdue": "Overdue"
+			},
+			"week": {
+				"more_one": "+{{count}} more",
+				"more_other": "+{{count}} more"
+			},
+			"upNext": {
+				"title": "Up next",
+				"assigned_one": "{{count}} open task assigned to you",
+				"assigned_other": "{{count}} open tasks assigned to you",
+				"viewAll": "View all"
+			},
+			"activity": {
+				"title": "Recent activity",
+				"commented": "commented",
+				"updated": "updated the task",
+				"loadError": "Could not load recent activity.",
+				"empty": "No activity in your projects in the last 30 days."
+			},
+			"projects": {
+				"title": "Projects",
+				"all": "All projects",
+				"loadError": "Could not load projects.",
+				"tasks_one": "{{count}} task",
+				"tasks_other": "{{count}} tasks"
+			}
+		},
+		"archived": {
+			"banner": "This workspace is archived and read-only. An instance administrator can restore it."
 		}
 	},
 	"team": {
@@ -2508,7 +3262,8 @@
 			"more": "More",
 			"open": "Open",
 			"close": "Close",
-			"preview": "Preview"
+			"preview": "Preview",
+			"openInDrive": "Open in Drive"
 		},
 		"preview": {
 			"loading": "Loading preview…",
@@ -2572,6 +3327,17 @@
 				"emptied": "Trash emptied",
 				"emptyError": "Failed to empty trash"
 			}
+		},
+		"drive": {
+			"uploadToServer": "Upload to server",
+			"uploadToDrive": "Upload to Google Drive",
+			"addFromDrive": "Add from Google Drive",
+			"pickTitle": "Select files from Google Drive",
+			"rootFolder": "Project folder",
+			"empty": "This folder is empty",
+			"linkSelected": "Link {{count}} file(s)",
+			"linkedToast": "Linked {{count}} file(s) from Drive",
+			"linkError": "Failed to link file"
 		}
 	},
 	"myTasks": {
@@ -2630,7 +3396,8 @@
 			"priority": "Priority",
 			"sprint": "Sprint",
 			"assignee": "Assignee",
-			"creator": "Created by"
+			"creator": "Created by",
+			"createdAt": "Created date"
 		},
 		"sort": {
 			"asc": "Sort ascending",
@@ -2646,6 +3413,27 @@
 			"title": "No tasks yet",
 			"description": "Create a task to start building your backlog."
 		},
-		"error": "Could not load tasks. Please try again."
+		"error": "Could not load tasks. Please try again.",
+		"savedViews": {
+			"rename": "Rename view",
+			"nameLabel": "View name",
+			"saveName": "Save view name",
+			"label": "Saved views",
+			"empty": "No saved views yet. Set filters, then save one.",
+			"save": "Save",
+			"namePlaceholder": "View name…",
+			"nameRequired": "Enter a name for this view",
+			"saved": "Saved view “{{name}}”",
+			"setDefault": "Set as default when opening backlog",
+			"saveAsDefault": "Set as default filter",
+			"delete": "Delete view"
+		},
+		"customFields": {
+			"columns": "Fields",
+			"showColumns": "Show field columns",
+			"noValue": "No value",
+			"checked": "Checked",
+			"unchecked": "Unchecked"
+		}
 	}
 }

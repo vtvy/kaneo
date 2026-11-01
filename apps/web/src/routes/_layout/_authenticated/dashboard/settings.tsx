@@ -9,8 +9,10 @@ import { useTranslation } from "react-i18next";
 import PageTitle from "@/components/page-title";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import useInstanceAccess from "@/hooks/queries/admin/use-instance-access";
 import useGetProjects from "@/hooks/queries/project/use-get-projects";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
+import { getWorkspaceDestination } from "@/lib/workspace-destination";
 
 export const Route = createFileRoute(
   "/_layout/_authenticated/dashboard/settings",
@@ -26,6 +28,25 @@ function SettingsLayout() {
   const { data: projects } = useGetProjects({
     workspaceId: workspace?.id ?? "",
   });
+  const { data: instanceAccess } = useInstanceAccess();
+  const isInstanceAdmin = !!instanceAccess?.permissions.length;
+  const adminLanding = (
+    instanceAccess?.permissions as string[] | undefined
+  )?.includes("users:read")
+    ? "/dashboard/settings/admin/users"
+    : (instanceAccess?.permissions as string[] | undefined)?.includes(
+          "workspaces:read",
+        )
+      ? "/dashboard/settings/admin/workspaces"
+      : (instanceAccess?.permissions as string[] | undefined)?.includes(
+            "instance:settings",
+          )
+        ? "/dashboard/settings/admin/settings"
+        : (instanceAccess?.permissions as string[] | undefined)?.includes(
+              "audit:read",
+            )
+          ? "/dashboard/settings/admin/audit-log"
+          : "/dashboard/settings/admin/system";
 
   const getActiveTab = () => {
     const pathname = location.pathname;
@@ -37,6 +58,9 @@ function SettingsLayout() {
     }
     if (pathname.includes("/dashboard/settings/projects")) {
       return "project";
+    }
+    if (pathname.includes("/dashboard/settings/admin")) {
+      return "admin";
     }
     return "account";
   };
@@ -52,12 +76,7 @@ function SettingsLayout() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() =>
-                navigate({
-                  to: "/dashboard/workspace/$workspaceId",
-                  params: { workspaceId: workspace?.id ?? "" },
-                })
-              }
+              onClick={() => navigate(getWorkspaceDestination(workspace?.id))}
             >
               <ChevronLeft className=" border border-border rounded-md p-1 size-6" />
               {t("navigation:page.backToWorkspace")}
@@ -97,6 +116,15 @@ function SettingsLayout() {
                 >
                   {t("navigation:sidebar.projects")}
                 </TabsTrigger>
+                {isInstanceAdmin && (
+                  <TabsTrigger
+                    value="admin"
+                    className="[&[data-state=active]]:border [&[data-state=active]]:border-border [&[data-state=active]]:rounded-md [&[data-state=active]]:bg-card"
+                    onClick={() => navigate({ to: adminLanding })}
+                  >
+                    {t("settings:adminPanel.title")}
+                  </TabsTrigger>
+                )}
               </TabsList>
             </Tabs>
           </div>

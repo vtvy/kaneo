@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { sprintTable } from "../../database/schema";
+import { sprintColumns } from "../sprint-columns";
 
 async function deleteSprint(id: string) {
   const existingSprint = await db.query.sprintTable.findFirst({
@@ -17,7 +18,7 @@ async function deleteSprint(id: string) {
   const [deletedSprint] = await db
     .delete(sprintTable)
     .where(eq(sprintTable.id, id))
-    .returning();
+    .returning(sprintColumns);
 
   if (!deletedSprint) {
     throw new HTTPException(404, {

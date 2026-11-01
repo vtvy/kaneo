@@ -33,6 +33,7 @@ const comment = new Hono<{
     }),
     validator("param", v.object({ taskId: v.string() })),
     workspaceAccess.fromTaskId(),
+    projectPermission.fromTask({ item: ["read"] }, "taskId"),
     async (c) => {
       const { taskId } = c.req.valid("param");
       const comments = await getComments(taskId);

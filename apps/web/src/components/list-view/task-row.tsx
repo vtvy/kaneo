@@ -331,6 +331,15 @@ function TaskRow({ task, projectSlug }: TaskRowProps) {
               </div>
             </div>
 
+            {task.points != null && (
+              <span
+                className="flex-shrink-0 inline-flex items-center rounded border border-border/70 bg-muted/55 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                title={t("tasks:points.label")}
+              >
+                {t("tasks:points.unit", { n: task.points })}
+              </span>
+            )}
+
             {showDueDates && task.dueDate && (
               <div
                 className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded flex-shrink-0 ${dueDateStatusColors[getDueDateStatus(task.dueDate)]}`}

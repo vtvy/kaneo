@@ -166,6 +166,28 @@ async function bulkUpdateTasks({
 
     case "updateAssignee": {
       const nextAssigneeId = value || null;
+
+      // All tasks share one workspace (checked above), so one lookup covers
+      // them; the assignee must be a member of it.
+      if (nextAssigneeId) {
+        const [assigneeMembership] = await db
+          .select({ id: workspaceUserTable.id })
+          .from(workspaceUserTable)
+          .where(
+            and(
+              eq(workspaceUserTable.userId, nextAssigneeId),
+              eq(workspaceUserTable.workspaceId, workspaceId),
+            ),
+          )
+          .limit(1);
+
+        if (!assigneeMembership) {
+          throw new HTTPException(400, {
+            message: "Assignee must be a member of this workspace",
+          });
+        }
+      }
+
       const result = await db
         .update(taskTable)
         .set({ userId: nextAssigneeId })
@@ -239,7 +261,7 @@ async function bulkUpdateTasks({
         where: eq(labelTable.id, value),
       });
 
-      if (!label) {
+      if (!label || label.workspaceId !== workspaceId) {
         throw new HTTPException(404, { message: "Label not found" });
       }
 

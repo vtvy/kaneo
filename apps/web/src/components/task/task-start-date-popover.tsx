@@ -9,6 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { toast } from "@/lib/toast";
 import type Task from "@/types/task";
@@ -26,7 +27,12 @@ export default function TaskStartDatePopover({
   const [open, setOpen] = useState(false);
   const { mutateAsync: updateTask } = useUpdateTask();
   const { canManageTasks } = useWorkspacePermission();
-  const canEdit = canManageTasks();
+  const { can: canProject, isCheckingPermissions } = useProjectPermission(
+    task.projectId,
+  );
+  const canEdit =
+    canManageTasks() ||
+    (!isCheckingPermissions && canProject("item", "update"));
 
   const handleDateChange = async (date: Date | undefined) => {
     try {

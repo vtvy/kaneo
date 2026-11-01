@@ -16,10 +16,19 @@ import {
 } from "hono-openapi";
 import * as v from "valibot";
 import activity from "./activity";
+import admin from "./admin";
+import { startInstanceWebhookWorker } from "./admin/webhooks/delivery";
 import { auth } from "./auth";
+import {
+  handleBackchannelLogoutRoute,
+  logoutBodyLimit,
+  noStore,
+} from "./backchannel-logout";
+import calendarFeed, { publicCalendarFeed } from "./calendar-feed";
 import column from "./column";
 import comment from "./comment";
 import config from "./config";
+import customField from "./custom-field";
 import dashboard from "./dashboard";
 import db, { getDatabase, schema } from "./database";
 import { prepareDatabaseStartup } from "./database/prepare-database-startup";
@@ -28,12 +37,23 @@ import discordIntegration from "./discord-integration";
 import document from "./document";
 import { eventContext } from "./events";
 import externalLink from "./external-link";
+import feedback from "./feedback";
 import genericWebhookIntegration from "./generic-webhook-integration";
 import giteaIntegration, { handleGiteaWebhookRoute } from "./gitea-integration";
 import githubIntegration, {
   handleGithubWebhookRoute,
 } from "./github-integration";
+import gitlabIntegration, {
+  handleGitlabWebhookRoute,
+} from "./gitlab-integration";
+import googleDriveIntegration, {
+  handleGoogleDriveCallback,
+} from "./google-drive-integration";
+import importRoutes from "./import";
+import { stopActiveImports } from "./import/runs/stop-active-imports";
 import getInstanceStatus from "./instance/controllers/get-instance-status";
+import { requireIntegrationEnabled } from "./instance-settings/require-integration-enabled";
+import { INTEGRATION_TYPES } from "./instance-settings/resolve-instance-settings";
 import invitation from "./invitation";
 import label from "./label";
 import mcpRoutes, { mcpWellKnownRoutes } from "./mcp";
@@ -46,6 +66,7 @@ import { migrateGitHubIntegration } from "./plugins/github/migration";
 import project from "./project";
 import { getPublicProject } from "./project/controllers/get-public-project";
 import projectRbac from "./project-rbac";
+import { canInProject } from "./project-rbac/can-in-project";
 import { seedDefaultProjectRoles } from "./project-rbac/seed-default-project-roles";
 import { initializeScheduler, shutdownScheduler } from "./scheduler";
 import search from "./search";
@@ -57,11 +78,14 @@ import task from "./task";
 import taskRelation from "./task-relation";
 import telegramIntegration from "./telegram-integration";
 import timeEntry from "./time-entry";
+import user from "./user";
 import {
   authenticateApiRequest,
   resolveAssetBearerOrCookie,
 } from "./utils/authenticate-api-request";
+import { defaultBodyLimit, isUploadRoute } from "./utils/body-limit";
 import { getInvitationDetails } from "./utils/check-registration-allowed";
+import { isAllowedOrigin, resolveCorsOrigins } from "./utils/cors-origins";
 import { migrateApiKeyReferenceId } from "./utils/migrate-apikey-reference-id";
 import { migrateNotificationPreferencesSchema } from "./utils/migrate-notification-preferences-schema";
 import { migrateSessionColumn } from "./utils/migrate-session-column";
@@ -82,6 +106,7 @@ import { validateWorkspaceAccess } from "./utils/validate-workspace-access";
 import workflowRule from "./workflow-rule";
 import workspace from "./workspace";
 import {
+  activateConnection,
   addConnection,
   initializeWebSocketAdapter,
   removeConnection,
@@ -157,38 +182,53 @@ function buildContentDisposition(filename: string, inline: boolean) {
   return `${disposition}; filename="${asciiFallback}"; filename*=UTF-8''${encodedFilename}`;
 }
 
+function resolveWebsocketBaseUrl() {
+  const raw =
+    process.env.KANEO_API_URL ||
+    process.env.KANEO_CLIENT_URL ||
+    "http://localhost:1337";
+  try {
+    const url = new URL(raw);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return "http://localhost:1337";
+  }
+}
+
 export function createApp() {
   const app = new Hono<AppVariables>();
-  const nodeWs = createNodeWebSocket({ app });
+  const nodeWs = createNodeWebSocket({
+    app,
+    // @hono/node-ws otherwise builds the upgrade request as http://localhost,
+    // which drops the public host and port before session cookies are read.
+    baseUrl: resolveWebsocketBaseUrl(),
+  });
   const { upgradeWebSocket, injectWebSocket } = nodeWs;
-  const corsOriginSource = [
-    process.env.CORS_ORIGINS,
-    process.env.KANEO_CLIENT_URL,
-  ].find((value) => value?.trim());
-  const corsOrigins = corsOriginSource
-    ?.split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  const corsOrigins = resolveCorsOrigins();
 
   app.use(
     "*",
     cors({
       credentials: true,
-      origin: (origin) => {
-        if (!corsOrigins) {
-          return origin || "*";
-        }
-
+      origin: (origin, c) => {
         if (!origin) {
           return null;
         }
 
-        return corsOrigins.includes(origin) ? origin : null;
+        return isAllowedOrigin(origin, corsOrigins, c.req.header("host"))
+          ? origin
+          : null;
       },
     }),
   );
 
   const api = new Hono<ApiVariables>();
+
+  api.use("*", (c, next) =>
+    isUploadRoute(c.req.method, c.req.path)
+      ? next()
+      : defaultBodyLimit(c, next),
+  );
 
   api.get("/health", (c) => {
     return c.json({ status: "ok" });
@@ -237,6 +277,22 @@ export function createApp() {
     "/gitea-integration/webhook/:integrationId",
     handleGiteaWebhookRoute,
   );
+
+  api.post(
+    "/gitlab-integration/webhook/:integrationId",
+    handleGitlabWebhookRoute,
+  );
+
+  // OIDC back-channel logout, called server-to-server by the identity
+  // provider (unauthenticated by design; the logout token is the proof).
+  api.post(
+    "/auth/oauth2/backchannel-logout/custom",
+    noStore,
+    logoutBodyLimit,
+    handleBackchannelLogoutRoute,
+  );
+
+  api.route("/calendar-feed", publicCalendarFeed);
 
   const invitationPublicApi = api.get("/invitation/public/:id", async (c) => {
     const { id } = c.req.param();
@@ -506,6 +562,7 @@ export function createApp() {
   });
 
   api.route("/", mcpRoutes);
+  api.get("/google-drive-integration/callback", handleGoogleDriveCallback);
 
   api.use("*", async (c, next) => {
     const path = c.req.path;
@@ -530,6 +587,12 @@ export function createApp() {
   });
 
   const oauthApi = api.route("/oauth", oauth);
+  const userApi = api.route("/user", user);
+  const feedbackApi = api.route("/feedback", feedback);
+  const googleDriveIntegrationApi = api.route(
+    "/google-drive-integration",
+    googleDriveIntegration,
+  );
 
   const projectApi = api.route("/project", project);
   const taskApi = api.route("/task", task);
@@ -539,6 +602,7 @@ export function createApp() {
   const documentApi = api.route("/document", document);
   const activityApi = api.route("/activity", activity);
   const commentApi = api.route("/comment", comment);
+  const customFieldApi = api.route("/custom-field", customField);
   const timeEntryApi = api.route("/time-entry", timeEntry);
   const labelApi = api.route("/label", label);
   const notificationApi = api.route("/notification", notification);
@@ -547,11 +611,20 @@ export function createApp() {
     notificationPreferences,
   );
   const searchApi = api.route("/search", search);
+  // Integration types an instance admin turned off can't be connected or
+  // changed (reads and removal still work).
+  for (const type of INTEGRATION_TYPES) {
+    api.use(`/${type}-integration/*`, requireIntegrationEnabled(type));
+  }
   const githubIntegrationApi = api.route(
     "/github-integration",
     githubIntegration,
   );
   const giteaIntegrationApi = api.route("/gitea-integration", giteaIntegration);
+  const gitlabIntegrationApi = api.route(
+    "/gitlab-integration",
+    gitlabIntegration,
+  );
   const genericWebhookIntegrationApi = api.route(
     "/generic-webhook-integration",
     genericWebhookIntegration,
@@ -571,6 +644,9 @@ export function createApp() {
   const invitationApi = api.route("/invitation", invitation);
   const workspaceApi = api.route("/workspace", workspace);
   const projectRbacApi = api.route("/project-rbac", projectRbac);
+  const adminApi = api.route("/admin", admin);
+  const calendarFeedApi = api.route("/calendar-feed", calendarFeed);
+  const importApi = api.route("/import", importRoutes);
 
   app.route(
     "/",
@@ -587,6 +663,17 @@ export function createApp() {
     upgradeWebSocket(async (c) => {
       const projectId = c.req.param("projectId");
 
+      // Browsers attach cookies to cross-site WebSocket handshakes, so only
+      // the app's own origins may open one. Clients without an Origin header
+      // (CLI, API keys) are not exposed to that.
+      const origin = c.req.header("origin");
+      if (
+        origin &&
+        !isAllowedOrigin(origin, corsOrigins, c.req.header("host"))
+      ) {
+        throw new HTTPException(403, { message: "Origin not allowed" });
+      }
+
       try {
         await authenticateApiRequest(c);
       } catch (error) {
@@ -598,6 +685,13 @@ export function createApp() {
       }
 
       const userId = c.get("userId");
+      // Remembered on the socket so revoking this session/API key, or the
+      // user's access, closes it (see ws/socket-revocation.ts).
+      const credential = {
+        sessionId: c.get("session")?.id,
+        apiKeyId: c.get("apiKey")?.id,
+        workspaceId: undefined as string | undefined,
+      };
 
       if (projectId) {
         const [project] = await db
@@ -611,6 +705,11 @@ export function createApp() {
         }
 
         await validateWorkspaceAccess(userId, project.workspaceId);
+
+        if (!(await canInProject(userId, projectId, "item", "read"))) {
+          throw new HTTPException(403, { message: "Insufficient permissions" });
+        }
+        credential.workspaceId = project.workspaceId;
       }
 
       const windowId = c.req.query("windowId");
@@ -618,9 +717,47 @@ export function createApp() {
       let conn: ReturnType<typeof addConnection> | null = null;
 
       return {
-        onOpen(_evt, ws) {
+        async onOpen(_evt, ws) {
           if (projectId) {
-            conn = addConnection(projectId, ws, userId, initiatorId);
+            conn = addConnection(projectId, ws, userId, initiatorId, {
+              ...credential,
+              pending: true,
+            });
+            // Register before checking again so concurrent revocations can
+            // find this socket. Pending sockets receive no project events.
+            try {
+              await authenticateApiRequest(c);
+              if (
+                c.get("userId") !== userId ||
+                c.get("session")?.id !== credential.sessionId ||
+                c.get("apiKey")?.id !== credential.apiKeyId
+              ) {
+                throw new Error("Credential changed during handshake");
+              }
+              const [currentProject] = await db
+                .select({ workspaceId: schema.projectTable.workspaceId })
+                .from(schema.projectTable)
+                .where(eq(schema.projectTable.id, projectId))
+                .limit(1);
+              if (
+                !currentProject ||
+                currentProject.workspaceId !== credential.workspaceId
+              ) {
+                throw new Error("Project changed during handshake");
+              }
+              await validateWorkspaceAccess(
+                userId,
+                currentProject.workspaceId,
+                credential.apiKeyId,
+              );
+              if (!(await canInProject(userId, projectId, "item", "read"))) {
+                throw new Error("Project access revoked during handshake");
+              }
+              activateConnection(projectId, conn);
+            } catch {
+              removeConnection(projectId, conn);
+              ws.close(1008, "Access revoked");
+            }
           }
         },
         onClose() {
@@ -639,9 +776,13 @@ export function createApp() {
     api,
     injectWebSocket,
     activityApi,
+    adminApi,
+    calendarFeedApi,
+    importApi,
     columnApi,
     commentApi,
     configApi,
+    customFieldApi,
     dashboardApi,
     discordIntegrationApi,
     documentApi,
@@ -649,6 +790,7 @@ export function createApp() {
     genericWebhookIntegrationApi,
     githubIntegrationApi,
     giteaIntegrationApi,
+    gitlabIntegrationApi,
     invitationApi,
     invitationPublicApi,
     labelApi,
@@ -667,6 +809,9 @@ export function createApp() {
     workflowRuleApi,
     workspaceApi,
     oauthApi,
+    userApi,
+    feedbackApi,
+    googleDriveIntegrationApi,
   };
 }
 
@@ -719,6 +864,7 @@ export async function startServer(
     process.exit(1);
   }
 
+  const stopInstanceWebhooks = startInstanceWebhookWorker();
   let shuttingDown = false;
 
   const server = serve(
@@ -740,7 +886,9 @@ export async function startServer(
     shuttingDown = true;
 
     console.log("🛑 Shutting down gracefully...");
+    stopInstanceWebhooks();
     shutdownScheduler();
+    await stopActiveImports();
     await shutdownWebSocketAdapter();
     server.close();
     process.exit(0);
@@ -760,9 +908,13 @@ const {
   app,
   injectWebSocket,
   activityApi,
+  adminApi,
+  calendarFeedApi,
+  importApi,
   columnApi,
   commentApi,
   configApi,
+  customFieldApi,
   dashboardApi,
   discordIntegrationApi,
   documentApi,
@@ -770,6 +922,7 @@ const {
   genericWebhookIntegrationApi,
   githubIntegrationApi,
   giteaIntegrationApi,
+  gitlabIntegrationApi,
   invitationApi,
   invitationPublicApi,
   labelApi,
@@ -788,6 +941,9 @@ const {
   workflowRuleApi,
   workspaceApi,
   oauthApi,
+  userApi,
+  feedbackApi,
+  googleDriveIntegrationApi,
 } = createdApp;
 
 const isMainModule =
@@ -808,6 +964,7 @@ export type AppType =
   | typeof documentApi
   | typeof activityApi
   | typeof commentApi
+  | typeof customFieldApi
   | typeof timeEntryApi
   | typeof labelApi
   | typeof notificationApi
@@ -815,6 +972,7 @@ export type AppType =
   | typeof searchApi
   | typeof githubIntegrationApi
   | typeof giteaIntegrationApi
+  | typeof gitlabIntegrationApi
   | typeof genericWebhookIntegrationApi
   | typeof discordIntegrationApi
   | typeof slackIntegrationApi
@@ -827,6 +985,12 @@ export type AppType =
   | typeof projectRbacApi
   | typeof publicProjectApi
   | typeof invitationPublicApi
-  | typeof oauthApi;
+  | typeof oauthApi
+  | typeof adminApi
+  | typeof calendarFeedApi
+  | typeof importApi
+  | typeof userApi
+  | typeof feedbackApi
+  | typeof googleDriveIntegrationApi;
 
 export default app;

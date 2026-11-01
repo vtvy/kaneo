@@ -18,6 +18,7 @@ import {
   APIError,
   createAuthMiddleware,
   getSessionFromCtx,
+  isAPIError,
 } from "better-auth/api";
 import {
   admin as adminPlugin,
@@ -34,24 +35,46 @@ import {
 import type { AccessControl } from "better-auth/plugins/access";
 import type { UserWithAnonymous } from "better-auth/plugins/anonymous";
 import { config } from "dotenv-mono";
-import { count, eq, sql } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
+import { assertBackchannelLogoutEnv } from "./backchannel-logout/config";
+import {
+  rememberSignInSessionId,
+  takeSignInSessionId,
+} from "./backchannel-logout/sign-in-session-id";
 import db, { schema } from "./database";
 import { publishEvent } from "./events";
+import { assertCanCreateWorkspace } from "./instance-settings/assert-can-create-workspace";
+import { emailVerificationContext } from "./instance-settings/email-verification-context";
+import { getInstanceSettings } from "./instance-settings/get-instance-settings";
+import { resolveAuthSecret } from "./utils/auth-secret";
 import { checkRegistrationAllowed } from "./utils/check-registration-allowed";
 import { checkWorkspaceName } from "./utils/check-workspace-name";
+import {
+  mapCustomOAuthProfileToUser,
+  parseManagedProfileFields,
+} from "./utils/custom-oauth-profile";
+import {
+  refreshManagedProfile,
+  rememberCustomOAuthProfile,
+  takeCustomOAuthProfile,
+} from "./utils/custom-oauth-sign-in";
 import { generateDemoName } from "./utils/generate-demo-name";
 import { getGithubSsoOAuthCredentials } from "./utils/github-sso-env";
 import { isCloud } from "./utils/is-cloud";
 import { isDisposableEmail } from "./utils/is-disposable-email";
 import { verifyTurnstile } from "./utils/verify-turnstile";
+import { assertOrganizationWritable } from "./workspace/archive/assert-organization-writable";
+import { deleteWorkspaceData } from "./workspace/controllers/delete-workspace-data";
+import {
+  closeSocketsForApiKey,
+  closeSocketsForSession,
+  closeSocketsForUser,
+  recheckSocketAccess,
+} from "./ws";
 
 config();
 
 const githubSso = getGithubSsoOAuthCredentials();
-
-const isRegistrationDisabled = process.env.DISABLE_REGISTRATION === "true";
-const isPasswordRegistrationDisabled =
-  process.env.DISABLE_PASSWORD_REGISTRATION === "true";
 
 const apiUrl = process.env.KANEO_API_URL || "http://localhost:1337";
 const clientUrl = process.env.KANEO_CLIENT_URL || "http://localhost:5173";
@@ -88,10 +111,26 @@ const baseURLWithoutPath = (() => {
   }
 })();
 
-if (process.env.AUTH_SECRET && process.env.AUTH_SECRET.length < 32) {
-  console.error(
-    "AUTH_SECRET is less than 32 characters, please generate a new one.",
-  );
+// Opt-in: proves the user owns the address before they can sign in, so nobody
+// can register someone else's email and pick up invitations sent to it.
+// Needs working SMTP; existing unverified users verify on their next sign-in.
+const requireEmailVerification =
+  process.env.REQUIRE_EMAIL_VERIFICATION === "true";
+
+const authSecret = (() => {
+  try {
+    return resolveAuthSecret();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+})();
+
+try {
+  parseManagedProfileFields();
+  assertBackchannelLogoutEnv();
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
 }
 
@@ -106,21 +145,33 @@ async function getUserLocale(email: string) {
 }
 
 function getLocaleKey(locale?: string | null) {
-  return locale?.toLowerCase().startsWith("de") ? "de" : "en";
+  const language = locale?.toLowerCase();
+  if (language?.startsWith("de")) return "de";
+  if (language?.startsWith("vi")) return "vi";
+  return "en";
 }
 
 function getAuthEmailCopy(locale?: string | null) {
-  return getLocaleKey(locale) === "de"
-    ? {
-        magicLinkSubject: "Anmeldelink fuer Kaneo",
-        otpSubject: "Bestaetigungscode fuer Kaneo",
-        passwordResetSubject: "Passwort zuruecksetzen fuer Kaneo",
-      }
-    : {
-        magicLinkSubject: "Login for Kaneo",
-        otpSubject: "Authentication code for Kaneo",
-        passwordResetSubject: "Reset your Kaneo password",
-      };
+  const key = getLocaleKey(locale);
+  if (key === "de") {
+    return {
+      magicLinkSubject: "Anmeldelink fuer Kaneo",
+      otpSubject: "Bestaetigungscode fuer Kaneo",
+      passwordResetSubject: "Passwort zuruecksetzen fuer Kaneo",
+    };
+  }
+  if (key === "vi") {
+    return {
+      magicLinkSubject: "Đăng nhập vào Kaneo",
+      otpSubject: "Mã xác minh Kaneo của bạn",
+      passwordResetSubject: "Đặt lại mật khẩu Kaneo của bạn",
+    };
+  }
+  return {
+    magicLinkSubject: "Login for Kaneo",
+    otpSubject: "Authentication code for Kaneo",
+    passwordResetSubject: "Reset your Kaneo password",
+  };
 }
 
 function getDeviceAuthClientIds(): Set<string> {
@@ -146,15 +197,20 @@ function getInvitationEmailSubject(
   inviterName: string,
   workspaceName: string,
 ) {
-  return getLocaleKey(locale) === "de"
-    ? `${inviterName} hat dich eingeladen, ${workspaceName} auf Kaneo beizutreten`
-    : `${inviterName} invited you to join ${workspaceName} on Kaneo`;
+  const key = getLocaleKey(locale);
+  if (key === "de") {
+    return `${inviterName} hat dich eingeladen, ${workspaceName} auf Kaneo beizutreten`;
+  }
+  if (key === "vi") {
+    return `${inviterName} đã mời bạn tham gia ${workspaceName} trên Kaneo`;
+  }
+  return `${inviterName} invited you to join ${workspaceName} on Kaneo`;
 }
 
 export const auth = betterAuth({
   baseURL: baseURLWithoutPath,
   trustedOrigins,
-  secret: process.env.AUTH_SECRET || "",
+  secret: authSecret,
   basePath: "/api/auth",
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -183,9 +239,14 @@ export const auth = betterAuth({
       },
     },
   },
+  emailVerification: {
+    sendOnSignIn: requireEmailVerification,
+    autoSignInAfterVerification: true,
+  },
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
+    requireEmailVerification,
     revokeSessionsOnPasswordReset: true,
     resetPasswordTokenExpiresIn: 60 * 60,
     sendResetPassword: async ({ user, url }) => {
@@ -255,8 +316,11 @@ export const auth = betterAuth({
       },
     }),
     emailOTP({
+      // Verification codes replace Better Auth's link emails. They are only
+      // sent (on sign-up and sign-in) when verification is required.
+      overrideDefaultEmailVerification: true,
       async sendVerificationOTP({ email, otp, type }) {
-        if (type === "sign-in") {
+        if (type === "sign-in" || type === "email-verification") {
           const locale = await getUserLocale(email);
           const copy = getAuthEmailCopy(locale);
           await sendOtpEmail(email, copy.otpSubject, {
@@ -329,11 +393,28 @@ export const auth = betterAuth({
       },
       allowUserToCreateOrganization: true,
       organizationHooks: {
-        beforeCreateOrganization: async ({ organization }) => {
+        beforeDeleteOrganization: async ({ organization }) => {
+          // Better Auth has already checked organization:delete. Delete the
+          // container and capture its blobs in one transaction before its
+          // idempotent adapter cleanup runs, then remove bytes after commit.
+          await deleteWorkspaceData(organization.id);
+        },
+        beforeCreateOrganization: async ({ organization, user }) => {
+          await assertCanCreateWorkspace(user?.id);
           const check = checkWorkspaceName(organization.name ?? "");
           if (!check.ok) {
             throw new APIError("BAD_REQUEST", { message: check.reason });
           }
+        },
+        afterRemoveMember: async ({ member }) => {
+          await recheckSocketAccess(member.userId, {
+            workspaceId: member.organizationId,
+          });
+        },
+        afterUpdateMemberRole: async ({ member }) => {
+          await recheckSocketAccess(member.userId, {
+            workspaceId: member.organizationId,
+          });
         },
         afterCreateOrganization: async ({ organization, user }) => {
           // Seed the editable default roles for this workspace. Each
@@ -426,6 +507,10 @@ export const auth = betterAuth({
           responseType: process.env.CUSTOM_OAUTH_RESPONSE_TYPE || "code",
           discoveryUrl: process.env.CUSTOM_OAUTH_DISCOVERY_URL || "",
           pkce: process.env.CUSTOM_AUTH_PKCE !== "false",
+          mapProfileToUser: async (profile) => {
+            await rememberCustomOAuthProfile(profile);
+            return mapCustomOAuthProfileToUser(profile);
+          },
         },
       ],
     }),
@@ -451,27 +536,95 @@ export const auth = betterAuth({
     openAPI(),
   ],
   session: {
+    additionalFields: {
+      // The custom OIDC provider's session ID, for back-channel logout.
+      oidcSid: {
+        type: "string",
+        required: false,
+        input: false,
+        returned: false,
+      },
+    },
+    // Off so revocation is immediate: with the cookie cache a revoked or
+    // banned browser session kept working until the signed cache cookie
+    // expired (5 min). Without it each getSession is one indexed lookup of
+    // the session token joined to its user, which is small next to the
+    // per-request workspace/permission queries the API already makes.
     cookieCache: {
-      enabled: true,
-      maxAge: 5 * 60,
+      enabled: false,
     },
   },
   rateLimit: {
-    // Enable in cloud; self-hosted instances opt in by setting KANEO_CLOUD.
-    // Default better-auth rate-limit only kicks in for production; we keep the
-    // global limits conservative and tighten signup/invite via customRules.
-    enabled: isCloud(),
+    // Always on so self-hosted instances also get Better Auth's built-in
+    // limits on sign-in, sign-up and password-reset/OTP emails. Outside cloud
+    // the global limit stays loose: a proxy that hides client IPs puts every
+    // user in one bucket.
+    enabled: true,
     window: 10,
-    max: 100,
+    max: isCloud() ? 100 : 1000,
     customRules: {
-      "/sign-up/email": { window: 60, max: 3 },
-      "/organization/invite-member": { window: 60, max: 5 },
+      ...(isCloud() && {
+        "/sign-up/email": { window: 60, max: 3 },
+        "/organization/invite-member": { window: 60, max: 5 },
+      }),
     },
   },
   databaseHooks: {
-    user: {
+    session: {
       create: {
-        before: async (user) => {
+        before: async (session, ctx) => {
+          // Custom OIDC sign-in: sync the managed profile fields of the
+          // linked user and store the provider session ID.
+          const profile = takeCustomOAuthProfile(ctx);
+          if (profile) {
+            await refreshManagedProfile(session.userId, profile).catch(
+              (error) => {
+                console.error(
+                  "Managed profile refresh failed:",
+                  error instanceof Error ? error.name : typeof error,
+                );
+              },
+            );
+          }
+          const oidcSid = takeSignInSessionId(ctx);
+          if (oidcSid) return { data: { oidcSid } };
+        },
+      },
+      // Every Better Auth session delete (sign-out, revoke-session(s),
+      // revoke-other-sessions, admin plugin, expiry) closes its sockets.
+      delete: {
+        after: async (session) => {
+          await closeSocketsForSession(session.id);
+        },
+      },
+    },
+    account: {
+      create: {
+        before: async (account, ctx) => {
+          rememberSignInSessionId(account.idToken, ctx);
+        },
+      },
+      update: {
+        before: async (account, ctx) => {
+          rememberSignInSessionId(account.idToken, ctx);
+        },
+      },
+    },
+    user: {
+      delete: {
+        after: async (user) => {
+          await closeSocketsForUser(user.id);
+        },
+      },
+      create: {
+        before: async (user, ctx) => {
+          // Accounts created by an instance admin (server-side only; the
+          // HTTP admin endpoints are blocked below) bypass registration
+          // restrictions.
+          if (ctx?.path === "/admin/create-user" && !ctx.request) {
+            return;
+          }
+
           // Allow the very first signup through even when registration
           // is disabled — that's the instance-admin bootstrap flow.
           // Otherwise a fresh instance with DISABLE_REGISTRATION=true
@@ -544,6 +697,42 @@ export const auth = betterAuth({
   },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
+      // Instance administration goes through /api/admin, which audits every
+      // action and protects the last admin. The admin plugin's own HTTP
+      // endpoints would bypass both (and expose session tokens), so only
+      // server-side calls may reach them.
+      if (ctx.path.startsWith("/admin/") && ctx.request) {
+        throw new APIError("FORBIDDEN", {
+          message: "Use the /api/admin endpoints for instance administration.",
+        });
+      }
+
+      if (ctx.path === "/update-user") {
+        const fields = parseManagedProfileFields();
+        if (fields.some((field) => ctx.body?.[field] !== undefined)) {
+          const session = await auth.api.getSession({
+            headers: ctx.headers ?? new Headers(),
+          });
+          if (session?.user.id) {
+            const [linked] = await db
+              .select({ id: schema.accountTable.id })
+              .from(schema.accountTable)
+              .where(
+                and(
+                  eq(schema.accountTable.userId, session.user.id),
+                  eq(schema.accountTable.providerId, "custom"),
+                ),
+              )
+              .limit(1);
+            if (linked)
+              throw new APIError("FORBIDDEN", {
+                message:
+                  "These profile fields are managed by your identity provider.",
+              });
+          }
+        }
+      }
+
       // Block invite-member calls on cloud from anonymous users or to
       // disposable-email addresses. The 2026-05-28 incident saw ~14k phishing
       // invites sent from throwaway disposable-email signups; gating here
@@ -572,6 +761,13 @@ export const auth = betterAuth({
         }
       }
 
+      // Archived workspaces are read-only, including Better Auth org writes.
+      await assertOrganizationWritable(ctx);
+
+      if (ctx.path === "/sign-in/email") {
+        return emailVerificationContext(ctx);
+      }
+
       const isSignUpPath =
         ctx.path === "/sign-up/email" ||
         ctx.path.startsWith("/callback/") ||
@@ -586,9 +782,14 @@ export const auth = betterAuth({
         .from(schema.userTable);
       const existingUserCount = userCountRows[0]?.value ?? 0;
       const isInstanceAdminSetup = existingUserCount === 0;
+      // Environment variables win over the database settings.
+      const instanceSettings = await getInstanceSettings();
 
       if (ctx.path === "/sign-up/email") {
-        if (isPasswordRegistrationDisabled && !isInstanceAdminSetup) {
+        if (
+          !instanceSettings.passwordRegistrationEnabled &&
+          !isInstanceAdminSetup
+        ) {
           throw new APIError("FORBIDDEN", {
             message:
               "Password registration is currently disabled. Please use a configured social or OIDC sign-in method.",
@@ -621,8 +822,8 @@ export const auth = betterAuth({
         }
       }
 
-      if (!isRegistrationDisabled || isInstanceAdminSetup) {
-        return;
+      if (instanceSettings.registrationEnabled || isInstanceAdminSetup) {
+        return emailVerificationContext(ctx);
       }
 
       const email =
@@ -642,8 +843,32 @@ export const auth = betterAuth({
           });
         }
       }
+      return emailVerificationContext(ctx);
     }),
     after: createAuthMiddleware(async (ctx) => {
+      if (
+        (ctx.path === "/api-key/delete" || ctx.path === "/api-key/update") &&
+        !isAPIError(ctx.context.returned)
+      ) {
+        const body = ctx.body as { keyId?: unknown; enabled?: unknown };
+        if (
+          typeof body?.keyId === "string" &&
+          (ctx.path === "/api-key/delete" || body.enabled === false)
+        ) {
+          await closeSocketsForApiKey(body.keyId);
+        }
+      }
+      if (
+        ctx.path === "/organization/leave" &&
+        !isAPIError(ctx.context.returned)
+      ) {
+        const userId = ctx.context.session?.user.id;
+        const workspaceId = (ctx.body as { organizationId?: unknown })
+          ?.organizationId;
+        if (userId && typeof workspaceId === "string") {
+          await recheckSocketAccess(userId, { workspaceId });
+        }
+      }
       if (ctx.path.startsWith("/sign-up") || ctx.path.startsWith("/sign-in")) {
         const newSession = ctx.context.newSession;
         if (newSession) {
@@ -668,9 +893,9 @@ export const auth = betterAuth({
   advanced: {
     defaultCookieAttributes: {
       // For cross-subdomain auth with HTTPS, use sameSite: "none" with secure: true
-      // For same-domain or HTTP deployments, use sameSite: "lax" with secure: false
+      // For same-domain deployments use sameSite: "lax"; Secure whenever HTTPS
       sameSite: isCrossSubdomain && isHttps ? "none" : "lax",
-      secure: isCrossSubdomain && isHttps, // must be true when sameSite is "none"
+      secure: isHttps,
       partitioned: isCrossSubdomain && isHttps,
       domain: process.env.COOKIE_DOMAIN || undefined, // Optional: e.g., ".andrej.com" for explicit cross-subdomain cookies
     },

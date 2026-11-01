@@ -36,9 +36,12 @@ import {
 } from "@/hooks/mutations/gitea-integration/use-create-gitea-integration";
 import useImportGiteaIssues from "@/hooks/mutations/gitea-integration/use-import-gitea-issues";
 import { useUpdateGiteaIntegration } from "@/hooks/mutations/gitea-integration/use-update-gitea-integration";
+import useGetConfig from "@/hooks/queries/config/use-get-config";
 import useGetGiteaIntegration from "@/hooks/queries/gitea-integration/use-get-gitea-integration";
 import { cn } from "@/lib/cn";
+import { copyText } from "@/lib/copy-text";
 import { toast } from "@/lib/toast";
+import { DisabledIntegration } from "./disabled-integration";
 
 type GiteaIntegrationFormValues = {
   baseUrl: string;
@@ -72,6 +75,8 @@ function createVerificationSnapshot(
 
 export function GiteaIntegrationSettings({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
+  const { data: config } = useGetConfig();
+  const disabled = config?.disabledIntegrations.includes("gitea");
 
   const giteaIntegrationSchema = React.useMemo(
     () =>
@@ -386,7 +391,7 @@ export function GiteaIntegrationSettings({ projectId }: { projectId: string }) {
     }
 
     try {
-      await navigator.clipboard.writeText(integration.webhookSecret);
+      await copyText(integration.webhookSecret);
       toast.success(t("settings:giteaIntegration.toast.secretCopied"));
     } catch (error) {
       toast.error(
@@ -451,6 +456,15 @@ export function GiteaIntegrationSettings({ projectId }: { projectId: string }) {
     integration?.baseUrl && integration.repositoryOwner
       ? `${integration.baseUrl.replace(/\/$/, "")}/${integration.repositoryOwner}/${integration.repositoryName}`
       : null;
+
+  if (disabled)
+    return (
+      <DisabledIntegration
+        connected={Boolean(integration)}
+        pending={isDeleting}
+        onDisconnect={handleDelete}
+      />
+    );
 
   return (
     <div className="space-y-4">

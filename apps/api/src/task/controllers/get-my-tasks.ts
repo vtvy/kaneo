@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import db from "../../database";
 import {
   columnTable,
@@ -6,6 +6,7 @@ import {
   taskInvolvementTable,
   taskTable,
 } from "../../database/schema";
+import { readableProjectsCondition } from "../../project-rbac/readable-projects";
 
 const priorityCaseExpr = sql<number>`CASE
   WHEN ${taskTable.priority} = 'urgent' THEN 4
@@ -15,18 +16,33 @@ const priorityCaseExpr = sql<number>`CASE
   ELSE 0
 END`;
 
+// Matches the My Tasks page: a task is done when its column is final or it
+// still carries the legacy "done" status; archived tasks are never open.
+const openTaskExpr = sql`${columnTable.isFinal} is not true and ${taskTable.status} not in ('done', 'archived')`;
+
 export type MyTasksScope = "assigned" | "involved";
+
+export type MyTasksOptions = {
+  /** Only unfinished tasks in active (non-archived) projects. */
+  open?: boolean;
+};
 
 async function getMyTasks(
   userId: string,
   workspaceId: string,
   scope: MyTasksScope = "assigned",
+  options: MyTasksOptions = {},
 ) {
   const workspaceCondition = and(
     eq(projectTable.workspaceId, workspaceId),
     scope === "assigned"
       ? eq(taskTable.userId, userId)
       : eq(taskInvolvementTable.userId, userId),
+    // Assignment/involvement can outlive project membership; only list tasks
+    // from projects the caller can still read.
+    await readableProjectsCondition(userId, workspaceId),
+    options.open ? isNull(projectTable.archivedAt) : undefined,
+    options.open ? openTaskExpr : undefined,
   );
 
   const baseQuery = db
@@ -42,9 +58,11 @@ async function getMyTasks(
       projectId: taskTable.projectId,
       projectName: projectTable.name,
       projectSlug: projectTable.slug,
+      projectIcon: projectTable.icon,
       columnId: taskTable.columnId,
       columnName: columnTable.name,
       columnSlug: columnTable.slug,
+      columnIcon: columnTable.icon,
       columnIsFinal: columnTable.isFinal,
       createdAt: taskTable.createdAt,
       position: taskTable.position,

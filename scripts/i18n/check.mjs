@@ -24,6 +24,27 @@ if (localeFilter && filteredLocales.length === 0) {
   process.exit(1);
 }
 
+const pluralSuffix = /_(zero|one|two|few|many|other)$/u;
+const referencePluralBases = new Set(
+  [...referenceKeys]
+    .filter((key) => pluralSuffix.test(key))
+    .map((key) => key.replace(pluralSuffix, "")),
+);
+
+// i18next resolves `key_<category>` before `key`, so a locale may define the
+// plural categories its language needs (e.g. ru `_few`/`_many`) even when
+// en-US only has `_one`/`_other` or a plain `key`.
+function isAllowedPluralKey(key, localeName) {
+  const match = key.match(pluralSuffix);
+  if (!match) return false;
+  const { pluralCategories } = new Intl.PluralRules(
+    localeName,
+  ).resolvedOptions();
+  if (!pluralCategories.includes(match[1])) return false;
+  const base = key.slice(0, -match[0].length);
+  return referenceKeys.has(base) || referencePluralBases.has(base);
+}
+
 let hasIssues = false;
 
 for (const locale of filteredLocales) {
@@ -32,7 +53,10 @@ for (const locale of filteredLocales) {
     [...referenceKeys].filter((key) => !localeKeys.has(key)),
   );
   const extra = new Set(
-    [...localeKeys].filter((key) => !referenceKeys.has(key)),
+    [...localeKeys].filter(
+      (key) =>
+        !referenceKeys.has(key) && !isAllowedPluralKey(key, locale.locale),
+    ),
   );
 
   if (missing.size === 0 && extra.size === 0) {

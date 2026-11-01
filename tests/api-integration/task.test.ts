@@ -8,6 +8,7 @@ import { resetTestDatabase } from "./helpers/database";
 import {
   createProjectFixture,
   createWorkspaceMember,
+  joinProject,
 } from "./helpers/fixtures";
 
 describe("API integration: task creation", () => {
@@ -48,6 +49,7 @@ describe("API integration: task creation", () => {
       name: "Delivery",
       slug: "delivery",
     });
+    await joinProject(project.id, member.user.id);
 
     await db.insert(schema.taskTable).values({
       projectId: project.id,
@@ -174,6 +176,7 @@ describe("API integration: task creation", () => {
     const { project, columns } = await createProjectFixture({
       workspaceId: member.workspace.id,
     });
+    await joinProject(project.id, member.user.id);
 
     mockAuthenticatedSession(member.user);
     const { app } = createApp();
@@ -234,6 +237,7 @@ describe("API integration: task creation", () => {
     const { project } = await createProjectFixture({
       workspaceId: member.workspace.id,
     });
+    await joinProject(project.id, member.user.id);
 
     mockAuthenticatedSession(member.user);
     const { app } = createApp();
@@ -275,5 +279,105 @@ describe("API integration: task creation", () => {
       columnId: null,
       position: 1,
     });
+  });
+
+  it("creates a task into a same-project sprint with points, and returns both from GET", async () => {
+    const member = await createWorkspaceMember();
+    const { project } = await createProjectFixture({
+      workspaceId: member.workspace.id,
+    });
+    await joinProject(project.id, member.user.id);
+
+    const [sprint] = await db
+      .insert(schema.sprintTable)
+      .values({ projectId: project.id, name: "Sprint 1", state: "active" })
+      .returning();
+
+    mockAuthenticatedSession(member.user);
+    const { app } = createApp();
+
+    const response = await app.request(`/api/task/${project.id}`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        title: "Task in sprint",
+        description: "Belongs to a valid sprint",
+        priority: "medium",
+        status: "to-do",
+        sprintId: sprint.id,
+        points: 5,
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as {
+      id: string;
+      sprintId: string | null;
+      points: number | null;
+    };
+
+    expect(payload).toMatchObject({ sprintId: sprint.id, points: 5 });
+
+    const persistedTask = await db.query.taskTable.findFirst({
+      where: eq(schema.taskTable.id, payload.id),
+    });
+    expect(persistedTask).toMatchObject({ sprintId: sprint.id, points: 5 });
+
+    const getResponse = await app.request(`/api/task/${payload.id}`);
+    expect(getResponse.status).toBe(200);
+    await expect(getResponse.json()).resolves.toMatchObject({
+      id: payload.id,
+      sprintId: sprint.id,
+      points: 5,
+    });
+  });
+
+  it("ignores a sprintId from another project instead of assigning it", async () => {
+    const member = await createWorkspaceMember();
+    const { project } = await createProjectFixture({
+      workspaceId: member.workspace.id,
+      slug: `project-target-${randomUUID()}`,
+    });
+    await joinProject(project.id, member.user.id);
+    const { project: otherProject } = await createProjectFixture({
+      workspaceId: member.workspace.id,
+      slug: `project-other-${randomUUID()}`,
+    });
+
+    const [foreignSprint] = await db
+      .insert(schema.sprintTable)
+      .values({ projectId: otherProject.id, name: "Other sprint" })
+      .returning();
+
+    mockAuthenticatedSession(member.user);
+    const { app } = createApp();
+
+    const response = await app.request(`/api/task/${project.id}`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        title: "Cross-project sprint",
+        description: "Sprint belongs elsewhere",
+        priority: "low",
+        status: "to-do",
+        sprintId: foreignSprint.id,
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const payload = (await response.json()) as {
+      id: string;
+      sprintId: string | null;
+    };
+    expect(payload.sprintId).toBeNull();
+
+    const persistedTask = await db.query.taskTable.findFirst({
+      where: eq(schema.taskTable.id, payload.id),
+    });
+    expect(persistedTask?.sprintId).toBeNull();
   });
 });

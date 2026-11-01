@@ -50,7 +50,7 @@ function getEventDataRecord(
   return eventData as Record<string, unknown>;
 }
 
-function getNotificationTitle(
+export function getNotificationTitle(
   notification: Notification,
   t: (key: string, options?: Record<string, unknown>) => string,
 ) {
@@ -107,6 +107,16 @@ function getNotificationTitle(
           ...eventData,
           defaultValue: notification.title ?? notification.type,
         });
+      case "sprint_started":
+        return t("notifications:events.sprint_started.title", {
+          ...eventData,
+          defaultValue: notification.title ?? notification.type,
+        });
+      case "sprint_ended":
+        return t("notifications:events.sprint_ended.title", {
+          ...eventData,
+          defaultValue: notification.title ?? notification.type,
+        });
       default:
         break;
     }
@@ -115,7 +125,7 @@ function getNotificationTitle(
   return notification.title ?? notification.type;
 }
 
-function getNotificationContent(
+export function getNotificationContent(
   notification: Notification,
   t: (key: string, options?: Record<string, unknown>) => string,
 ) {
@@ -179,6 +189,16 @@ function getNotificationContent(
               ...eventData,
               defaultValue: notification.content ?? "",
             });
+      case "sprint_started":
+        return t("notifications:events.sprint_started.content", {
+          ...eventData,
+          defaultValue: notification.content ?? "",
+        });
+      case "sprint_ended":
+        return t("notifications:events.sprint_ended.content", {
+          ...eventData,
+          defaultValue: notification.content ?? "",
+        });
       default:
         break;
     }

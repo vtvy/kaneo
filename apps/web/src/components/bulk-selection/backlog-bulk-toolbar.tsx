@@ -4,6 +4,7 @@ import {
   CalendarIcon,
   ChevronDown,
   Menu,
+  Target,
   Trash2,
   X,
 } from "lucide-react";
@@ -46,8 +47,10 @@ import {
 import labelColors from "@/constants/label-colors";
 import { useBulkOperations } from "@/hooks/mutations/task/use-bulk-operations";
 import useGetLabelsByWorkspace from "@/hooks/queries/label/use-get-labels-by-workspace";
+import useGetSprintsByProject from "@/hooks/queries/sprint/use-get-sprints-by-project";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { getColumnIcon } from "@/lib/column";
 import { getPriorityLabel } from "@/lib/i18n/domain";
@@ -95,6 +98,7 @@ function BacklogBulkToolbar() {
     bulkPriority,
     bulkAddLabel,
     bulkDueDate,
+    bulkAssignSprint,
   } = useBulkOperations();
   const { data: workspace } = useActiveWorkspace();
   const { data: workspaceUsers } = useGetActiveWorkspaceUsers(
@@ -106,6 +110,16 @@ function BacklogBulkToolbar() {
   const { canManageTasks, canAssignTasks } = useWorkspacePermission();
   const canEdit = canManageTasks();
   const canAssign = canAssignTasks();
+  const { can: canProject, isCheckingPermissions } = useProjectPermission(
+    project?.id,
+  );
+  // Sprint membership is a task update: workspace task-manager OR project
+  // item:update, matching the per-task sprint popover.
+  const canAssignSprint =
+    canEdit || (!isCheckingPermissions && canProject("item", "update"));
+  const { data: sprints = [] } = useGetSprintsByProject(
+    canAssignSprint ? (project?.id ?? "") : "",
+  );
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
@@ -258,6 +272,35 @@ function BacklogBulkToolbar() {
     [bulkDueDate, selectedTaskIds, selectedCount, clearSelection, t],
   );
 
+  const handleBulkAssignSprint = useCallback(
+    async (sprintId: string) => {
+      try {
+        await bulkAssignSprint({
+          taskIds: Array.from(selectedTaskIds),
+          sprintId,
+        });
+        toast.success(t("tasks:bulk.updateSuccess", { count: selectedCount }));
+        clearSelection();
+        setIsActionsOpen(false);
+      } catch (_error) {
+        toast.error(t("tasks:bulk.addToSprintError"));
+      }
+    },
+    [bulkAssignSprint, selectedTaskIds, selectedCount, clearSelection, t],
+  );
+
+  // Active first, then planned/future; completed sprints are not offered.
+  const assignableSprints = useMemo(
+    () =>
+      sprints
+        .filter((sprint) => sprint.state !== "completed")
+        .sort(
+          (a, b) =>
+            (a.state === "active" ? 0 : 1) - (b.state === "active" ? 0 : 1),
+        ),
+    [sprints],
+  );
+
   const groupedItems = useMemo<BacklogActionGroup[]>(() => {
     const groups: BacklogActionGroup[] = [];
     if (canEdit) {
@@ -343,10 +386,27 @@ function BacklogBulkToolbar() {
         })),
       });
     }
+    if (canAssignSprint && assignableSprints.length > 0) {
+      groups.push({
+        value: "sprint",
+        label: t("tasks:bulk.addToSprint"),
+        items: assignableSprints.map((sprint) => ({
+          value: `sprint-${sprint.id}`,
+          label: sprint.name,
+          icon: <Target className="h-4 w-4 text-muted-foreground" />,
+          onRun: () => {
+            void handleBulkAssignSprint(sprint.id);
+          },
+        })),
+      });
+    }
     return groups;
   }, [
     canEdit,
     canAssign,
+    canAssignSprint,
+    assignableSprints,
+    handleBulkAssignSprint,
     workspaceUsers?.members,
     uniqueLabels,
     handleBulkDelete,
@@ -359,7 +419,7 @@ function BacklogBulkToolbar() {
   ]);
 
   if (selectedCount === 0) return null;
-  if (!canEdit && !canAssign) return null;
+  if (!canEdit && !canAssign && !canAssignSprint) return null;
 
   return (
     <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">

@@ -3,6 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { sprintTable, taskTable } from "../../database/schema";
 import { publishEvent } from "../../events";
+import syncTaskSprintMembership from "./sync-task-sprint-membership";
 
 async function assignTaskToSprint({
   id,
@@ -50,6 +51,8 @@ async function assignTaskToSprint({
       message: "Failed to assign task to sprint",
     });
   }
+
+  await syncTaskSprintMembership(taskId, id);
 
   await publishEvent("task.sprint_changed", {
     taskId,

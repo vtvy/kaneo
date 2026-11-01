@@ -2,11 +2,12 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { sprintTable } from "../../database/schema";
+import { sprintColumns } from "../sprint-columns";
 import { getSprintTotals } from "./get-sprint-totals";
 
 async function getSprint(id: string) {
   const [sprint] = await db
-    .select()
+    .select(sprintColumns)
     .from(sprintTable)
     .where(eq(sprintTable.id, id))
     .limit(1);

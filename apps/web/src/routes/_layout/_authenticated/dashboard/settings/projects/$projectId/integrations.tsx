@@ -3,6 +3,8 @@ import {
   ChevronDown,
   FolderGit,
   Github,
+  Gitlab,
+  HardDrive,
   MessageCircle,
   Radio,
   Send,
@@ -15,6 +17,8 @@ import { DiscordIntegrationSettings } from "@/components/project/discord-integra
 import { GenericWebhookIntegrationSettings } from "@/components/project/generic-webhook-integration-settings";
 import { GiteaIntegrationSettings } from "@/components/project/gitea-integration-settings";
 import { GitHubIntegrationSettings } from "@/components/project/github-integration-settings";
+import { GitlabIntegrationSettings } from "@/components/project/gitlab-integration-settings";
+import { GoogleDriveIntegrationSettings } from "@/components/project/google-drive-integration-settings";
 import { SlackIntegrationSettings } from "@/components/project/slack-integration-settings";
 import { TelegramIntegrationSettings } from "@/components/project/telegram-integration-settings";
 import {
@@ -22,6 +26,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import useGetConfig from "@/hooks/queries/config/use-get-config";
 
 export const Route = createFileRoute(
   "/_layout/_authenticated/dashboard/settings/projects/$projectId/integrations",
@@ -32,6 +37,9 @@ export const Route = createFileRoute(
 function RouteComponent() {
   const { t } = useTranslation();
   const { projectId } = Route.useParams();
+  const { data: config } = useGetConfig();
+  // Disabled providers stay visible so existing connections can be removed.
+  const disabledIntegrations = new Set(config?.disabledIntegrations ?? []);
 
   return (
     <>
@@ -48,6 +56,16 @@ function RouteComponent() {
 
         <div className="space-y-6">
           <IntegrationSection
+            icon={<HardDrive className="size-4" />}
+            title="Google Drive"
+            subtitle={t("settings:googleDrive.sectionSubtitle")}
+          >
+            <GoogleDriveIntegrationSettings
+              projectId={projectId}
+              disabled={disabledIntegrations.has("google-drive")}
+            />
+          </IntegrationSection>
+          <IntegrationSection
             icon={<Github className="size-4" />}
             subtitle={t("settings:projectIntegrations.githubSectionSubtitle")}
             title={t("settings:projectIntegrations.githubSectionTitle")}
@@ -61,6 +79,14 @@ function RouteComponent() {
             title={t("settings:projectIntegrations.giteaSectionTitle")}
           >
             <GiteaIntegrationSettings projectId={projectId} />
+          </IntegrationSection>
+
+          <IntegrationSection
+            icon={<Gitlab className="size-4" />}
+            subtitle={t("settings:projectIntegrations.gitlabSectionSubtitle")}
+            title={t("settings:projectIntegrations.gitlabSectionTitle")}
+          >
+            <GitlabIntegrationSettings projectId={projectId} />
           </IntegrationSection>
 
           <IntegrationSection

@@ -18,6 +18,10 @@ function useAssignTaskToSprint() {
       void queryClient.invalidateQueries({
         queryKey: ["tasks", updatedTask.projectId],
       });
+      // Sprint lists carry per-sprint task/point totals.
+      void queryClient.invalidateQueries({
+        queryKey: ["sprints", updatedTask.projectId],
+      });
       // Refresh the backlog table (all-project-tasks) so the actor's backlog
       // reflects the new sprint membership immediately after an inline edit.
       void queryClient.invalidateQueries({
@@ -27,6 +31,9 @@ function useAssignTaskToSprint() {
       // reflect the new sprint membership immediately.
       void queryClient.invalidateQueries({
         queryKey: ["task", variables.taskId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["sprint-history", variables.taskId],
       });
     },
   });

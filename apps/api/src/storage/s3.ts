@@ -124,7 +124,7 @@ function getStorageConfig(): StorageConfig {
   };
 }
 
-function getMaxImageUploadBytes() {
+export function getMaxImageUploadBytes() {
   return parsePositiveInt(
     process.env.S3_MAX_IMAGE_UPLOAD_BYTES,
     DEFAULT_MAX_IMAGE_UPLOAD_BYTES,

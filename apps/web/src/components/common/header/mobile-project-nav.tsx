@@ -1,4 +1,12 @@
-import { CalendarDays, Check, Menu, Plus, SquareKanban } from "lucide-react";
+import {
+  Calendar,
+  CalendarDays,
+  Check,
+  Menu,
+  Plus,
+  SquareKanban,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -12,10 +20,11 @@ import { cn } from "@/lib/cn";
 type MobileProjectNavProps = {
   workspaceId: string;
   projectId: string;
-  activeView: "backlog" | "board" | "gantt";
+  activeView: "backlog" | "board" | "gantt" | "calendar";
   onSelectBoard: () => void;
   onSelectBacklog: () => void;
   onSelectGantt: () => void;
+  onSelectCalendar?: () => void;
   onSelectProject: (projectId: string) => void;
   onAddProject: () => void;
 };
@@ -27,9 +36,11 @@ export default function MobileProjectNav({
   onSelectBoard,
   onSelectBacklog,
   onSelectGantt,
+  onSelectCalendar,
   onSelectProject,
   onAddProject,
 }: MobileProjectNavProps) {
+  const { t } = useTranslation();
   const { data: projects = [] } = useGetProjects({ workspaceId });
 
   return (
@@ -77,6 +88,21 @@ export default function MobileProjectNav({
                 <SquareKanban className="size-3.5" />
                 Board
               </button>
+              {onSelectCalendar && (
+                <button
+                  type="button"
+                  onClick={onSelectCalendar}
+                  className={cn(
+                    "flex w-full items-center justify-center gap-1 whitespace-nowrap rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
+                    activeView === "calendar"
+                      ? "border-border bg-secondary text-foreground"
+                      : "border-transparent text-muted-foreground hover:bg-accent",
+                  )}
+                >
+                  <Calendar className="size-3.5" />
+                  {t("tasks:calendar.title")}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onSelectGantt}

@@ -13,8 +13,10 @@ import useGetProject from "@/hooks/queries/project/use-get-project";
 import useGetTask from "@/hooks/queries/task/use-get-task";
 import useGetTaskRelations from "@/hooks/queries/task-relation/use-get-task-relations";
 import type { ExternalLink } from "@/types/external-link";
+import PushToGitlabButton from "./push-to-gitlab-button";
 import TaskDescription from "./task-description";
 import TaskRelations from "./task-relations";
+import TaskSprintHistory from "./task-sprint-history";
 import TaskSubtasks from "./task-subtasks";
 import TaskTitle from "./task-title";
 
@@ -76,8 +78,10 @@ export default function TaskDetailsContent({
         <p className="text-xs font-semibold text-foreground/70">
           {project?.slug}-{task?.number}
         </p>
+        <TaskSprintHistory taskId={taskId} />
         <TaskTitle taskId={taskId} />
         <TaskDescription taskId={taskId} />
+        <PushToGitlabButton taskId={taskId} projectId={projectId} />
       </div>
       {!isLoadingExternalLinks && externalLinks.length > 0 && (
         <div className="mt-4">
@@ -104,7 +108,9 @@ export default function TaskDetailsContent({
       <span className="text-sm font-medium text-muted-foreground h-[1px] bg-border w-full block shrink-0" />
       <div className="flex flex-col gap-4">
         <h1 className="text-md font-semibold">{t("tasks:detail.activity")}</h1>
-        {user?.id && taskId && <CommentInput taskId={taskId} />}
+        {user?.id && taskId && (
+          <CommentInput taskId={taskId} projectId={projectId} />
+        )}
         {activities.length > 0 ? (
           <Timeline>
             {activities.map((activity, index) => {
@@ -120,6 +126,7 @@ export default function TaskDetailsContent({
                   activity={activity}
                   step={activities.length - index}
                   showConnector={showConnector}
+                  projectId={projectId}
                 />
               );
             })}

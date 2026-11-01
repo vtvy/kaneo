@@ -1,7 +1,11 @@
 import { eq } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { taskTable, userTable } from "../../database/schema";
+
+// Second join on the user table to resolve the reporter (task creator).
+const reporterUser = alias(userTable, "reporter_user");
 
 async function getTask(taskId: string) {
   const task = await db
@@ -14,15 +18,22 @@ async function getTask(taskId: string) {
       priority: taskTable.priority,
       startDate: taskTable.startDate,
       dueDate: taskTable.dueDate,
+      recurrence: taskTable.recurrence,
       position: taskTable.position,
       createdAt: taskTable.createdAt,
       userId: taskTable.userId,
       assigneeName: userTable.name,
       assigneeId: userTable.id,
       projectId: taskTable.projectId,
+      sprintId: taskTable.sprintId,
+      points: taskTable.points,
+      reporterId: taskTable.reporterId,
+      reporterName: reporterUser.name,
+      reporterImage: reporterUser.image,
     })
     .from(taskTable)
     .leftJoin(userTable, eq(taskTable.userId, userTable.id))
+    .leftJoin(reporterUser, eq(taskTable.reporterId, reporterUser.id))
     .where(eq(taskTable.id, taskId))
     .limit(1);
 

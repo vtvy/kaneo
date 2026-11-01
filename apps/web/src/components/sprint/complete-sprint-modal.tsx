@@ -11,8 +11,13 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import useCompleteSprint from "@/hooks/mutations/sprint/use-complete-sprint";
+import {
+  getSprintCompletionReport,
+  type SprintCompletionReport,
+} from "@/lib/sprint";
 import { toast } from "@/lib/toast";
-import type { Sprint } from "@/types/sprint";
+import type { Sprint, SprintSnapshotTask } from "@/types/sprint";
+import SprintReportContent from "./sprint-report-content";
 
 type CompleteSprintModalProps = {
   open: boolean;
@@ -24,6 +29,12 @@ type CompleteSprintModalProps = {
 
 const BACKLOG_VALUE = "__backlog__";
 
+type CompletedReport = {
+  report: SprintCompletionReport;
+  doneTasks: SprintSnapshotTask[];
+  carriedOverTasks: SprintSnapshotTask[];
+};
+
 function CompleteSprintModal({
   open,
   onClose,
@@ -32,21 +43,29 @@ function CompleteSprintModal({
 }: CompleteSprintModalProps) {
   const { t } = useTranslation();
   const [target, setTarget] = useState<string>(BACKLOG_VALUE);
+  const [report, setReport] = useState<CompletedReport | null>(null);
   const { mutateAsync: completeSprint, isPending } = useCompleteSprint();
 
   useEffect(() => {
-    if (open) setTarget(BACKLOG_VALUE);
+    if (open) {
+      setTarget(BACKLOG_VALUE);
+      setReport(null);
+    }
   }, [open]);
 
   const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await completeSprint({
+      const completed = await completeSprint({
         id: sprint.id,
         targetSprintId: target === BACKLOG_VALUE ? null : target,
       });
       toast.success(t("common:modals.completeSprint.completedToast"));
-      onClose();
+      setReport({
+        report: getSprintCompletionReport(completed),
+        doneTasks: completed.completionSnapshot.doneTasks,
+        carriedOverTasks: completed.completionSnapshot.carriedOverTasks,
+      });
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -55,6 +74,37 @@ function CompleteSprintModal({
       );
     }
   };
+
+  if (report) {
+    return (
+      <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {t("common:modals.sprintReport.title", { name: sprint.name })}
+            </DialogTitle>
+            <DialogDescription>
+              {t("common:modals.sprintReport.description")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[60vh] overflow-y-auto px-6">
+            <SprintReportContent
+              report={report.report}
+              doneTasks={report.doneTasks}
+              carriedOverTasks={report.carriedOverTasks}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button type="button" size="sm" onClick={onClose}>
+              {t("common:actions.close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
