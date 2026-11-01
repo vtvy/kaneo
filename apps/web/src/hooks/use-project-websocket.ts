@@ -53,6 +53,13 @@ export function useProjectWebSocket(projectId: string) {
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
+          if (message.type === "PROJECT_UPDATED") {
+            queryClient.invalidateQueries({ queryKey: ["projects"] });
+            queryClient.invalidateQueries({
+              queryKey: ["tasks", message.projectId],
+            });
+            return;
+          }
           if (message.type === "PROJECT_MOVED") {
             // The server closes this socket; refetch so the project shows up
             // under its new workspace (or disappears if access was lost).

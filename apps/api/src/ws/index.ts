@@ -357,6 +357,20 @@ subscribeToEvent<{
 
 subscribeToEvent<{
   projectId: string;
+  initiatorId?: string;
+}>("project.updated", async (data) => {
+  const { projectId, initiatorId } = data;
+  if (!projectId) return;
+
+  broadcastToProject(
+    projectId,
+    { type: "PROJECT_UPDATED", projectId },
+    initiatorId,
+  );
+});
+
+subscribeToEvent<{
+  projectId: string;
   sourceWorkspaceId: string;
   targetWorkspaceId: string;
 }>("project.moved", async ({ projectId }) => {

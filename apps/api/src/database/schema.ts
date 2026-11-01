@@ -287,6 +287,9 @@ export const projectTable = pgTable(
     isPublic: boolean("is_public").default(false),
     archivedAt: timestamp("archived_at", { mode: "date" }),
     sprintCycleWeeks: integer("sprint_cycle_weeks").default(2).notNull(),
+    backgroundObjectKey: text("background_object_key"),
+    backgroundMimeType: text("background_mime_type"),
+    backgroundVersion: text("background_version"),
   },
   (table) => [
     unique("project_workspace_id_id_unique").on(table.workspaceId, table.id),

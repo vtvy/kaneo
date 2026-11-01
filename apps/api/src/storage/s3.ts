@@ -62,6 +62,20 @@ type TaskImageUploadUrl = {
   headers: Record<string, string>;
 };
 
+type ProjectBackgroundUploadContext = {
+  workspaceId: string;
+  projectId: string;
+  contentType: string;
+  size: number;
+};
+
+type ProjectBackgroundUploadUrl = {
+  key: string;
+  uploadUrl: string;
+  version: string;
+  headers: Record<string, string>;
+};
+
 type AssetObject = {
   body: unknown;
   contentType: string | undefined;
@@ -215,6 +229,30 @@ export function buildObjectKey(context: TaskImageUploadContext) {
   return `${objectKeyPrefix}/${fileName}`;
 }
 
+export function buildProjectBackgroundObjectKeyPrefix(
+  context: Pick<ProjectBackgroundUploadContext, "workspaceId" | "projectId">,
+) {
+  return [
+    "workspace",
+    sanitizePathSegment(context.workspaceId),
+    "project",
+    sanitizePathSegment(context.projectId),
+    "backgrounds",
+  ].join("/");
+}
+
+export function buildProjectBackgroundObjectKey(
+  context: Pick<ProjectBackgroundUploadContext, "workspaceId" | "projectId">,
+) {
+  const objectKeyPrefix = buildProjectBackgroundObjectKeyPrefix(context);
+  const version = createId();
+
+  return {
+    rawKey: `${objectKeyPrefix}/background-${version}`,
+    version,
+  };
+}
+
 export function applyKeyPrefix(prefix: string, key: string) {
   if (!prefix) return key;
   const trimmed = prefix.replace(/\/+$/, "");
@@ -238,6 +276,23 @@ export function validateTaskAssetUploadInput(
   if (size > maxImageUploadBytes) {
     throw new Error(
       `Upload exceeds the maximum upload size of ${Math.floor(maxImageUploadBytes / (1024 * 1024))}MB.`,
+    );
+  }
+}
+
+export function validateProjectBackgroundUploadInput(
+  contentType: string,
+  size: number,
+) {
+  if (contentType.toLowerCase() === "image/svg+xml") {
+    throw new Error("SVG images cannot be used as a project background.");
+  }
+
+  validateTaskAssetUploadInput(contentType, size);
+
+  if (!isImageContentType(contentType)) {
+    throw new Error(
+      `Unsupported content type "${contentType}". Upload a supported image.`,
     );
   }
 }
@@ -274,6 +329,40 @@ export async function createTaskImageUploadUrl(
   };
 }
 
+export async function createProjectBackgroundUploadUrl(
+  context: ProjectBackgroundUploadContext,
+): Promise<ProjectBackgroundUploadUrl> {
+  validateProjectBackgroundUploadInput(context.contentType, context.size);
+  const config = getStorageConfig();
+  const client = getClient(config);
+  const { rawKey, version } = buildProjectBackgroundObjectKey(context);
+  const key = applyKeyPrefix(config.keyPrefix, rawKey);
+
+  const command = new PutObjectCommand({
+    Bucket: config.bucket,
+    Key: key,
+    ContentType: context.contentType,
+    ContentLength: context.size,
+  });
+
+  const uploadUrl = await getSignedUrl(
+    client as unknown as Parameters<typeof getSignedUrl>[0],
+    command as unknown as Parameters<typeof getSignedUrl>[1],
+    {
+      expiresIn: config.presignTtlSeconds,
+    },
+  );
+
+  return {
+    key,
+    uploadUrl,
+    version,
+    headers: {
+      "Content-Type": context.contentType,
+    },
+  };
+}
+
 export function assertStorageConfigured() {
   return getStorageConfig();
 }
@@ -286,6 +375,27 @@ export function assertTaskImageKeyMatchesContext(
   const objectPrefix = buildObjectKeyPrefix(context);
   const fullPrefix = `${applyKeyPrefix(config.keyPrefix, objectPrefix)}/`;
   return key.startsWith(fullPrefix);
+}
+
+export function assertProjectBackgroundKeyMatchesContext(
+  key: string,
+  context: Pick<ProjectBackgroundUploadContext, "workspaceId" | "projectId"> & {
+    version: string;
+  },
+) {
+  const config = getStorageConfig();
+  const objectPrefix = buildProjectBackgroundObjectKeyPrefix(context);
+  const fullPrefix = `${applyKeyPrefix(config.keyPrefix, objectPrefix)}/`;
+
+  if (!key.startsWith(fullPrefix)) {
+    return false;
+  }
+
+  if (!/^[A-Za-z0-9_-]+$/.test(context.version)) {
+    return false;
+  }
+
+  return key.slice(fullPrefix.length) === `background-${context.version}`;
 }
 
 export async function getPrivateObject(key: string): Promise<AssetObject> {

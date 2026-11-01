@@ -7,13 +7,18 @@ import { isInstanceAdmin } from "../utils/is-instance-admin";
 import { requireWorkspacePermission } from "../utils/require-workspace-permission";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import archiveProjectCtrl from "./controllers/archive-project";
+import clearProjectBackground from "./controllers/clear-project-background";
 import createProjectCtrl from "./controllers/create-project";
 import deleteProjectCtrl from "./controllers/delete-project";
+import finalizeProjectBackground from "./controllers/finalize-project-background";
 import getProjectCtrl from "./controllers/get-project";
+import getProjectBackgroundResponse from "./controllers/get-project-background";
 import getProjectsCtrl from "./controllers/get-projects";
 import moveProjectCtrl from "./controllers/move-project";
+import prepareProjectBackgroundUpload from "./controllers/prepare-project-background-upload";
 import unarchiveProjectCtrl from "./controllers/unarchive-project";
 import updateProjectCtrl from "./controllers/update-project";
+import { toPublicProject } from "./to-public-project";
 
 const project = new Hono<{
   Variables: {
@@ -53,7 +58,7 @@ const project = new Hono<{
         userId,
         includeArchived === "true",
       );
-      return c.json(projects);
+      return c.json(projects.map(toPublicProject));
     },
   )
   .post(
@@ -93,7 +98,7 @@ const project = new Hono<{
         slug,
         userId,
       );
-      return c.json(newProject);
+      return c.json(toPublicProject(newProject));
     },
   )
   .get(
@@ -118,7 +123,7 @@ const project = new Hono<{
       const { id } = c.req.valid("param");
       const workspaceId = c.get("workspaceId");
       const projectData = await getProjectCtrl(id, workspaceId);
-      return c.json(projectData);
+      return c.json(toPublicProject(projectData));
     },
   )
   .put(
@@ -167,7 +172,7 @@ const project = new Hono<{
         workspaceId,
         sprintCycleWeeks,
       );
-      return c.json(updatedProject);
+      return c.json(toPublicProject(updatedProject));
     },
   )
   .delete(
@@ -192,7 +197,7 @@ const project = new Hono<{
       const { id } = c.req.valid("param");
       const workspaceId = c.get("workspaceId");
       const deletedProject = await deleteProjectCtrl(id, workspaceId);
-      return c.json(deletedProject);
+      return c.json(toPublicProject(deletedProject));
     },
   )
   .put(
@@ -217,7 +222,7 @@ const project = new Hono<{
       const { id } = c.req.valid("param");
       const workspaceId = c.get("workspaceId");
       const archivedProject = await archiveProjectCtrl(id, workspaceId);
-      return c.json(archivedProject);
+      return c.json(toPublicProject(archivedProject));
     },
   )
   .put(
@@ -242,7 +247,7 @@ const project = new Hono<{
       const { id } = c.req.valid("param");
       const workspaceId = c.get("workspaceId");
       const unarchivedProject = await unarchiveProjectCtrl(id, workspaceId);
-      return c.json(unarchivedProject);
+      return c.json(toPublicProject(unarchivedProject));
     },
   )
   .put(
@@ -277,7 +282,120 @@ const project = new Hono<{
         userId: c.get("userId"),
         isInstanceAdmin: await isInstanceAdmin(c),
       });
-      return c.json(movedProject);
+      return c.json(toPublicProject(movedProject));
+    },
+  )
+  .get(
+    "/:id/background",
+    describeRoute({
+      operationId: "getProjectBackground",
+      tags: ["Projects"],
+      description: "Download the current project board background image",
+    }),
+    validator("param", v.object({ id: v.string() })),
+    workspaceAccess.fromProject(),
+    projectPermission.fromParam({ item: ["read"] }, "id"),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      return getProjectBackgroundResponse(id, c.req.header("If-None-Match"));
+    },
+  )
+  .put(
+    "/:id/background-upload",
+    describeRoute({
+      operationId: "uploadProjectBackground",
+      tags: ["Projects"],
+      description: "Create a presigned background image upload URL",
+      responses: {
+        200: {
+          description: "Background image upload URL",
+          content: {
+            "application/json": {
+              schema: resolver(
+                v.object({
+                  key: v.string(),
+                  uploadUrl: v.string(),
+                  version: v.string(),
+                  headers: v.record(v.string(), v.string()),
+                }),
+              ),
+            },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    validator(
+      "json",
+      v.object({
+        contentType: v.string(),
+        size: v.number(),
+      }),
+    ),
+    workspaceAccess.fromProject(),
+    projectPermission.fromParam({ role: ["manage"] }, "id"),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const { contentType, size } = c.req.valid("json");
+      const upload = await prepareProjectBackgroundUpload(
+        id,
+        contentType,
+        size,
+      );
+      return c.json(upload);
+    },
+  )
+  .post(
+    "/:id/background-upload/finalize",
+    describeRoute({
+      operationId: "finalizeProjectBackgroundUpload",
+      tags: ["Projects"],
+      description: "Save an uploaded image as the project board background",
+      responses: {
+        200: {
+          description: "Finalized project background",
+          content: {
+            "application/json": {
+              schema: resolver(v.object({ url: v.string() })),
+            },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    validator(
+      "json",
+      v.object({
+        key: v.string(),
+        contentType: v.string(),
+        version: v.string(),
+        size: v.number(),
+      }),
+    ),
+    workspaceAccess.fromProject(),
+    projectPermission.fromParam({ role: ["manage"] }, "id"),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const body = c.req.valid("json");
+      const apiBaseUrl = process.env.KANEO_API_URL || new URL(c.req.url).origin;
+      const result = await finalizeProjectBackground(id, body, apiBaseUrl);
+      return c.json(result);
+    },
+  )
+  .delete(
+    "/:id/background",
+    describeRoute({
+      operationId: "deleteProjectBackground",
+      tags: ["Projects"],
+      description: "Remove the current project board background image",
+    }),
+    validator("param", v.object({ id: v.string() })),
+    workspaceAccess.fromProject(),
+    projectPermission.fromParam({ role: ["manage"] }, "id"),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      await clearProjectBackground(id);
+      return c.body(null, 204);
     },
   );
 
