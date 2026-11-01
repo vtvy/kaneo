@@ -1260,7 +1260,17 @@
 			"branch": "Ветка",
 			"merged": "Влит",
 			"draft": "Черновик",
-			"open": "Открыт"
+			"open": "Открыт",
+			"addResource": "Add resource",
+			"url": "URL",
+			"titleOptional": "Title (optional)",
+			"cancel": "Cancel",
+			"adding": "Adding...",
+			"empty": "No resources linked to this task.",
+			"remove": "Remove {{title}}",
+			"removeError": "Failed to remove the resource link.",
+			"addError": "Failed to add the resource link.",
+			"invalidUrl": "Enter an http or https URL."
 		},
 		"blueprint": "Blueprint",
 		"blueprintPage": {

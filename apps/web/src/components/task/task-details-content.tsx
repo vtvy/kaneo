@@ -12,6 +12,7 @@ import useExternalLinks from "@/hooks/queries/external-link/use-external-links";
 import useGetProject from "@/hooks/queries/project/use-get-project";
 import useGetTask from "@/hooks/queries/task/use-get-task";
 import useGetTaskRelations from "@/hooks/queries/task-relation/use-get-task-relations";
+import { useProjectPermission } from "@/hooks/use-project-permission";
 import type { ExternalLink } from "@/types/external-link";
 import PushToGitlabButton from "./push-to-gitlab-button";
 import TaskDescription from "./task-description";
@@ -42,6 +43,8 @@ export default function TaskDetailsContent({
     useExternalLinks(taskId ?? "");
   const { data: relations = [] } = useGetTaskRelations(taskId ?? "");
   const { user } = useAuth();
+  const { can } = useProjectPermission(projectId);
+  const canUpdateTask = can("item", "update");
 
   const parentRelation = relations.find(
     (rel) => rel.relationType === "subtask" && rel.targetTaskId === taskId,
@@ -83,14 +86,17 @@ export default function TaskDetailsContent({
         <TaskDescription taskId={taskId} />
         <PushToGitlabButton taskId={taskId} projectId={projectId} />
       </div>
-      {!isLoadingExternalLinks && externalLinks.length > 0 && (
-        <div className="mt-4">
-          <ExternalLinksAccordion
-            externalLinks={externalLinks as ExternalLink[]}
-            isLoading={isLoadingExternalLinks}
-          />
-        </div>
-      )}
+      {!isLoadingExternalLinks &&
+        (externalLinks.length > 0 || canUpdateTask) && (
+          <div className="mt-4">
+            <ExternalLinksAccordion
+              taskId={taskId}
+              externalLinks={externalLinks as ExternalLink[]}
+              isLoading={isLoadingExternalLinks}
+              canUpdate={canUpdateTask}
+            />
+          </div>
+        )}
       <div className="mt-4">
         <TaskSubtasks
           taskId={taskId}
