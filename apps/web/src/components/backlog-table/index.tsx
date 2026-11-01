@@ -15,7 +15,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ActiveFilterChip from "@/components/common/active-filter-chip";
 import TaskSprintPopover from "@/components/sprint/task-sprint-popover";
@@ -72,6 +72,7 @@ import { formatDateShort } from "@/lib/format";
 import { getPriorityLabel, getStatusDisplayLabel } from "@/lib/i18n/domain";
 import { getPriorityBadgeColor, getPriorityIcon } from "@/lib/priority";
 import { toast } from "@/lib/toast";
+import useBacklogBulkSelectionStore from "@/store/backlog-bulk-selection";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 import type Task from "@/types/task";
 import {
@@ -385,6 +386,33 @@ function BacklogTable({
     customFieldFilters,
     customFields,
   ]);
+
+  const setAvailableTasks = useBacklogBulkSelectionStore(
+    (state) => state.setAvailableTasks,
+  );
+  const selectRange = useBacklogBulkSelectionStore(
+    (state) => state.selectRange,
+  );
+  const setSelectionAnchor = useBacklogBulkSelectionStore(
+    (state) => state.setSelectionAnchor,
+  );
+  const toggleSelection = useBacklogBulkSelectionStore(
+    (state) => state.toggleSelection,
+  );
+  const selectedTaskIds = useBacklogBulkSelectionStore(
+    (state) => state.selectedTaskIds,
+  );
+  const visibleTaskIds = useMemo(
+    () => processedTasks.map((task) => task.id),
+    [processedTasks],
+  );
+
+  useEffect(() => {
+    // The first render has no rows yet. Publishing that empty list would drop
+    // the shift-click anchor before the tasks arrive.
+    if (visibleTaskIds.length === 0) return;
+    setAvailableTasks(visibleTaskIds);
+  }, [setAvailableTasks, visibleTaskIds]);
 
   const handleOpenTask = (taskId: string) => {
     navigate({
@@ -1213,8 +1241,25 @@ function BacklogTable({
                   return (
                     <TableRow
                       key={task.id}
-                      className="group cursor-pointer"
-                      onClick={() => handleOpenTask(task.id)}
+                      data-selected={selectedTaskIds.has(task.id) || undefined}
+                      className={cn(
+                        "group cursor-pointer",
+                        selectedTaskIds.has(task.id) && "bg-accent/60",
+                      )}
+                      onClick={(event) => {
+                        if (event.shiftKey) {
+                          event.preventDefault();
+                          selectRange(task.id);
+                          return;
+                        }
+                        if (event.metaKey || event.ctrlKey) {
+                          event.preventDefault();
+                          toggleSelection(task.id);
+                          return;
+                        }
+                        setSelectionAnchor(task.id);
+                        handleOpenTask(task.id);
+                      }}
                     >
                       <TableCell className="font-mono text-xs text-muted-foreground">
                         {projectSlug && task.number != null

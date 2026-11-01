@@ -59,8 +59,13 @@ export default function BacklogTaskRow({ task }: BacklogTaskRowProps) {
   } = useUserPreferencesStore();
   const [isDeleteTaskModalOpen, setIsDeleteTaskModalOpen] = useState(false);
   const { mutateAsync: deleteTask } = useDeleteTask();
-  const { toggleSelection, isSelected, isFocused } =
-    useBacklogBulkSelectionStore();
+  const {
+    toggleSelection,
+    isSelected,
+    isFocused,
+    selectRange,
+    setSelectionAnchor,
+  } = useBacklogBulkSelectionStore();
   const isTaskSelected = isSelected(task.id);
   const isTaskFocused = isFocused(task.id);
 
@@ -85,11 +90,19 @@ export default function BacklogTaskRow({ task }: BacklogTaskRowProps) {
     if (!project || !task) return;
     if (e.defaultPrevented) return;
 
+    if (e.type === "click" && e.shiftKey) {
+      e.preventDefault();
+      selectRange(task.id);
+      return;
+    }
+
     if (e.metaKey || e.ctrlKey) {
       e.preventDefault();
       toggleSelection(task.id);
       return;
     }
+
+    setSelectionAnchor(task.id);
 
     const currentParams = new URLSearchParams(window.location.search);
     const currentTaskId = currentParams.get("taskId");
