@@ -11,6 +11,7 @@ COPY packages/typescript-config/package.json ./packages/typescript-config/
 COPY packages/email/package.json ./packages/email/
 COPY packages/libs/package.json ./packages/libs/
 COPY packages/permissions/package.json ./packages/permissions/
+COPY packages/importers/package.json ./packages/importers/
 COPY apps/api/package.json ./apps/api/
 
 RUN pnpm install --frozen-lockfile
@@ -19,12 +20,16 @@ COPY packages/typescript-config ./packages/typescript-config
 COPY packages/email ./packages/email
 COPY packages/libs ./packages/libs
 COPY packages/permissions ./packages/permissions
+COPY packages/importers ./packages/importers
 COPY apps/api ./apps/api
 
 WORKDIR /app/packages/email
 RUN pnpm run build
 
 WORKDIR /app/packages/permissions
+RUN pnpm run build
+
+WORKDIR /app/packages/importers
 RUN pnpm run build
 
 WORKDIR /app/apps/api
@@ -40,6 +45,7 @@ COPY --from=api-builder /app/packages/typescript-config/package.json ./packages/
 COPY --from=api-builder /app/packages/libs/package.json ./packages/libs/
 COPY --from=api-builder /app/packages/email/package.json ./packages/email/
 COPY --from=api-builder /app/packages/permissions/package.json ./packages/permissions/
+COPY --from=api-builder /app/packages/importers/package.json ./packages/importers/
 
 RUN sed -i 's/"prepare": "husky"/"prepare": ""/g' package.json && \
   corepack enable && \
@@ -50,6 +56,7 @@ COPY --from=api-builder /app/apps/api/dist ./apps/api/dist
 COPY --from=api-builder /app/apps/api/drizzle ./apps/api/drizzle
 COPY --from=api-builder /app/packages/email ./packages/email
 COPY --from=api-builder /app/packages/permissions ./packages/permissions
+COPY --from=api-builder /app/packages/importers ./packages/importers
 
 FROM --platform=$BUILDPLATFORM node:20.20.2-alpine AS web-builder
 

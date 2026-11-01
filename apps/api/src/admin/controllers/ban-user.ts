@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import db, { schema } from "../../database";
+import { closeSocketsForUser } from "../../ws";
 import type { AdminAuditRequest } from "../audit/admin-audit-request";
 import { recordAdminAction } from "../audit/record-admin-action";
 import {
@@ -25,7 +26,7 @@ export async function banUser(
     });
   }
 
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     await lockAdminChanges(tx);
     const target = await findTargetUser(userId, tx, { forUpdate: true });
     if (isBanActive(target)) {
@@ -62,6 +63,8 @@ export async function banUser(
 
     return { id: target.id, banned: true };
   });
+  await closeSocketsForUser(result.id);
+  return result;
 }
 
 export default banUser;

@@ -2,6 +2,10 @@ import { eq } from "drizzle-orm";
 import type { Context, Next } from "hono";
 import { HTTPException } from "hono/http-exception";
 import db, { schema } from "../database";
+import {
+  assertWorkspaceWritable,
+  isSafeMethod,
+} from "../workspace/archive/workspace-archived";
 import { validateWorkspaceAccess } from "./validate-workspace-access";
 
 type WorkspaceIdSource =
@@ -89,6 +93,10 @@ export function workspaceAccessMiddleware(
     const apiKeyId = apiKey?.id;
 
     await validateWorkspaceAccess(userId, workspaceId, apiKeyId);
+    // Central read-only enforcement for archived workspaces.
+    if (!isSafeMethod(c.req.method)) {
+      await assertWorkspaceWritable(workspaceId);
+    }
 
     c.set("workspaceId", workspaceId);
 

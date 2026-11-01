@@ -1,6 +1,9 @@
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import * as v from "valibot";
+import db from "../database";
+import { workspaceTable } from "../database/schema";
 import { requireWorkspacePermission } from "../utils/require-workspace-permission";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import getWorkspaceMembersCtrl from "./controllers/get-workspace-members";
@@ -19,6 +22,41 @@ const workspace = new Hono<{
     workspaceId: string;
   };
 }>()
+  .get(
+    "/:workspaceId/archive-status",
+    describeRoute({
+      operationId: "getWorkspaceArchiveStatus",
+      tags: ["Workspaces"],
+      description:
+        "Whether the workspace is archived (read-only) and since when",
+      responses: {
+        200: {
+          description: "Archive status",
+          content: {
+            "application/json": {
+              schema: resolver(
+                v.object({
+                  archived: v.boolean(),
+                  archivedAt: v.nullable(v.string()),
+                }),
+              ),
+            },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ workspaceId: v.string() })),
+    workspaceAccess.fromParam("workspaceId"),
+    async (c) => {
+      const [row] = await db
+        .select({ archivedAt: workspaceTable.archivedAt })
+        .from(workspaceTable)
+        .where(eq(workspaceTable.id, c.get("workspaceId")))
+        .limit(1);
+      const archivedAt = row?.archivedAt?.toISOString() ?? null;
+      return c.json({ archived: archivedAt !== null, archivedAt });
+    },
+  )
   .get(
     "/:workspaceId/members",
     describeRoute({

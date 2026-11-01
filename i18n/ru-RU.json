@@ -182,10 +182,14 @@
 				"done": "Done",
 				"carriedOver": "Carried over",
 				"total": "Total",
-				"tasks_one": "{{count}} task",
-				"tasks_other": "{{count}} tasks",
-				"points_one": "{{count}} point",
-				"points_other": "{{count}} points",
+				"tasks_one": "{{count}} задача",
+				"tasks_few": "{{count}} задачи",
+				"tasks_many": "{{count}} задач",
+				"tasks_other": "{{count}} задачи",
+				"points_one": "{{count}} балл",
+				"points_few": "{{count}} балла",
+				"points_many": "{{count}} баллов",
+				"points_other": "{{count}} балла",
 				"historyDescription": "Snapshot taken when the sprint was completed.",
 				"completedOn": "Completed {{date}}",
 				"completedOnBy": "Completed {{date}} by {{name}}",
@@ -241,16 +245,20 @@
 			"noSprintsAvailable": "No sprints available",
 			"noSprintBacklog": "No sprint (Backlog)",
 			"noSprintsYetCreate": "No sprints yet. Create one in Backlog & Sprints.",
-			"taskCount_one": "{{count}} task",
-			"taskCount_other": "{{count}} tasks",
+			"taskCount_one": "{{count}} задача",
+			"taskCount_few": "{{count}} задачи",
+			"taskCount_many": "{{count}} задач",
+			"taskCount_other": "{{count}} задачи",
 			"showingActiveSprint": "Showing active sprint",
 			"filterToActiveSprint": "Filter to active sprint",
 			"pointsTotal": "{{completed}}/{{total}} pts",
 			"pointsTotalTitle": "Completed / total story points",
 			"overdue": "Overdue",
 			"endsToday": "Ends today",
-			"endsInDays_one": "Ends in {{count}} day",
-			"endsInDays_other": "Ends in {{count}} days",
+			"endsInDays_one": "Заканчивается через {{count}} день",
+			"endsInDays_few": "Заканчивается через {{count}} дня",
+			"endsInDays_many": "Заканчивается через {{count}} дней",
+			"endsInDays_other": "Заканчивается через {{count}} дня",
 			"viewReport": "View report"
 		},
 		"notFound": {
@@ -1204,8 +1212,8 @@
 			"invalidFormat": "Некорректный формат файла импорта",
 			"noFileDropped": "Файл не был перетащен",
 			"notJsonFile": "Пожалуйста, загрузите JSON-файл",
-			"importSuccess": "Imported {{count}} tasks successfully",
-			"importPartialError": "Failed to import {{count}} tasks"
+			"importSuccess": "Успешно импортировано {{count}} задач",
+			"importPartialError": "Не удалось импортировать {{count}} задач"
 		},
 		"workflowEditor": {
 			"loading": "Загрузка...",
@@ -1400,7 +1408,11 @@
 			"noRoles": "No roles yet",
 			"noRolesHint": "Default roles (Owner / Member / Viewer) will appear here once seeded for this project.",
 			"systemBadge": "System",
-			"permissionsCount": "{{count}} permissions",
+			"permissionsCount": "{{count}} разрешений",
+			"permissionsCount_one": "{{count}} разрешение",
+			"permissionsCount_few": "{{count}} разрешения",
+			"permissionsCount_many": "{{count}} разрешений",
+			"permissionsCount_other": "{{count}} разрешения",
 			"draftTitle": "New role",
 			"nameLabel": "Name",
 			"nameHint": "Will appear in the role selector for members.",
@@ -1733,8 +1745,10 @@
 			"addField": "Add field",
 			"empty": "No custom fields yet.",
 			"required": "Required",
-			"hiddenCount_one": "{{count}} hidden",
-			"hiddenCount_other": "{{count}} hidden",
+			"hiddenCount_one": "{{count}} скрыто",
+			"hiddenCount_few": "{{count}} скрыты",
+			"hiddenCount_many": "{{count}} скрыто",
+			"hiddenCount_other": "{{count}} скрыты",
 			"edit": "Edit field",
 			"delete": "Delete field",
 			"types": {
@@ -1800,8 +1814,10 @@
 			"users": "Users",
 			"usersSubtitle": "Create, manage and restrict the accounts on this instance.",
 			"noUsers": "No users match these filters.",
-			"totalUsers_one": "{{count}} user",
-			"totalUsers_other": "{{count}} users",
+			"totalUsers_one": "{{count}} пользователь",
+			"totalUsers_few": "{{count}} пользователя",
+			"totalUsers_many": "{{count}} пользователей",
+			"totalUsers_other": "{{count}} пользователя",
 			"pageOf": "Page {{page}} of {{count}}",
 			"previous": "Previous",
 			"next": "Next",
@@ -1897,8 +1913,176 @@
 					"user_session_revoked": "Revoked session",
 					"user_sessions_revoked": "Revoked all sessions",
 					"user_api_key_revoked": "Revoked API key",
-					"user_api_keys_revoked": "Revoked all API keys"
+					"user_api_keys_revoked": "Revoked all API keys",
+					"instance_settings_updated": "Instance settings changed",
+					"email_smtp_verified": "SMTP connection verified",
+					"email_test_sent": "Test email sent",
+					"email_test_failed": "Test email failed",
+					"workspace_archived": "Workspace archived",
+					"workspace_restored": "Workspace restored",
+					"workspace_deleted": "Workspace deleted"
 				}
+			},
+			"system": {
+				"title": "System",
+				"subtitle": "Version, uptime and the health of the services this instance depends on.",
+				"status": {
+					"ok": "Healthy",
+					"down": "Unreachable",
+					"not_configured": "Not configured"
+				},
+				"version": "Kaneo version",
+				"node": "Node.js",
+				"uptime": "Uptime",
+				"database": "Database",
+				"migrations": "Migrations applied",
+				"redis": "Redis",
+				"storage": "File storage",
+				"storageS3": "{{driver}} (documents), S3 (images)",
+				"email": "Email (SMTP)",
+				"emailConfigured": "Sending through {{host}}",
+				"verifySmtp": "Verify connection",
+				"sendTestEmail": "Send test email to me",
+				"smtpOk": "Connected to the mail server",
+				"smtpNotConfigured": "Email is not configured. Set SMTP_HOST, SMTP_PORT and SMTP_FROM.",
+				"smtpFailed": "The mail server refused the connection ({{code}})",
+				"testEmailSent": "Test email sent to {{email}}"
+			},
+			"instanceSettings": {
+				"title": "Settings",
+				"subtitle": "Instance-wide options. Environment variables still win over these values.",
+				"saved": "Settings saved",
+				"save": "Save",
+				"instanceName": "Instance name",
+				"instanceNameHint": "Shown in page titles. Leave empty to use Kaneo.",
+				"lockedByEnv": "Set by {{variable}}; change it in the environment.",
+				"needsSmtp": "Needs email delivery (SMTP) to be configured.",
+				"registrationEnabled": "Allow registration",
+				"registrationEnabledHint": "When off, only people with a valid invitation can create an account.",
+				"passwordRegistrationEnabled": "Allow password sign-up",
+				"passwordRegistrationEnabledHint": "When off, new accounts must use a social or OIDC provider.",
+				"requireEmailVerification": "Require email verification",
+				"requireEmailVerificationHint": "Password users confirm their email with a code before they can sign in.",
+				"workspaceCreationRestricted": "Only admins create workspaces",
+				"workspaceCreationRestrictedHint": "When on, only instance administrators can create new workspaces.",
+				"integrations": "Integrations",
+				"integrationsHint": "Turned-off providers are hidden from projects and can't be connected or changed.",
+				"integrationNames": {
+					"github": "GitHub",
+					"gitea": "Gitea",
+					"gitlab": "GitLab",
+					"generic-webhook": "Generic webhook",
+					"discord": "Discord",
+					"slack": "Slack",
+					"telegram": "Telegram"
+				}
+			},
+			"workspaces": {
+				"title": "Workspaces",
+				"subtitle": "Archive, restore or delete the workspaces on this instance.",
+				"searchPlaceholder": "Search by name or slug",
+				"status": {
+					"all": "All workspaces",
+					"active": "Active",
+					"archived": "Archived"
+				},
+				"empty": "No workspaces match these filters.",
+				"columns": {
+					"name": "Workspace",
+					"members": "Members",
+					"projects": "Projects",
+					"created": "Created"
+				},
+				"archivedBadge": "Archived",
+				"archive": "Archive",
+				"unarchive": "Restore",
+				"delete": "Delete",
+				"archiveConfirmTitle": "Archive workspace?",
+				"archiveConfirmDescription": "{{name}} becomes read-only for everyone. Members can still view it until you restore it.",
+				"unarchiveConfirmTitle": "Restore workspace?",
+				"unarchiveConfirmDescription": "{{name}} becomes editable again for its members.",
+				"archived": "Workspace archived",
+				"unarchived": "Workspace restored",
+				"deleteConfirmTitle": "Delete workspace permanently?",
+				"deleteConfirmDescription": "This deletes {{name}} with all its projects, tasks and documents, and removes every member's access. Type the workspace name to confirm.",
+				"confirmNameLabel": "Workspace name",
+				"deleted": "Workspace deleted"
+			}
+		},
+		"workspaceImport": {
+			"pageTitle": "Import",
+			"title": "Import",
+			"subtitle": "Move projects in from PLANKA or Jira. Each selected project becomes a new project in this workspace.",
+			"notAllowed": "Only members who can manage workspace settings and create projects can import.",
+			"credentialsNotice": "Your credentials are used only to read the projects you pick. Kaneo never stores or logs them.",
+			"toastStarted": "Import started",
+			"source": {
+				"label": "Import from"
+			},
+			"connect": {
+				"title": "Connect",
+				"subtitle": "Sign in to the tool you are moving from."
+			},
+			"fields": {
+				"url": "Address",
+				"email": "Account email",
+				"apiToken": "API token",
+				"apiKey": "API key",
+				"signIn": "Sign in with",
+				"username": "Username or email",
+				"password": "Password"
+			},
+			"hints": {
+				"plankaUrl": "The address you open PLANKA at, including https://.",
+				"jiraUrl": "Your Jira site, e.g. https://your-site.atlassian.net, or your Jira Data Center address.",
+				"jiraEmail": "Required for Jira Cloud. Leave empty for Jira Data Center.",
+				"jiraToken": "A Jira Cloud API token, or a personal access token for Jira Data Center.",
+				"plankaApiKey": "Create an API key in your PLANKA account settings."
+			},
+			"projects": {
+				"title": "Choose projects",
+				"subtitle": "Pick the projects to import. Each one becomes a new project.",
+				"empty": "This account cannot see any projects to import.",
+				"includeComments": "Import comments",
+				"includeCommentsHint": "Comments are kept with the name of their original author.",
+				"tooMany": "Pick at most {{max}} projects per import."
+			},
+			"actions": {
+				"connect": "Connect",
+				"connecting": "Connecting…",
+				"back": "Back",
+				"start_one": "Import {{count}} project",
+				"start_other": "Import {{count}} projects",
+				"importMore": "Import more"
+			},
+			"run": {
+				"title": "Import from {{source}}",
+				"progress": "{{done}} of {{total}} projects done"
+			},
+			"status": {
+				"pending": "Waiting",
+				"running": "Importing",
+				"completed": "Done",
+				"failed": "Failed"
+			},
+			"counts": {
+				"tasks_one": "{{count}} task",
+				"tasks_other": "{{count}} tasks",
+				"columns_one": "{{count}} column",
+				"columns_other": "{{count}} columns",
+				"labels_one": "{{count}} label",
+				"labels_other": "{{count}} labels",
+				"comments_one": "{{count}} comment",
+				"comments_other": "{{count}} comments"
+			},
+			"history": {
+				"title": "Recent imports",
+				"subtitle": "The last 20 imports in this workspace.",
+				"empty": "No imports yet."
+			},
+			"errors": {
+				"connect": "Could not connect to the source.",
+				"start": "Could not start the import."
 			}
 		}
 	},
@@ -2496,7 +2680,7 @@
 				"dueNextWeek": "Срок на следующей неделе",
 				"noDueDate": "Без срока"
 			},
-			"moveAllSuccess": "Moved {{count}} tasks to To Do"
+			"moveAllSuccess": "{{count}} задач перемещено в «К выполнению»"
 		},
 		"sort": {
 			"label": "Сортировка",
@@ -2546,7 +2730,7 @@
 				"includeAnyOf": "включает любой из",
 				"is": "is"
 			},
-			"selectedCount": "{{count}} selected",
+			"selectedCount": "{{count}} выбрано",
 			"allCreators": "All creators",
 			"relatedToMeValue": "me"
 		},
@@ -2578,7 +2762,7 @@
 			"success_few": "{{count}} задачи архивированы",
 			"success_many": "{{count}} задач архивировано",
 			"success_other": "{{count}} задач архивировано",
-			"success": "Archived {{count}} tasks"
+			"success": "{{count}} задач архивировано"
 		},
 		"listView": {
 			"addTask": "Добавить задачу",
@@ -2688,15 +2872,15 @@
 			"searchActions": "Поиск действий...",
 			"noActionsFound": "Действия не найдены.",
 			"changeStatus": "Изменить статус",
-			"selectedCount": "{{count}} selected",
-			"moveToBacklogSuccess": "{{count}} tasks moved to backlog",
-			"moveToBoardSuccess": "{{count}} tasks moved to board",
-			"deleteConfirm": "Delete {{count}} tasks? This action cannot be undone.",
-			"deleteSuccess": "{{count}} tasks deleted",
-			"archiveSuccess": "{{count}} tasks archived",
-			"updateSuccess": "{{count}} tasks updated",
-			"assignSuccess": "{{count}} tasks assigned",
-			"addLabelSuccess": "Label added to {{count}} tasks",
+			"selectedCount": "{{count}} выбрано",
+			"moveToBacklogSuccess": "{{count}} задач перемещено в бэклог",
+			"moveToBoardSuccess": "{{count}} задач перемещено на доску",
+			"deleteConfirm": "Удалить {{count}} задач? Это действие нельзя отменить.",
+			"deleteSuccess": "{{count}} задач удалено",
+			"archiveSuccess": "{{count}} задач архивировано",
+			"updateSuccess": "{{count}} задач обновлено",
+			"assignSuccess": "{{count}} задач назначено",
+			"addLabelSuccess": "Метка добавлена к {{count}} задачам",
 			"addToSprint": "Add to sprint",
 			"addToSprintError": "Failed to add tasks to sprint"
 		},
@@ -2883,13 +3067,17 @@
 				"overdue": "Overdue"
 			},
 			"week": {
-				"more_one": "+{{count}} more",
-				"more_other": "+{{count}} more"
+				"more_one": "+{{count}} ещё",
+				"more_few": "+{{count}} ещё",
+				"more_many": "+{{count}} ещё",
+				"more_other": "+{{count}} ещё"
 			},
 			"upNext": {
 				"title": "Up next",
-				"assigned_one": "{{count}} open task assigned to you",
-				"assigned_other": "{{count}} open tasks assigned to you",
+				"assigned_one": "{{count}} открытая задача назначена вам",
+				"assigned_few": "{{count}} открытые задачи назначены вам",
+				"assigned_many": "{{count}} открытых задач назначено вам",
+				"assigned_other": "{{count}} открытых задач назначено вам",
 				"viewAll": "View all"
 			},
 			"activity": {
@@ -2903,9 +3091,14 @@
 				"title": "Projects",
 				"all": "All projects",
 				"loadError": "Could not load projects.",
-				"tasks_one": "{{count}} task",
-				"tasks_other": "{{count}} tasks"
+				"tasks_one": "{{count}} задача",
+				"tasks_few": "{{count}} задачи",
+				"tasks_many": "{{count}} задач",
+				"tasks_other": "{{count}} задачи"
 			}
+		},
+		"archived": {
+			"banner": "This workspace is archived and read-only. An instance administrator can restore it."
 		}
 	},
 	"team": {
@@ -3141,10 +3334,14 @@
 			"tasks": "Tasks",
 			"points": "Points"
 		},
-		"daysLeft_one": "{{count}} day left",
-		"daysLeft_other": "{{count}} days left",
-		"overdueBy_one": "{{count}} day overdue",
-		"overdueBy_other": "{{count}} days overdue",
+		"daysLeft_one": "Остался {{count}} день",
+		"daysLeft_few": "Осталось {{count}} дня",
+		"daysLeft_many": "Осталось {{count}} дней",
+		"daysLeft_other": "Осталось {{count}} дня",
+		"overdueBy_one": "Просрочено на {{count}} день",
+		"overdueBy_few": "Просрочено на {{count}} дня",
+		"overdueBy_many": "Просрочено на {{count}} дней",
+		"overdueBy_other": "Просрочено на {{count}} дня",
 		"noActiveSprint": "No active sprint",
 		"empty": "No data yet",
 		"emptyDescription": "Create a project and add tasks to see workspace insights here.",
@@ -3158,8 +3355,10 @@
 		"unknownCreator": "Unknown",
 		"searchTitle": "Search by title…",
 		"noMatch": "No tasks match the current filters.",
-		"activeFilters_one": "{{count}} filter active",
-		"activeFilters_other": "{{count}} filters active",
+		"activeFilters_one": "{{count}} активный фильтр",
+		"activeFilters_few": "{{count}} активных фильтра",
+		"activeFilters_many": "{{count}} активных фильтров",
+		"activeFilters_other": "{{count}} активных фильтра",
 		"columns": {
 			"id": "ID",
 			"title": "Title",

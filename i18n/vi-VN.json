@@ -1889,8 +1889,176 @@
 					"user_session_revoked": "Đã thu hồi phiên",
 					"user_sessions_revoked": "Đã thu hồi tất cả phiên",
 					"user_api_key_revoked": "Đã thu hồi API key",
-					"user_api_keys_revoked": "Đã thu hồi tất cả API key"
+					"user_api_keys_revoked": "Đã thu hồi tất cả API key",
+					"instance_settings_updated": "Đã đổi cài đặt hệ thống",
+					"email_smtp_verified": "Đã xác minh kết nối SMTP",
+					"email_test_sent": "Đã gửi email thử",
+					"email_test_failed": "Gửi email thử thất bại",
+					"workspace_archived": "Đã lưu trữ workspace",
+					"workspace_restored": "Đã khôi phục workspace",
+					"workspace_deleted": "Đã xóa workspace"
 				}
+			},
+			"system": {
+				"title": "Hệ thống",
+				"subtitle": "Phiên bản, thời gian hoạt động và tình trạng các dịch vụ mà hệ thống này phụ thuộc.",
+				"status": {
+					"ok": "Hoạt động tốt",
+					"down": "Không truy cập được",
+					"not_configured": "Chưa cấu hình"
+				},
+				"version": "Phiên bản Kaneo",
+				"node": "Node.js",
+				"uptime": "Thời gian hoạt động",
+				"database": "Cơ sở dữ liệu",
+				"migrations": "Migration đã áp dụng",
+				"redis": "Redis",
+				"storage": "Lưu trữ tệp",
+				"storageS3": "{{driver}} (tài liệu), S3 (hình ảnh)",
+				"email": "Email (SMTP)",
+				"emailConfigured": "Đang gửi qua {{host}}",
+				"verifySmtp": "Kiểm tra kết nối",
+				"sendTestEmail": "Gửi email thử cho tôi",
+				"smtpOk": "Đã kết nối tới máy chủ mail",
+				"smtpNotConfigured": "Chưa cấu hình email. Hãy đặt SMTP_HOST, SMTP_PORT và SMTP_FROM.",
+				"smtpFailed": "Máy chủ mail đã từ chối kết nối ({{code}})",
+				"testEmailSent": "Đã gửi email thử tới {{email}}"
+			},
+			"instanceSettings": {
+				"title": "Cài đặt",
+				"subtitle": "Tùy chọn cho toàn hệ thống. Biến môi trường vẫn được ưu tiên hơn các giá trị này.",
+				"saved": "Đã lưu cài đặt",
+				"save": "Lưu",
+				"instanceName": "Tên hệ thống",
+				"instanceNameHint": "Hiển thị trên tiêu đề trang. Để trống để dùng Kaneo.",
+				"lockedByEnv": "Được đặt bởi {{variable}}; hãy thay đổi trong biến môi trường.",
+				"needsSmtp": "Cần cấu hình gửi email (SMTP).",
+				"registrationEnabled": "Cho phép đăng ký",
+				"registrationEnabledHint": "Khi tắt, chỉ người có lời mời hợp lệ mới tạo được tài khoản.",
+				"passwordRegistrationEnabled": "Cho phép đăng ký bằng mật khẩu",
+				"passwordRegistrationEnabledHint": "Khi tắt, tài khoản mới phải dùng nhà cung cấp mạng xã hội hoặc OIDC.",
+				"requireEmailVerification": "Yêu cầu xác minh email",
+				"requireEmailVerificationHint": "Người dùng mật khẩu phải xác nhận email bằng mã trước khi đăng nhập.",
+				"workspaceCreationRestricted": "Chỉ admin được tạo workspace",
+				"workspaceCreationRestrictedHint": "Khi bật, chỉ quản trị viên hệ thống mới tạo được workspace mới.",
+				"integrations": "Tích hợp",
+				"integrationsHint": "Các nhà cung cấp bị tắt sẽ bị ẩn khỏi dự án và không thể kết nối hay thay đổi.",
+				"integrationNames": {
+					"github": "GitHub",
+					"gitea": "Gitea",
+					"gitlab": "GitLab",
+					"generic-webhook": "Webhook chung",
+					"discord": "Discord",
+					"slack": "Slack",
+					"telegram": "Telegram"
+				}
+			},
+			"workspaces": {
+				"title": "Workspace",
+				"subtitle": "Lưu trữ, khôi phục hoặc xóa các workspace trên hệ thống này.",
+				"searchPlaceholder": "Tìm theo tên hoặc slug",
+				"status": {
+					"all": "Tất cả workspace",
+					"active": "Đang hoạt động",
+					"archived": "Đã lưu trữ"
+				},
+				"empty": "Không có workspace nào khớp bộ lọc.",
+				"columns": {
+					"name": "Workspace",
+					"members": "Thành viên",
+					"projects": "Dự án",
+					"created": "Ngày tạo"
+				},
+				"archivedBadge": "Đã lưu trữ",
+				"archive": "Lưu trữ",
+				"unarchive": "Khôi phục",
+				"delete": "Xóa",
+				"archiveConfirmTitle": "Lưu trữ workspace?",
+				"archiveConfirmDescription": "{{name}} sẽ chuyển sang chỉ đọc với mọi người. Thành viên vẫn xem được cho đến khi bạn khôi phục.",
+				"unarchiveConfirmTitle": "Khôi phục workspace?",
+				"unarchiveConfirmDescription": "Thành viên của {{name}} sẽ chỉnh sửa được trở lại.",
+				"archived": "Đã lưu trữ workspace",
+				"unarchived": "Đã khôi phục workspace",
+				"deleteConfirmTitle": "Xóa vĩnh viễn workspace?",
+				"deleteConfirmDescription": "Thao tác này sẽ xóa {{name}} cùng toàn bộ dự án, công việc và tài liệu, đồng thời gỡ quyền truy cập của mọi thành viên. Nhập tên workspace để xác nhận.",
+				"confirmNameLabel": "Tên workspace",
+				"deleted": "Đã xóa workspace"
+			}
+		},
+		"workspaceImport": {
+			"pageTitle": "Nhập dữ liệu",
+			"title": "Nhập dữ liệu",
+			"subtitle": "Chuyển dự án từ PLANKA hoặc Jira sang. Mỗi dự án được chọn sẽ trở thành một dự án mới trong workspace này.",
+			"notAllowed": "Chỉ thành viên có quyền quản lý cài đặt workspace và tạo dự án mới có thể nhập.",
+			"credentialsNotice": "Thông tin đăng nhập của bạn chỉ được dùng để đọc các dự án bạn chọn. Kaneo không bao giờ lưu hay ghi log chúng.",
+			"toastStarted": "Đã bắt đầu nhập",
+			"source": {
+				"label": "Nhập từ"
+			},
+			"connect": {
+				"title": "Kết nối",
+				"subtitle": "Đăng nhập vào công cụ bạn đang chuyển từ đó sang."
+			},
+			"fields": {
+				"url": "Địa chỉ",
+				"email": "Email tài khoản",
+				"apiToken": "API token",
+				"apiKey": "API key",
+				"signIn": "Đăng nhập bằng",
+				"username": "Tên đăng nhập hoặc email",
+				"password": "Mật khẩu"
+			},
+			"hints": {
+				"plankaUrl": "Địa chỉ bạn dùng để mở PLANKA, bao gồm https://.",
+				"jiraUrl": "Trang Jira của bạn, vd: https://your-site.atlassian.net, hoặc địa chỉ Jira Data Center.",
+				"jiraEmail": "Bắt buộc với Jira Cloud. Để trống với Jira Data Center.",
+				"jiraToken": "API token của Jira Cloud, hoặc personal access token của Jira Data Center.",
+				"plankaApiKey": "Tạo API key trong cài đặt tài khoản PLANKA của bạn."
+			},
+			"projects": {
+				"title": "Chọn dự án",
+				"subtitle": "Chọn các dự án cần nhập. Mỗi dự án sẽ trở thành một dự án mới.",
+				"empty": "Tài khoản này không thấy dự án nào để nhập.",
+				"includeComments": "Nhập bình luận",
+				"includeCommentsHint": "Bình luận được giữ kèm tên tác giả gốc.",
+				"tooMany": "Chọn tối đa {{max}} dự án cho mỗi lần nhập."
+			},
+			"actions": {
+				"connect": "Kết nối",
+				"connecting": "Đang kết nối…",
+				"back": "Quay lại",
+				"start_one": "Nhập {{count}} dự án",
+				"start_other": "Nhập {{count}} dự án",
+				"importMore": "Nhập thêm"
+			},
+			"run": {
+				"title": "Nhập từ {{source}}",
+				"progress": "Đã xong {{done}}/{{total}} dự án"
+			},
+			"status": {
+				"pending": "Đang chờ",
+				"running": "Đang nhập",
+				"completed": "Hoàn thành",
+				"failed": "Thất bại"
+			},
+			"counts": {
+				"tasks_one": "{{count}} công việc",
+				"tasks_other": "{{count}} công việc",
+				"columns_one": "{{count}} cột",
+				"columns_other": "{{count}} cột",
+				"labels_one": "{{count}} nhãn",
+				"labels_other": "{{count}} nhãn",
+				"comments_one": "{{count}} bình luận",
+				"comments_other": "{{count}} bình luận"
+			},
+			"history": {
+				"title": "Lần nhập gần đây",
+				"subtitle": "20 lần nhập gần nhất trong workspace này.",
+				"empty": "Chưa có lần nhập nào."
+			},
+			"errors": {
+				"connect": "Không kết nối được tới nguồn.",
+				"start": "Không bắt đầu được quá trình nhập."
 			}
 		}
 	},
@@ -2844,6 +3012,9 @@
 				"tasks_one": "{{count}} công việc",
 				"tasks_other": "{{count}} công việc"
 			}
+		},
+		"archived": {
+			"banner": "Workspace này đã được lưu trữ và chỉ đọc. Quản trị viên hệ thống có thể khôi phục nó."
 		}
 	},
 	"team": {

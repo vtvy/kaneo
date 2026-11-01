@@ -9,7 +9,7 @@ describe("getAuditActionKey", () => {
   });
 
   it("returns null for unknown actions", () => {
-    expect(getAuditActionKey("workspace.archived")).toBeNull();
+    expect(getAuditActionKey("project.teleported")).toBeNull();
   });
 });
 

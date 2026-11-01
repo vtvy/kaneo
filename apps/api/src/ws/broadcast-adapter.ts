@@ -1,3 +1,5 @@
+import type { SocketRevocation } from "./socket-revocation";
+
 export type ProjectBroadcastMessage = {
   type: string;
   projectId: string;
@@ -18,6 +20,12 @@ export type BroadcastAdapter = {
 
   /** Subscribe to messages for delivery to local connections */
   subscribe(handler: (msg: BroadcastMessage) => void): Promise<void>;
+
+  /** Publish a socket revocation to every instance (this one included) */
+  publishRevocation(msg: SocketRevocation): Promise<void>;
+
+  /** Subscribe to socket revocations published by any instance */
+  subscribeRevocation(handler: (msg: SocketRevocation) => void): Promise<void>;
 
   /** Cleanup on shutdown */
   shutdown(): Promise<void>;

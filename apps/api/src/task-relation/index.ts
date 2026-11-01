@@ -8,6 +8,7 @@ import { projectTable, taskRelationTable, taskTable } from "../database/schema";
 import { projectPermission } from "../project-rbac/require-project-permission";
 import { validateWorkspaceAccess } from "../utils/validate-workspace-access";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
+import { assertWorkspaceWritable } from "../workspace/archive/workspace-archived";
 import createTaskRelation from "./controllers/create-task-relation";
 import deleteTaskRelation from "./controllers/delete-task-relation";
 import getTaskRelations from "./controllers/get-task-relations";
@@ -95,6 +96,7 @@ const taskRelation = new Hono<{
         throw new HTTPException(404, { message: "Source task not found" });
       }
       await validateWorkspaceAccess(userId, task.workspaceId);
+      await assertWorkspaceWritable(task.workspaceId);
       c.set("workspaceId", task.workspaceId);
       return next();
     },
@@ -151,6 +153,7 @@ const taskRelation = new Hono<{
         throw new HTTPException(404, { message: "Task not found" });
       }
       await validateWorkspaceAccess(userId, task.workspaceId);
+      await assertWorkspaceWritable(task.workspaceId);
       c.set("workspaceId", task.workspaceId);
       return next();
     },

@@ -18,6 +18,11 @@ import * as v from "valibot";
 import activity from "./activity";
 import admin from "./admin";
 import { auth } from "./auth";
+import {
+  handleBackchannelLogoutRoute,
+  logoutBodyLimit,
+  noStore,
+} from "./backchannel-logout";
 import calendarFeed, { publicCalendarFeed } from "./calendar-feed";
 import column from "./column";
 import comment from "./comment";
@@ -39,7 +44,11 @@ import githubIntegration, {
 import gitlabIntegration, {
   handleGitlabWebhookRoute,
 } from "./gitlab-integration";
+import importRoutes from "./import";
+import { stopActiveImports } from "./import/runs/stop-active-imports";
 import getInstanceStatus from "./instance/controllers/get-instance-status";
+import { requireIntegrationEnabled } from "./instance-settings/require-integration-enabled";
+import { INTEGRATION_TYPES } from "./instance-settings/resolve-instance-settings";
 import invitation from "./invitation";
 import label from "./label";
 import mcpRoutes, { mcpWellKnownRoutes } from "./mcp";
@@ -265,6 +274,15 @@ export function createApp() {
   api.post(
     "/gitlab-integration/webhook/:integrationId",
     handleGitlabWebhookRoute,
+  );
+
+  // OIDC back-channel logout, called server-to-server by the identity
+  // provider (unauthenticated by design; the logout token is the proof).
+  api.post(
+    "/auth/oauth2/backchannel-logout/custom",
+    noStore,
+    logoutBodyLimit,
+    handleBackchannelLogoutRoute,
   );
 
   api.route("/calendar-feed", publicCalendarFeed);
@@ -579,6 +597,11 @@ export function createApp() {
     notificationPreferences,
   );
   const searchApi = api.route("/search", search);
+  // Integration types an instance admin turned off can't be connected or
+  // changed (reads and removal still work).
+  for (const type of INTEGRATION_TYPES) {
+    api.use(`/${type}-integration/*`, requireIntegrationEnabled(type));
+  }
   const githubIntegrationApi = api.route(
     "/github-integration",
     githubIntegration,
@@ -609,6 +632,7 @@ export function createApp() {
   const projectRbacApi = api.route("/project-rbac", projectRbac);
   const adminApi = api.route("/admin", admin);
   const calendarFeedApi = api.route("/calendar-feed", calendarFeed);
+  const importApi = api.route("/import", importRoutes);
 
   app.route(
     "/",
@@ -647,6 +671,13 @@ export function createApp() {
       }
 
       const userId = c.get("userId");
+      // Remembered on the socket so revoking this session/API key, or the
+      // user's access, closes it (see ws/socket-revocation.ts).
+      const credential = {
+        sessionId: c.get("session")?.id,
+        apiKeyId: c.get("apiKey")?.id,
+        workspaceId: undefined as string | undefined,
+      };
 
       if (projectId) {
         const [project] = await db
@@ -664,6 +695,7 @@ export function createApp() {
         if (!(await canInProject(userId, projectId, "item", "read"))) {
           throw new HTTPException(403, { message: "Insufficient permissions" });
         }
+        credential.workspaceId = project.workspaceId;
       }
 
       const windowId = c.req.query("windowId");
@@ -673,7 +705,13 @@ export function createApp() {
       return {
         onOpen(_evt, ws) {
           if (projectId) {
-            conn = addConnection(projectId, ws, userId, initiatorId);
+            conn = addConnection(
+              projectId,
+              ws,
+              userId,
+              initiatorId,
+              credential,
+            );
           }
         },
         onClose() {
@@ -694,6 +732,7 @@ export function createApp() {
     activityApi,
     adminApi,
     calendarFeedApi,
+    importApi,
     columnApi,
     commentApi,
     configApi,
@@ -798,6 +837,7 @@ export async function startServer(
 
     console.log("🛑 Shutting down gracefully...");
     shutdownScheduler();
+    await stopActiveImports();
     await shutdownWebSocketAdapter();
     server.close();
     process.exit(0);
@@ -819,6 +859,7 @@ const {
   activityApi,
   adminApi,
   calendarFeedApi,
+  importApi,
   columnApi,
   commentApi,
   configApi,
@@ -892,6 +933,7 @@ export type AppType =
   | typeof invitationPublicApi
   | typeof oauthApi
   | typeof adminApi
-  | typeof calendarFeedApi;
+  | typeof calendarFeedApi
+  | typeof importApi;
 
 export default app;

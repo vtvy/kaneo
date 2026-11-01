@@ -71,6 +71,22 @@ Kaneo supports three Redis deployment modes for WebSocket Pub/Sub. When any Redi
 
 > **Note:** Only one mode should be configured at a time. If multiple are set, the priority is: Cluster > Sentinel > Standalone.
 
+#### Custom OAuth/OIDC: Profile Sync and Logout
+
+These build on the custom provider (`CUSTOM_OAUTH_CLIENT_ID`, `CUSTOM_OAUTH_CLIENT_SECRET`, `CUSTOM_OAUTH_DISCOVERY_URL` or the explicit endpoint URLs, `CUSTOM_OAUTH_SCOPES`). Its callback URL is `<KANEO_API_URL>/api/auth/oauth2/callback/custom`.
+
+- `CUSTOM_OAUTH_MANAGED_PROFILE_FIELDS` - Comma-separated profile fields the provider owns: `name`, `image`. At every sign-in through the provider, Kaneo copies them from the claims (`name`, falling back to `given_name`/`family_name`, `preferred_username`, then the email's local part; `picture`, http(s) only) onto the user that is linked to that provider account. The email is never synced and no account is relinked by email. Unknown values stop the API at startup. Edits made in Kaneo are overwritten at the next sign-in.
+- `CUSTOM_OAUTH_LOGOUT_URL` - The provider's RP-initiated logout (`end_session_endpoint`). Signing out of Kaneo then sends the browser there with `id_token_hint` and `post_logout_redirect_uri=<KANEO_CLIENT_URL>/auth/sign-in` (register that redirect URI at the provider).
+- `CUSTOM_OAUTH_BACKCHANNEL_LOGOUT` - Set to `true` to enable [OpenID Connect Back-Channel Logout 1.0](https://openid.net/specs/openid-connect-backchannel-1_0.html). Requires `CUSTOM_OAUTH_DISCOVERY_URL` (absolute http/https) and `CUSTOM_OAUTH_CLIENT_ID`; the API refuses to start otherwise. Add `openid` to `CUSTOM_OAUTH_SCOPES` so the ID token carries the provider session ID (`sid`), which Kaneo stores on each session it creates.
+
+  Register this as the client's back-channel logout URL at the provider (and enable "session required" / `backchannel_logout_session_required` so tokens include `sid`):
+
+  ```
+  <KANEO_API_URL>/api/auth/oauth2/backchannel-logout/custom
+  ```
+
+  The provider POSTs `logout_token=<JWT>` (`application/x-www-form-urlencoded`, at most 16 KB). Kaneo verifies the signature with the keys from the discovery document's `jwks_uri` (asymmetric algorithms only), `iss` (the discovery `issuer`), `aud` (the client ID), `iat` (at most 10 minutes old, 60 s clock skew), `exp` if present, the `http://schemas.openid.net/event/backchannel-logout` event, `sid` and/or `sub`, and the absence of `nonce`. Each `jti` is accepted once (recorded in the database, so this holds across API instances). It then deletes the sessions with that `sid` (limited to the user linked to `sub` when both are sent), or every session of the user linked to `sub` for this provider, and closes their realtime connections. API keys are untouched. Responses: `200` on success (also when nothing matched), `400` for an invalid or replayed token, `503` while the discovery document or keys cannot be loaded, `404` when disabled; always `Cache-Control: no-store`. The endpoint is unauthenticated by design and is called server-to-server, so the provider must be able to reach the API.
+
 #### SMTP Configuration
 
 For sending emails (workspace invitations, magic links, etc.), configure these variables:

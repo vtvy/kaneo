@@ -13,6 +13,7 @@ import revokeUserApiKeys from "./controllers/revoke-user-api-keys";
 import revokeUserSessions from "./controllers/revoke-user-sessions";
 import setUserRole from "./controllers/set-user-role";
 import unbanUser from "./controllers/unban-user";
+import adminInstanceRoutes from "./instance-routes";
 import { requireInstanceAdmin } from "./require-instance-admin";
 import {
   adminApiKeySchema,
@@ -271,6 +272,7 @@ const admin = new Hono<{
     async (c) => {
       return c.json(await listAuditLog(c.req.valid("query")));
     },
-  );
+  )
+  .route("/", adminInstanceRoutes);
 
 export default admin;

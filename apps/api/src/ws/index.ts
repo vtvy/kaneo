@@ -8,10 +8,13 @@ import type {
 } from "./broadcast-adapter";
 import { InMemoryBroadcastAdapter } from "./in-memory-broadcast-adapter";
 import { RedisBroadcastAdapter } from "./redis-broadcast-adapter";
+import {
+  applyRevocation,
+  type RevocableConnection,
+  type SocketRevocation,
+} from "./socket-revocation";
 
-type ProjectConnection = {
-  ws: WSContext;
-  userId: string;
+type ProjectConnection = RevocableConnection & {
   initiatorId: string;
 };
 
@@ -50,6 +53,9 @@ export async function initializeWebSocketAdapter() {
         msg.message,
         msg.excludeInitiatorId,
       );
+    });
+    await nextAdapter.subscribeRevocation((msg) => {
+      void revokeLocalConnections(msg);
     });
   } catch (err) {
     await nextAdapter.shutdown().catch(() => {});
@@ -123,11 +129,16 @@ export function addConnection(
   ws: WSContext,
   userId: string,
   initiatorId: string,
+  credential: {
+    sessionId?: string;
+    apiKeyId?: string;
+    workspaceId?: string;
+  } = {},
 ) {
   if (!projectConnections.has(projectId)) {
     projectConnections.set(projectId, new Set());
   }
-  const conn: ProjectConnection = { ws, userId, initiatorId };
+  const conn: ProjectConnection = { ws, userId, initiatorId, ...credential };
   projectConnections.get(projectId)?.add(conn);
   return conn;
 }
@@ -140,6 +151,84 @@ export function removeConnection(projectId: string, conn: ProjectConnection) {
       projectConnections.delete(projectId);
     }
   }
+}
+
+// --- Revocation: close sockets whose credential or access was revoked ---
+
+async function stillAllowed(conn: ProjectConnection, projectId: string) {
+  // Loaded lazily so this module stays free of database imports.
+  const [{ HTTPException }, { validateWorkspaceAccess }, { canInProject }] =
+    await Promise.all([
+      import("hono/http-exception"),
+      import("../utils/validate-workspace-access"),
+      import("../project-rbac/can-in-project"),
+    ]);
+  try {
+    if (conn.workspaceId) {
+      await validateWorkspaceAccess(
+        conn.userId,
+        conn.workspaceId,
+        conn.apiKeyId,
+      );
+    }
+    return await canInProject(conn.userId, projectId, "item", "read");
+  } catch (error) {
+    if (error instanceof HTTPException) return false;
+    // A transient database error must not drop every socket.
+    console.error("Failed to re-check socket access:", error);
+    return true;
+  }
+}
+
+async function revokeLocalConnections(revocation: SocketRevocation) {
+  try {
+    await applyRevocation(projectConnections, revocation, stillAllowed);
+  } catch (error) {
+    console.error("Failed to revoke sockets:", error);
+  }
+}
+
+/**
+ * Closes matching sockets here right away, then tells every instance (Redis)
+ * to do the same. Never throws: revocation must not fail the caller.
+ */
+export async function revokeSockets(revocation: SocketRevocation) {
+  await revokeLocalConnections(revocation);
+  try {
+    await adapter?.publishRevocation(revocation);
+  } catch (error) {
+    console.error("Failed to publish socket revocation:", error);
+  }
+}
+
+/** Close sockets opened with these Better Auth sessions, on every instance. */
+export function closeSocketsForSession(sessionIds: string | string[]) {
+  const ids = [sessionIds].flat().filter(Boolean);
+  if (ids.length === 0) return Promise.resolve();
+  return revokeSockets({ kind: "sessions", sessionIds: ids });
+}
+
+/** Close sockets opened with these API keys, on every instance. */
+export function closeSocketsForApiKey(apiKeyIds: string | string[]) {
+  const ids = [apiKeyIds].flat().filter(Boolean);
+  if (ids.length === 0) return Promise.resolve();
+  return revokeSockets({ kind: "apiKeys", apiKeyIds: ids });
+}
+
+/** Close every socket of a user (ban, delete), on every instance. */
+export function closeSocketsForUser(userId: string) {
+  return revokeSockets({ kind: "user", userId });
+}
+
+/**
+ * Re-check a user's sockets (optionally one project or workspace) and close
+ * the ones that lost read access, on every instance.
+ */
+export function recheckSocketAccess(
+  userId: string,
+  scope: { projectId?: string; workspaceId?: string } = {},
+) {
+  return revokeSockets({ kind: "access", userId, ...scope });
 }
 
 export function broadcastToProject(
