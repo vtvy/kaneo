@@ -1244,7 +1244,17 @@
 			"branch": "Nhánh",
 			"merged": "Đã hợp nhất",
 			"draft": "Bản nháp",
-			"open": "Đang mở"
+			"open": "Đang mở",
+			"addResource": "Thêm tài nguyên",
+			"url": "URL",
+			"titleOptional": "Tiêu đề (không bắt buộc)",
+			"cancel": "Hủy",
+			"adding": "Đang thêm...",
+			"empty": "Chưa có tài nguyên nào gắn với task này.",
+			"remove": "Gỡ {{title}}",
+			"removeError": "Không gỡ được link tài nguyên.",
+			"addError": "Không thêm được link tài nguyên.",
+			"invalidUrl": "Nhập URL http hoặc https."
 		},
 		"blueprint": "Blueprint",
 		"blueprintPage": {
