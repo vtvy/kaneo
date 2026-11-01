@@ -1,9 +1,10 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import db, { schema } from "../../database";
 import type { ProjectPermissionMap } from "../catalog";
 
 async function updateRole(
+  projectId: string,
   roleId: string,
   name?: string,
   permissions?: ProjectPermissionMap,
@@ -15,7 +16,12 @@ async function updateRole(
         isSystem: schema.projectRoleTable.isSystem,
       })
       .from(schema.projectRoleTable)
-      .where(eq(schema.projectRoleTable.id, roleId))
+      .where(
+        and(
+          eq(schema.projectRoleTable.id, roleId),
+          eq(schema.projectRoleTable.projectId, projectId),
+        ),
+      )
       .limit(1);
 
     if (!existing) {

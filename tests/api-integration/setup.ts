@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, vi } from "vitest";
@@ -63,6 +64,7 @@ process.env.NODE_ENV = "test";
 process.env.AUTH_SECRET = "test-secret-with-at-least-32-chars";
 process.env.KANEO_API_URL = "http://localhost:1337";
 process.env.KANEO_CLIENT_URL = "http://localhost:5173";
+process.env.STORAGE_FS_ROOT = resolve(tmpdir(), "kaneo-integration-storage");
 process.env.DISABLE_GUEST_ACCESS = "false";
 process.env.DISABLE_REGISTRATION = "false";
 process.env.DISABLE_PASSWORD_REGISTRATION = "false";

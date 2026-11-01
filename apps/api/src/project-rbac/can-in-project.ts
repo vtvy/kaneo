@@ -49,11 +49,16 @@ export async function resolveProjectStatements(
         schema.projectMemberTable.id,
       ),
     )
+    // Only roles defined on this project count; a role from another project
+    // attached to this membership must not grant anything here.
     .innerJoin(
       schema.projectRoleTable,
-      eq(
-        schema.projectRoleTable.id,
-        schema.projectMemberRoleTable.projectRoleId,
+      and(
+        eq(
+          schema.projectRoleTable.id,
+          schema.projectMemberRoleTable.projectRoleId,
+        ),
+        eq(schema.projectRoleTable.projectId, projectId),
       ),
     )
     .leftJoin(
