@@ -12,6 +12,7 @@ import {
   workspaceTable,
 } from "../database/schema";
 import { assertPublicWebhookDestination } from "../plugins/generic-webhook/config";
+import { publicFetch } from "../utils/public-fetch";
 import { localizeNotificationEmail } from "./email-content";
 import { decryptSecret } from "./secrets";
 
@@ -26,7 +27,7 @@ async function fetchWithTimeout(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { ...rest, signal: controller.signal });
+    return await publicFetch(url, { ...rest, signal: controller.signal });
   } finally {
     clearTimeout(timer);
   }

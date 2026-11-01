@@ -1,4 +1,5 @@
 import { assertPublicDestination } from "../../../utils/assert-public-destination";
+import { publicFetch } from "../../../utils/public-fetch";
 import type { GiteaConfig } from "../config";
 import { normalizeGiteaBaseUrl } from "../config";
 
@@ -90,7 +91,7 @@ export async function giteaFetch<T>(
   }
 
   try {
-    const res = await fetch(url, {
+    const res = await publicFetch(url, {
       ...init,
       signal: controller.signal,
       headers: {

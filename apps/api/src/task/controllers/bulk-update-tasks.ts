@@ -239,7 +239,7 @@ async function bulkUpdateTasks({
         where: eq(labelTable.id, value),
       });
 
-      if (!label) {
+      if (!label || label.workspaceId !== workspaceId) {
         throw new HTTPException(404, { message: "Label not found" });
       }
 
