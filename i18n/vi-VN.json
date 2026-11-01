@@ -423,8 +423,34 @@
 				"workspaceCreated": "Tạo workspace thành công",
 				"createFailed": "Tạo workspace thất bại"
 			},
+			"projectName": "Project đầu tiên",
+			"projectNameDefault": "Project đầu tiên của tôi",
+			"projectNameHint": "Chúng tôi sẽ thêm vài công việc mẫu để bạn làm quen.",
+			"starterTasks": {
+				"drag": {
+					"title": "Kéo thẻ này sang Đang thực hiện",
+					"description": "Thẻ di chuyển trên bảng khi công việc tiến lên. Kéo thẻ này sang **Đang thực hiện**, hoặc mở thẻ và đổi trạng thái."
+				},
+				"details": {
+					"title": "Mở công việc này và thêm một việc con",
+					"description": "Một công việc có thể có mô tả, việc con, nhãn, người được giao và hạn. Hãy thêm một việc con vào công việc này để thử."
+				},
+				"invite": {
+					"title": "Mời nhóm của bạn",
+					"description": "Kaneo hoạt động tốt hơn khi mọi người cùng tham gia. Mở **Thành viên** ở thanh bên để mời bằng email."
+				},
+				"integrations": {
+					"title": "Kết nối GitHub, GitLab hoặc Gitea",
+					"description": "Đồng bộ issue và chuyển công việc khi pull request được mở và hợp nhất. Thiết lập trong **Cài đặt project**."
+				},
+				"create": {
+					"title": "Tạo công việc của riêng bạn",
+					"description": "Dùng dấu **+** cạnh tên cột, hoặc nhấn **T** rồi **C**. Xóa các công việc mẫu này khi bạn sẵn sàng."
+				}
+			},
 			"validation": {
-				"workspaceNameRequired": "Tên workspace là bắt buộc"
+				"workspaceNameRequired": "Tên workspace là bắt buộc",
+				"projectNameRequired": "Hãy đặt tên cho project đầu tiên"
 			}
 		},
 		"profileSetup": {
@@ -3116,6 +3142,7 @@
 		},
 		"home": {
 			"pageTitle": "Trang chủ",
+			"newTask": "Công việc mới",
 			"greeting": {
 				"morning": "Chào buổi sáng",
 				"afternoon": "Chào buổi chiều",

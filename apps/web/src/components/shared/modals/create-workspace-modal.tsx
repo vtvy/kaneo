@@ -21,6 +21,8 @@ import { Input } from "@/components/ui/input";
 import useCreateWorkspace from "@/hooks/queries/workspace/use-create-workspace";
 import { useCanCreateWorkspace } from "@/hooks/use-can-create-workspace";
 import { authClient } from "@/lib/auth-client";
+import { createStarterProject } from "@/lib/onboarding/create-starter-project";
+import { starterTasks } from "@/lib/onboarding/starter-tasks";
 import { toast } from "@/lib/toast";
 
 type CreateWorkspaceModalProps = {
@@ -33,6 +35,9 @@ function CreateWorkspaceModal({ open, onClose }: CreateWorkspaceModalProps) {
   const canCreateWorkspace = useCanCreateWorkspace();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [projectName, setProjectName] = useState(() =>
+    t("auth:onboarding.projectNameDefault"),
+  );
   const inputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -49,12 +54,13 @@ function CreateWorkspaceModal({ open, onClose }: CreateWorkspaceModalProps) {
   const handleClose = () => {
     setName("");
     setDescription("");
+    setProjectName(t("auth:onboarding.projectNameDefault"));
     onClose();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canCreateWorkspace || !name.trim()) return;
+    if (!canCreateWorkspace || !name.trim() || !projectName.trim()) return;
 
     try {
       const createdWorkspace = await mutateAsync({ name, description });
@@ -64,6 +70,12 @@ function CreateWorkspaceModal({ open, onClose }: CreateWorkspaceModalProps) {
       await authClient.organization.setActive({
         organizationId: createdWorkspace.id,
       });
+      await createStarterProject({
+        workspaceId: createdWorkspace.id,
+        name: projectName.trim() || t("auth:onboarding.projectNameDefault"),
+        tasks: starterTasks(t, "team"),
+      }).catch(() => null);
+      await queryClient.invalidateQueries({ queryKey: ["projects"] });
 
       navigate({
         to: "/dashboard/workspace/$workspaceId",
@@ -127,6 +139,20 @@ function CreateWorkspaceModal({ open, onClose }: CreateWorkspaceModalProps) {
               )}
               className="w-full [&_[data-slot=input]]:h-auto [&_[data-slot=input]]:px-0 [&_[data-slot=input]]:py-2 [&_[data-slot=input]]:text-base [&_[data-slot=input]]:leading-relaxed [&_[data-slot=input]]:text-foreground [&_[data-slot=input]]:placeholder:text-muted-foreground [&_[data-slot=input]]:outline-none"
             />
+            <div className="space-y-1">
+              <Input
+                unstyled
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder={t("auth:onboarding.projectName")}
+                aria-label={t("auth:onboarding.projectName")}
+                className="w-full [&_[data-slot=input]]:h-auto [&_[data-slot=input]]:px-0 [&_[data-slot=input]]:py-2 [&_[data-slot=input]]:text-base [&_[data-slot=input]]:leading-relaxed [&_[data-slot=input]]:text-foreground [&_[data-slot=input]]:placeholder:text-muted-foreground [&_[data-slot=input]]:outline-none"
+                required
+              />
+              <p className="text-muted-foreground text-xs">
+                {t("auth:onboarding.projectNameHint")}
+              </p>
+            </div>
           </div>
 
           <DialogFooter>
@@ -141,7 +167,7 @@ function CreateWorkspaceModal({ open, onClose }: CreateWorkspaceModalProps) {
             </Button>
             <Button
               type="submit"
-              disabled={!name.trim()}
+              disabled={!name.trim() || !projectName.trim()}
               size="sm"
               className="disabled:opacity-50"
             >
