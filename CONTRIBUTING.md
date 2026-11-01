@@ -191,6 +191,13 @@ kaneo/
 └── charts/           # Kubernetes Helm charts
 ```
 
+## Maintaining this fork
+
+Before integrating upstream changes, read [UPSTREAM_MIGRATION.md](UPSTREAM_MIGRATION.md).
+It records renamed/replaced features, compatibility contracts, migration hazards,
+and the verification required when upstream changes the same functionality.
+Update its integration log whenever an upstream update is accepted.
+
 ## Need Help?
 
 - **Discord**: Join our [Discord server](https://discord.gg/rU4tSyhXXU) for real-time help

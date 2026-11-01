@@ -150,6 +150,9 @@ For contributing guidelines, code structure, and development best practices, che
 
 ## Contributing
 
+For this fork's feature mappings, data migrations, and upstream integration
+procedure, read [Upstream migration guide](UPSTREAM_MIGRATION.md).
+
 We're always looking for help, whether that's:
 - Reporting bugs or suggesting features
 - Improving documentation
