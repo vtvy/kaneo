@@ -22,6 +22,7 @@ import { UserAvatar } from "@/components/user-avatar";
 import { shortcuts } from "@/constants/shortcuts";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import useGetWorkspaces from "@/hooks/queries/workspace/use-get-workspaces";
+import { useCanCreateWorkspace } from "@/hooks/use-can-create-workspace";
 import {
   getModifierKeyText,
   useRegisterShortcuts,
@@ -32,6 +33,7 @@ import CreateWorkspaceModal from "./shared/modals/create-workspace-modal";
 
 export function WorkspaceSwitcher() {
   const { t } = useTranslation();
+  const canCreateWorkspace = useCanCreateWorkspace();
   const { data: workspace } = useActiveWorkspace();
   const { data: workspaces } = useGetWorkspaces();
   const navigate = useNavigate();
@@ -96,7 +98,7 @@ export function WorkspaceSwitcher() {
           setIsOpen(true);
         },
         [shortcuts.workspace.create]: () => {
-          setIsCreateWorkspaceModalOpen(true);
+          if (canCreateWorkspace) setIsCreateWorkspaceModalOpen(true);
         },
       },
     },
@@ -170,16 +172,23 @@ export function WorkspaceSwitcher() {
                   </DropdownMenuItem>
                 ))}
 
-                {hasWorkspaces ? <DropdownMenuSeparator /> : null}
-                <DropdownMenuItem
-                  onClick={() => {
-                    setIsCreateWorkspaceModalOpen(true);
-                    setIsOpen(false);
-                  }}
-                  className="h-7 text-sm data-highlighted:bg-sidebar-accent data-highlighted:text-sidebar-accent-foreground"
-                >
-                  <span>{t("navigation:workspaceSwitcher.addWorkspace")}</span>
-                </DropdownMenuItem>
+                {canCreateWorkspace && hasWorkspaces ? (
+                  <DropdownMenuSeparator />
+                ) : null}
+                {canCreateWorkspace && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (canCreateWorkspace)
+                        setIsCreateWorkspaceModalOpen(true);
+                      setIsOpen(false);
+                    }}
+                    className="h-7 text-sm data-highlighted:bg-sidebar-accent data-highlighted:text-sidebar-accent-foreground"
+                  >
+                    <span>
+                      {t("navigation:workspaceSwitcher.addWorkspace")}
+                    </span>
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

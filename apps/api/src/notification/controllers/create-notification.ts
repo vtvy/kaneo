@@ -35,20 +35,25 @@ async function createNotification({
     })
     .returning();
 
-  if (notification) {
-    await publishEvent("notification.created", {
-      notificationId: notification.id,
-      userId,
-    });
-    void deliverNotification(notification.id).catch((error) => {
-      console.error("Failed to deliver notification", {
-        notificationId: notification.id,
-        error,
-      });
-    });
-  }
+  if (notification) await announceNotification(notification);
 
   return notification;
+}
+
+/** Announce only after the inserting transaction commits. */
+export async function announceNotification(
+  notification: typeof notificationTable.$inferSelect,
+) {
+  await publishEvent("notification.created", {
+    notificationId: notification.id,
+    userId: notification.userId,
+  });
+  void deliverNotification(notification.id).catch((error) => {
+    console.error("Failed to deliver notification", {
+      notificationId: notification.id,
+      error,
+    });
+  });
 }
 
 export default createNotification;

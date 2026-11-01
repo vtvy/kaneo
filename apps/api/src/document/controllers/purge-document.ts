@@ -2,13 +2,13 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { documentTable } from "../../database/schema";
-import { storage } from "../../storage";
+import { deleteDocumentBlob } from "../providers";
 
 // Permanently removes the row and the blob (purge from Trash). The DB is the
 // source of truth; blob deletion is best-effort.
 async function purgeDocument(id: string) {
   const [doc] = await db
-    .select({ id: documentTable.id, storageKey: documentTable.storageKey })
+    .select()
     .from(documentTable)
     .where(eq(documentTable.id, id))
     .limit(1);
@@ -17,7 +17,7 @@ async function purgeDocument(id: string) {
   }
 
   await db.delete(documentTable).where(eq(documentTable.id, id));
-  await storage.delete(doc.storageKey).catch(() => {});
+  await deleteDocumentBlob(doc);
 
   return { success: true };
 }

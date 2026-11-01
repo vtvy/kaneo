@@ -1,6 +1,7 @@
 export const DEFAULT_INSTANCE_NAME = "Kaneo";
 
 export const INTEGRATION_TYPES = [
+  "google-drive",
   "github",
   "gitea",
   "gitlab",

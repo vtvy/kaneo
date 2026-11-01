@@ -258,6 +258,17 @@
 			"description": "Liên kết có thể chưa đầy đủ hoặc trang đã được chuyển. Về trang chủ để mở workspace hiện có.",
 			"home": "Về trang chủ",
 			"back": "Quay lại"
+		},
+		"feedback": {
+			"button": "Góp ý",
+			"title": "Gửi góp ý",
+			"description": "Nội dung sẽ được gửi đến hộp thư góp ý đã cấu hình.",
+			"placeholder": "Chuyện gì đã xảy ra, hoặc bạn muốn đổi gì?",
+			"send": "Gửi",
+			"sending": "Đang gửi…",
+			"sent": "Đã gửi góp ý",
+			"sendError": "Không gửi được góp ý",
+			"smtpUnavailable": "Máy chủ chưa cấu hình email, nên chưa gửi được góp ý."
 		}
 	},
 	"auth": {
@@ -489,7 +500,8 @@
 				"nameRequired": "Vui lòng nhập tên",
 				"nameShort": "Tên phải có ít nhất 2 ký tự",
 				"invalidEmail": "Địa chỉ email không hợp lệ"
-			}
+			},
+			"managedBySso": "Do nhà cung cấp danh tính quản lý"
 		},
 		"notificationsPage": {
 			"pageTitle": "Thông báo",
@@ -810,7 +822,9 @@
 			"blueprintSectionTitle": "Tích hợp Blueprint",
 			"blueprintSectionSubtitle": "Map project Kaneo sang project/process Blueprint để Push to Blueprint.",
 			"gitlabSectionTitle": "Tích hợp GitLab",
-			"gitlabSectionSubtitle": "Đồng bộ công việc với GitLab (issue, merge request, webhook)."
+			"gitlabSectionSubtitle": "Đồng bộ công việc với GitLab (issue, merge request, webhook).",
+			"disabledByAdmin": "Quản trị viên đã tắt tích hợp này. Bạn vẫn có thể ngắt kết nối hiện có.",
+			"disconnect": "Ngắt kết nối"
 		},
 		"projectVisibility": {
 			"pageTitle": "Chế độ hiển thị dự án",
@@ -1983,6 +1997,63 @@
 				"deleteConfirmDescription": "Thao tác này sẽ xóa {{name}} cùng toàn bộ dự án, công việc và tài liệu, đồng thời gỡ quyền truy cập của mọi thành viên. Nhập tên workspace để xác nhận.",
 				"confirmNameLabel": "Tên workspace",
 				"deleted": "Đã xóa workspace"
+			},
+			"customRoles": {
+				"title": "Vai trò hệ thống",
+				"hint": "Vai trò tùy chỉnh cấp từng quyền quản trị. Chỉ quản trị viên mặc định được quản lý vai trò và tài khoản có quyền quản trị.",
+				"name": "Tên vai trò (chữ thường, số và dấu gạch nối)",
+				"permissions": "Quyền",
+				"save": "Lưu vai trò",
+				"edit": "Sửa",
+				"assign": "Gán vai trò cho người dùng",
+				"searchUsers": "Tìm người dùng theo tên hoặc email",
+				"none": "Không có vai trò hệ thống"
+			},
+			"instancePermissions": {
+				"users_read": "Xem người dùng",
+				"users_create": "Tạo người dùng",
+				"users_manage": "Quản lý người dùng thông thường",
+				"sessions_manage": "Xem và thu hồi phiên đăng nhập",
+				"api_keys_manage": "Xem và thu hồi khóa API",
+				"workspaces_read": "Xem mọi không gian làm việc",
+				"workspaces_manage": "Lưu trữ và xóa không gian làm việc",
+				"instance_read": "Xem trạng thái hệ thống",
+				"instance_settings": "Quản lý cài đặt hệ thống và webhook",
+				"audit_read": "Xem nhật ký kiểm tra"
+			},
+			"webhooks": {
+				"title": "Webhook hệ thống",
+				"hint": "Gửi sự kiện quản trị có chữ ký đến địa chỉ HTTP(S) công khai. Cấu hình NOTIFICATION_SECRET_ENCRYPTION_KEY trên máy chủ trước. Mỗi lượt gửi lỗi được thử lại tối đa ba lần. Dùng mã lượt gửi để loại sự kiện trùng.",
+				"name": "Tên",
+				"url": "URL nhận sự kiện",
+				"enabled": "Đang bật",
+				"disabled": "Đã tắt",
+				"categories": "Nhóm sự kiện",
+				"save": "Lưu webhook",
+				"test": "Gửi thử",
+				"rotate": "Đổi khóa ký",
+				"history": "Các lượt gửi gần đây",
+				"emptyHistory": "Chưa có lượt gửi nào",
+				"secretOnce": "Khóa ký — hãy sao chép ngay, khóa chỉ hiển thị một lần",
+				"attempts_other": "{{count}} lần thử",
+				"deliveryError": "Gửi không thành công; kiểm tra địa chỉ nhận và cấu hình máy chủ",
+				"attempts_one": "{{count}} lần thử"
+			},
+			"webhookCategories": {
+				"user": "Người dùng",
+				"session": "Phiên đăng nhập",
+				"api_key": "Khóa API",
+				"workspace": "Không gian làm việc",
+				"role": "Vai trò hệ thống",
+				"instance": "Cài đặt hệ thống",
+				"email": "Email",
+				"webhook": "Webhook"
+			},
+			"webhookStates": {
+				"pending": "Đang chờ",
+				"succeeded": "Thành công",
+				"failed": "Thất bại",
+				"cancelled": "Đã hủy"
 			}
 		},
 		"workspaceImport": {
@@ -2060,6 +2131,42 @@
 				"connect": "Không kết nối được tới nguồn.",
 				"start": "Không bắt đầu được quá trình nhập."
 			}
+		},
+		"googleDrive": {
+			"notConnected": "Kết nối Google Drive để lưu tài liệu dự án trên Drive và liên kết các tệp Drive có sẵn.",
+			"connect": "Kết nối Google Drive",
+			"connected": "Đã kết nối",
+			"disconnect": "Ngắt kết nối",
+			"rootFolder": "Thư mục Drive",
+			"noFolder": "Chưa chọn thư mục",
+			"chooseFolder": "Chọn thư mục",
+			"changeFolder": "Đổi thư mục",
+			"pickFolderTitle": "Chọn thư mục Google Drive",
+			"noSubfolders": "Không có thư mục con",
+			"useFolder": "Dùng “{{name}}”",
+			"connectedToast": "Đã kết nối Google Drive",
+			"disconnectedToast": "Đã ngắt kết nối Google Drive",
+			"folderSetToast": "Đã đặt thư mục thành “{{name}}”",
+			"norefreshToast": "Google không trả về refresh token. Hãy gỡ quyền truy cập của Kaneo trong tài khoản Google rồi kết nối lại.",
+			"errorToast": "Kết nối Google Drive thất bại",
+			"credsTitle": "Thông tin xác thực Google",
+			"credsHint": "Nhập Client ID và Client Secret OAuth của Google. Tạo chúng trong Google Cloud Console (APIs & Services → Credentials) và bật Drive API.",
+			"credsConfigured": "Đã lưu thông tin xác thực",
+			"redirectUriLabel": "Authorized redirect URI",
+			"redirectUriHint": "Thêm chính xác URI này vào mục “Authorized redirect URIs” của OAuth client trong Google Cloud Console.",
+			"copy": "Sao chép",
+			"copiedToast": "Đã sao chép",
+			"clientIdLabel": "Client ID",
+			"clientSecretLabel": "Client Secret",
+			"clientSecretPlaceholderUpdate": "Nhập secret mới để thay thế cái đã lưu",
+			"saveCreds": "Lưu thông tin xác thực",
+			"cancel": "Hủy",
+			"editCreds": "Sửa thông tin xác thực",
+			"credsRequired": "Cần nhập Client ID và Client Secret",
+			"credsSavedToast": "Đã lưu thông tin xác thực Google",
+			"credsRemovedToast": "Đã xóa thông tin xác thực Google",
+			"removeCreds": "Xóa thông tin xác thực",
+			"sectionSubtitle": "Kết nối Google Drive để tải lên và liên kết tài liệu dự án"
 		}
 	},
 	"navigation": {
@@ -2974,7 +3081,8 @@
 			"submit": "Tạo workspace",
 			"success": "Đã tạo workspace",
 			"error": "Tạo workspace thất bại",
-			"alreadyExists": "Workspace với tên (hoặc URL) này đã tồn tại. Hãy thử tên khác."
+			"alreadyExists": "Workspace với tên (hoặc URL) này đã tồn tại. Hãy thử tên khác.",
+			"restricted": "Việc tạo không gian làm việc đã bị hạn chế. Hãy nhờ quản trị viên tạo hoặc mời bạn vào một không gian hiện có."
 		},
 		"home": {
 			"pageTitle": "Trang chủ",
@@ -3154,7 +3262,8 @@
 			"more": "Thêm",
 			"open": "Mở",
 			"close": "Đóng",
-			"preview": "Xem trước"
+			"preview": "Xem trước",
+			"openInDrive": "Mở trong Drive"
 		},
 		"preview": {
 			"loading": "Đang tải bản xem trước…",
@@ -3218,6 +3327,17 @@
 				"emptied": "Đã dọn thùng rác",
 				"emptyError": "Không thể dọn thùng rác"
 			}
+		},
+		"drive": {
+			"uploadToServer": "Tải lên máy chủ",
+			"uploadToDrive": "Tải lên Google Drive",
+			"addFromDrive": "Thêm từ Google Drive",
+			"pickTitle": "Chọn tệp từ Google Drive",
+			"rootFolder": "Thư mục dự án",
+			"empty": "Thư mục này trống",
+			"linkSelected": "Liên kết {{count}} tệp",
+			"linkedToast": "Đã liên kết {{count}} tệp từ Drive",
+			"linkError": "Không thể liên kết tệp"
 		}
 	},
 	"myTasks": {

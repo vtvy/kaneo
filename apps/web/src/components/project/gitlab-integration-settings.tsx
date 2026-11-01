@@ -36,10 +36,12 @@ import {
 } from "@/hooks/mutations/gitlab-integration/use-create-gitlab-integration";
 import useImportGitlabIssues from "@/hooks/mutations/gitlab-integration/use-import-gitlab-issues";
 import { useUpdateGitlabIntegration } from "@/hooks/mutations/gitlab-integration/use-update-gitlab-integration";
+import useGetConfig from "@/hooks/queries/config/use-get-config";
 import useGetGitlabIntegration from "@/hooks/queries/gitlab-integration/use-get-gitlab-integration";
 import { cn } from "@/lib/cn";
 import { copyText } from "@/lib/copy-text";
 import { toast } from "@/lib/toast";
+import { DisabledIntegration } from "./disabled-integration";
 
 type GitlabIntegrationFormValues = {
   baseUrl: string;
@@ -77,6 +79,8 @@ export function GitlabIntegrationSettings({
   projectId: string;
 }) {
   const { t } = useTranslation();
+  const { data: config } = useGetConfig();
+  const disabled = config?.disabledIntegrations.includes("gitlab");
 
   const gitlabIntegrationSchema = React.useMemo(
     () =>
@@ -461,6 +465,15 @@ export function GitlabIntegrationSettings({
     integration?.baseUrl && integration.repositoryOwner
       ? `${integration.baseUrl.replace(/\/$/, "")}/${integration.repositoryOwner}/${integration.repositoryName}`
       : null;
+
+  if (disabled)
+    return (
+      <DisabledIntegration
+        connected={Boolean(integration)}
+        pending={isDeleting}
+        onDisconnect={handleDelete}
+      />
+    );
 
   return (
     <div className="space-y-4">

@@ -2,6 +2,10 @@ import { and, count, eq, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "../../database";
 import type { DbOrTx } from "../audit/record-admin-action";
+import {
+  getInstanceAccess,
+  hasInstancePrivileges,
+} from "../roles/get-instance-access";
 
 // Serializes every change that can remove an administrator, so two admins
 // demoting each other concurrently cannot leave the instance without one.
@@ -49,12 +53,12 @@ export async function assertAdminRemovable(
   actorId: string,
   target: { id: string; role: string | null },
 ) {
-  const [actor] = await tx
-    .select({ role: user.role })
-    .from(user)
-    .where(eq(user.id, actorId))
-    .limit(1);
-  if (actor?.role !== "admin") {
+  const actor = await getInstanceAccess(actorId, tx);
+  const targetPrivileged = await hasInstancePrivileges(target.id, tx);
+  if (
+    !actor.isAdmin &&
+    (!actor.permissions.includes("users:manage") || targetPrivileged)
+  ) {
     throw new HTTPException(403, {
       message: "Instance administrator access required",
     });

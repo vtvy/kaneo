@@ -11,7 +11,6 @@ import sendAdminTestEmail from "./controllers/send-test-email";
 import setWorkspaceArchived from "./controllers/set-workspace-archived";
 import updateAdminSettings from "./controllers/update-admin-settings";
 import verifySmtp from "./controllers/verify-smtp";
-import { requireInstanceAdmin } from "./require-instance-admin";
 
 const jsonContent = (schema: v.GenericSchema) => ({
   "application/json": { schema: resolver(schema) },
@@ -120,14 +119,13 @@ const archiveResultSchema = v.object({
 });
 
 // System status, instance settings and the workspace lifecycle. Mounted under
-// /api/admin; every route re-checks instance admin status in the database.
+// /api/admin; the parent router checks each route's current instance permission.
 const adminInstanceRoutes = new Hono<{
   Variables: {
     userId: string;
     apiKey?: { id: string };
   };
 }>()
-  .use("*", requireInstanceAdmin)
   .get(
     "/system",
     describeRoute({

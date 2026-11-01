@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import db from "../../database";
 import { documentTable, folderTable } from "../../database/schema";
-import { storage } from "../../storage";
+import { deleteDocumentBlob } from "../providers";
 
 // Permanently purges everything in a project's Trash: all trashed folders (with
 // their full subtrees, via DB cascade) and all trashed documents. Blob cleanup
@@ -42,16 +42,16 @@ async function emptyTrash(projectId: string) {
 
   // Storage keys to clean up: docs under any trashed subtree folder, plus any
   // individually trashed doc (root-level or inside a still-active folder).
-  const storageKeys = new Set<string>();
+  const documents = new Map<string, typeof documentTable.$inferSelect>();
   if (subtree.size > 0) {
     const subtreeDocs = await db
-      .select({ storageKey: documentTable.storageKey })
+      .select()
       .from(documentTable)
       .where(inArray(documentTable.folderId, [...subtree]));
-    for (const d of subtreeDocs) storageKeys.add(d.storageKey);
+    for (const d of subtreeDocs) documents.set(d.id, d);
   }
   const trashedDocs = await db
-    .select({ storageKey: documentTable.storageKey })
+    .select()
     .from(documentTable)
     .where(
       and(
@@ -59,7 +59,7 @@ async function emptyTrash(projectId: string) {
         isNotNull(documentTable.deletedAt),
       ),
     );
-  for (const d of trashedDocs) storageKeys.add(d.storageKey);
+  for (const d of trashedDocs) documents.set(d.id, d);
 
   await db.transaction(async (tx) => {
     // Deleting trashed folders cascades to descendant folders + their docs.
@@ -83,7 +83,7 @@ async function emptyTrash(projectId: string) {
   });
 
   await Promise.all(
-    [...storageKeys].map((key) => storage.delete(key).catch(() => {})),
+    [...documents.values()].map((doc) => deleteDocumentBlob(doc)),
   );
 
   return { success: true };

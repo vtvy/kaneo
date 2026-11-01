@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import useUpdateUserProfile from "@/hooks/mutations/use-update-user-profile";
+import { useManagedProfileFields } from "@/hooks/use-managed-profile-fields";
 import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute(
@@ -49,6 +50,8 @@ function normalizeProfileValues(
 function RouteComponent() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const managed = useManagedProfileFields();
+  const nameLocked = managed.loading || managed.fields.includes("name");
   const queryClient = useQueryClient();
   const { mutateAsync: updateProfile } = useUpdateUserProfile();
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -90,6 +93,7 @@ function RouteComponent() {
 
   const saveProfile = useCallback(
     async (data: ProfileFormValues) => {
+      if (nameLocked) return;
       const normalizedData = normalizeProfileValues(data);
 
       if (lastSavedRef.current?.name === normalizedData.name) {
@@ -130,7 +134,7 @@ function RouteComponent() {
         }
       }
     },
-    [t, updateProfile, queryClient, profileForm],
+    [t, updateProfile, queryClient, profileForm, nameLocked],
   );
 
   const debouncedSave = useCallback(
@@ -220,6 +224,12 @@ function RouteComponent() {
                         <FormControl>
                           <Input
                             className="w-48"
+                            disabled={nameLocked}
+                            title={
+                              managed.fields.includes("name")
+                                ? t("settings:informationPage.managedBySso")
+                                : undefined
+                            }
                             placeholder={t(
                               "settings:informationPage.fullNamePlaceholder",
                             )}

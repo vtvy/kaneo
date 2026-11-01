@@ -17,6 +17,14 @@
 		".": {
 			"import": "./dist/server.js",
 			"types": "./dist/server.d.ts"
+		},
+		"./device-flow": {
+			"types": "./dist/auth/device-flow.d.ts",
+			"import": "./dist/auth/device-flow.js"
+		},
+		"./normalize-base-url": {
+			"types": "./dist/utils/normalize-base-url.d.ts",
+			"import": "./dist/utils/normalize-base-url.js"
 		}
 	},
 	"publishConfig": {

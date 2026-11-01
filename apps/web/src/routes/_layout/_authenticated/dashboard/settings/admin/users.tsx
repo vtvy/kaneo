@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/table";
 import type { AdminUser } from "@/fetchers/admin/list-admin-users";
 import useAdminUsers from "@/hooks/queries/admin/use-admin-users";
+import useInstanceAccess from "@/hooks/queries/admin/use-instance-access";
 
 export const Route = createFileRoute(
   "/_layout/_authenticated/dashboard/settings/admin/users",
@@ -47,6 +48,10 @@ function formatDate(value: string | null) {
 
 function RouteComponent() {
   const { t } = useTranslation();
+  const { data: access } = useInstanceAccess();
+  const can = (permission: string) =>
+    (access?.permissions as string[] | undefined)?.includes(permission) ??
+    false;
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [role, setRole] = useState<RoleFilter>("all");
@@ -100,7 +105,11 @@ function RouteComponent() {
               {t("settings:adminPanel.usersSubtitle")}
             </p>
           </div>
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+          <Button
+            disabled={!can("users:create")}
+            onClick={() => setCreateOpen(true)}
+            className="gap-2"
+          >
             <Plus className="size-4" />
             {t("settings:adminPanel.createUser.title")}
           </Button>
@@ -224,6 +233,15 @@ function RouteComponent() {
                       <Button
                         variant="outline"
                         size="sm"
+                        disabled={
+                          (!access?.isAdmin && user.role === "admin") ||
+                          ![
+                            "users:manage",
+                            "sessions:manage",
+                            "api_keys:manage",
+                            "roles:manage",
+                          ].some(can)
+                        }
                         onClick={() => setSelectedId(user.id)}
                       >
                         {t("settings:adminPanel.manage.open")}

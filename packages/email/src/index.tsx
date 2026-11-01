@@ -1,5 +1,6 @@
 export {
   isSmtpConfigured,
+  sendFeedbackEmail,
   sendMagicLinkEmail,
   sendNotificationEmail,
   sendOtpEmail,

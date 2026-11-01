@@ -2,6 +2,12 @@ import { config } from "dotenv-mono";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import {
+  instanceRoleAssignmentTable,
+  instanceRoleTable,
+  instanceWebhookDeliveryTable,
+  instanceWebhookTable,
+} from "./admin-schema";
+import {
   accountTableRelations,
   activityTableRelations,
   apikeyTableRelations,
@@ -95,6 +101,10 @@ import {
 config();
 
 export const schema = {
+  instanceRoleTable,
+  instanceRoleAssignmentTable,
+  instanceWebhookTable,
+  instanceWebhookDeliveryTable,
   accountTable,
   adminAuditLogTable,
   assetTable,

@@ -20,8 +20,10 @@ import {
   useDeleteDiscordIntegration,
   useUpdateDiscordIntegration,
 } from "@/hooks/mutations/discord-integration/use-discord-integration";
+import useGetConfig from "@/hooks/queries/config/use-get-config";
 import useGetDiscordIntegration from "@/hooks/queries/discord-integration/use-get-discord-integration";
 import { toast } from "@/lib/toast";
+import { DisabledIntegration } from "./disabled-integration";
 
 type DiscordIntegrationFormValues = {
   webhookUrl: string;
@@ -85,6 +87,8 @@ export function DiscordIntegrationSettings({
   projectId: string;
 }) {
   const { t } = useTranslation();
+  const { data: config } = useGetConfig();
+  const disabled = config?.disabledIntegrations.includes("discord");
   const schema = React.useMemo(
     () =>
       z.object({
@@ -273,6 +277,15 @@ export function DiscordIntegrationSettings({
       </div>
     );
   }
+
+  if (disabled)
+    return (
+      <DisabledIntegration
+        connected={Boolean(integration)}
+        pending={isDeleting}
+        onDisconnect={handleDelete}
+      />
+    );
 
   return (
     <div className="space-y-4">

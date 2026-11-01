@@ -1,3 +1,4 @@
+import { createId } from "@paralleldrive/cuid2";
 import { and, eq, gt, inArray, lte, ne, sql } from "drizzle-orm";
 import db from "../database";
 import {
@@ -7,7 +8,7 @@ import {
   sprintTable,
   workspaceUserTable,
 } from "../database/schema";
-import createNotification from "../notification/controllers/create-notification";
+import { announceNotification } from "../notification/controllers/create-notification";
 
 export type SprintNotificationType = "sprint_started" | "sprint_ended";
 
@@ -48,66 +49,84 @@ export async function notifySprintMembers(
   type: SprintNotificationType,
   excludeUserId?: string | null,
 ): Promise<number> {
-  const [project] = await db
-    .select({ name: projectTable.name, workspaceId: projectTable.workspaceId })
-    .from(projectTable)
-    .where(eq(projectTable.id, sprint.projectId))
-    .limit(1);
-  if (!project) return 0;
-
-  const members = await db
-    .selectDistinct({ userId: projectMemberTable.userId })
-    .from(projectMemberTable)
-    .innerJoin(
-      workspaceUserTable,
-      and(
-        eq(workspaceUserTable.userId, projectMemberTable.userId),
-        eq(workspaceUserTable.workspaceId, project.workspaceId),
-      ),
-    )
-    .where(eq(projectMemberTable.projectId, sprint.projectId));
-
-  const candidateIds = members
-    .map((member) => member.userId)
-    .filter((userId) => userId !== excludeUserId);
-  if (candidateIds.length === 0) return 0;
-
-  const alreadyNotified = await db
-    .select({ userId: notificationTable.userId })
-    .from(notificationTable)
-    .where(
-      and(
-        eq(notificationTable.type, type),
-        eq(notificationTable.resourceType, "project"),
-        eq(notificationTable.resourceId, sprint.projectId),
-        sql`${notificationTable.eventData}->>'sprintId' = ${sprint.id}`,
-        inArray(notificationTable.userId, candidateIds),
-      ),
+  const notifications = await db.transaction(async (tx) => {
+    // All instances and manual completion events serialize on this sprint/type.
+    // The lock and deduplication query share the inserting transaction.
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${`sprint-notification:${sprint.id}:${type}`}, 0))`,
     );
-  const notified = new Set(alreadyNotified.map((row) => row.userId));
+    const [project] = await tx
+      .select({
+        name: projectTable.name,
+        workspaceId: projectTable.workspaceId,
+      })
+      .from(projectTable)
+      .where(eq(projectTable.id, sprint.projectId))
+      .limit(1);
+    if (!project) return [];
 
-  const copy = COPY[type];
-  let sent = 0;
-  for (const userId of candidateIds) {
-    if (notified.has(userId)) continue;
-    await createNotification({
-      userId,
-      type,
-      title: copy.title,
-      content: copy.content(sprint.name, project.name),
-      eventData: {
-        sprintId: sprint.id,
-        sprintName: sprint.name,
-        projectId: sprint.projectId,
-        projectName: project.name,
-        workspaceId: project.workspaceId,
-      },
-      resourceId: sprint.projectId,
-      resourceType: "project",
-    });
-    sent++;
-  }
-  return sent;
+    const members = await tx
+      .selectDistinct({ userId: projectMemberTable.userId })
+      .from(projectMemberTable)
+      .innerJoin(
+        workspaceUserTable,
+        and(
+          eq(workspaceUserTable.userId, projectMemberTable.userId),
+          eq(workspaceUserTable.workspaceId, project.workspaceId),
+        ),
+      )
+      .where(eq(projectMemberTable.projectId, sprint.projectId));
+
+    const candidateIds = members
+      .map((member) => member.userId)
+      .filter((userId) => userId !== excludeUserId);
+    if (candidateIds.length === 0) return [];
+
+    const alreadyNotified = await tx
+      .select({ userId: notificationTable.userId })
+      .from(notificationTable)
+      .where(
+        and(
+          eq(notificationTable.type, type),
+          eq(notificationTable.resourceType, "project"),
+          eq(notificationTable.resourceId, sprint.projectId),
+          sql`${notificationTable.eventData}->>'sprintId' = ${sprint.id}`,
+          inArray(notificationTable.userId, candidateIds),
+        ),
+      );
+    const notified = new Set(alreadyNotified.map((row) => row.userId));
+
+    const copy = COPY[type];
+    const inserted: (typeof notificationTable.$inferSelect)[] = [];
+    for (const userId of candidateIds) {
+      if (notified.has(userId)) continue;
+      const [notification] = await tx
+        .insert(notificationTable)
+        .values({
+          id: createId(),
+          userId,
+          type,
+          title: copy.title,
+          content: copy.content(sprint.name, project.name),
+          eventData: {
+            sprintId: sprint.id,
+            sprintName: sprint.name,
+            projectId: sprint.projectId,
+            projectName: project.name,
+            workspaceId: project.workspaceId,
+          },
+          resourceId: sprint.projectId,
+          resourceType: "project",
+        })
+        .returning();
+      if (notification) inserted.push(notification);
+    }
+    return inserted;
+  });
+  await Promise.all(
+    notifications.map((notification) => announceNotification(notification)),
+  );
+  return notifications.length;
 }
 
 /**

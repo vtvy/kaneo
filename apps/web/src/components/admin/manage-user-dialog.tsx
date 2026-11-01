@@ -10,6 +10,7 @@ import useSetAdminUserRole from "@/hooks/mutations/admin/use-set-admin-user-role
 import useUnbanAdminUser from "@/hooks/mutations/admin/use-unban-admin-user";
 import useAdminUserApiKeys from "@/hooks/queries/admin/use-admin-user-api-keys";
 import useAdminUserSessions from "@/hooks/queries/admin/use-admin-user-sessions";
+import useInstanceAccess from "@/hooks/queries/admin/use-instance-access";
 import { toast } from "@/lib/toast";
 import {
   AlertDialog,
@@ -75,14 +76,23 @@ export function ManageUserDialog({ user, onClose }: ManageUserDialogProps) {
   const { t } = useTranslation();
   const { user: currentUser } = useAuth();
   const userId = user?.id ?? null;
+  const { data: access } = useInstanceAccess();
+  const can = (permission: string) =>
+    (access?.permissions as string[] | undefined)?.includes(permission) ??
+    false;
+  const canManage = can("users:manage");
+  const canRoles = can("roles:manage");
+  const canSessions = can("sessions:manage");
+  const canKeys = can("api_keys:manage");
   const isSelf = Boolean(user && currentUser?.id === user.id);
   const [banReason, setBanReason] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data: sessions = [], isLoading: sessionsLoading } =
-    useAdminUserSessions(userId);
-  const { data: apiKeys = [], isLoading: keysLoading } =
-    useAdminUserApiKeys(userId);
+    useAdminUserSessions(canSessions ? userId : null);
+  const { data: apiKeys = [], isLoading: keysLoading } = useAdminUserApiKeys(
+    canKeys ? userId : null,
+  );
   const setRole = useSetAdminUserRole();
   const ban = useBanAdminUser();
   const unban = useUnbanAdminUser();
@@ -128,246 +138,256 @@ export function ManageUserDialog({ user, onClose }: ManageUserDialogProps) {
               </p>
             )}
 
-            <Section title={t("settings:adminPanel.manage.role")}>
-              <Select
-                value={user.role}
-                disabled={isSelf || setRole.isPending}
-                onValueChange={(value) =>
-                  run(
-                    () =>
-                      setRole.mutateAsync({
-                        userId: user.id,
-                        role: value as "admin" | "user",
-                      }),
-                    t("settings:adminPanel.manage.roleUpdated"),
-                  ).then((done) => done && onClose())
+            {canRoles && (
+              <Section title={t("settings:adminPanel.manage.role")}>
+                <Select
+                  value={user.role}
+                  disabled={isSelf || setRole.isPending}
+                  onValueChange={(value) =>
+                    run(
+                      () =>
+                        setRole.mutateAsync({
+                          userId: user.id,
+                          role: value as "admin" | "user",
+                        }),
+                      t("settings:adminPanel.manage.roleUpdated"),
+                    ).then((done) => done && onClose())
+                  }
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue>{roleLabel(user.role)}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">{roleLabel("user")}</SelectItem>
+                    <SelectItem value="admin">{roleLabel("admin")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Section>
+            )}
+
+            {canManage && (
+              <Section title={t("settings:adminPanel.manage.access")}>
+                {user.banned ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm text-muted-foreground">
+                      {user.banReason
+                        ? t("settings:adminPanel.manage.bannedWithReason", {
+                            reason: user.banReason,
+                          })
+                        : t("settings:adminPanel.manage.banned")}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={unban.isPending}
+                      onClick={() =>
+                        run(
+                          () => unban.mutateAsync(user.id),
+                          t("settings:adminPanel.manage.unbanned"),
+                        ).then((done) => done && onClose())
+                      }
+                    >
+                      {t("settings:adminPanel.manage.unban")}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder={t(
+                        "settings:adminPanel.manage.banReasonPlaceholder",
+                      )}
+                      maxLength={500}
+                      value={banReason}
+                      disabled={isSelf}
+                      onChange={(e) => setBanReason(e.target.value)}
+                    />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={isSelf || ban.isPending}
+                      onClick={() =>
+                        run(
+                          () =>
+                            ban.mutateAsync({
+                              userId: user.id,
+                              reason: banReason.trim() || undefined,
+                            }),
+                          t("settings:adminPanel.manage.bannedToast"),
+                        ).then((done) => done && onClose())
+                      }
+                    >
+                      {t("settings:adminPanel.manage.ban")}
+                    </Button>
+                  </div>
+                )}
+              </Section>
+            )}
+
+            {canSessions && (
+              <Section
+                title={t("settings:adminPanel.manage.sessions")}
+                action={
+                  sessions.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={revokeSessions.isPending}
+                      onClick={() =>
+                        run(
+                          () => revokeSessions.mutateAsync({ userId: user.id }),
+                          t("settings:adminPanel.manage.sessionsRevoked"),
+                        )
+                      }
+                    >
+                      {t("settings:adminPanel.manage.revokeAll")}
+                    </Button>
+                  )
                 }
               >
-                <SelectTrigger className="w-48">
-                  <SelectValue>{roleLabel(user.role)}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">{roleLabel("user")}</SelectItem>
-                  <SelectItem value="admin">{roleLabel("admin")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </Section>
-
-            <Section title={t("settings:adminPanel.manage.access")}>
-              {user.banned ? (
-                <div className="flex items-center justify-between gap-2">
+                {sessionsLoading ? (
                   <p className="text-sm text-muted-foreground">
-                    {user.banReason
-                      ? t("settings:adminPanel.manage.bannedWithReason", {
-                          reason: user.banReason,
-                        })
-                      : t("settings:adminPanel.manage.banned")}
+                    {t("settings:adminPanel.loading")}
                   </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={unban.isPending}
-                    onClick={() =>
-                      run(
-                        () => unban.mutateAsync(user.id),
-                        t("settings:adminPanel.manage.unbanned"),
-                      ).then((done) => done && onClose())
-                    }
-                  >
-                    {t("settings:adminPanel.manage.unban")}
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder={t(
-                      "settings:adminPanel.manage.banReasonPlaceholder",
-                    )}
-                    maxLength={500}
-                    value={banReason}
-                    disabled={isSelf}
-                    onChange={(e) => setBanReason(e.target.value)}
-                  />
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    disabled={isSelf || ban.isPending}
-                    onClick={() =>
-                      run(
-                        () =>
-                          ban.mutateAsync({
-                            userId: user.id,
-                            reason: banReason.trim() || undefined,
-                          }),
-                        t("settings:adminPanel.manage.bannedToast"),
-                      ).then((done) => done && onClose())
-                    }
-                  >
-                    {t("settings:adminPanel.manage.ban")}
-                  </Button>
-                </div>
-              )}
-            </Section>
-
-            <Section
-              title={t("settings:adminPanel.manage.sessions")}
-              action={
-                sessions.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={revokeSessions.isPending}
-                    onClick={() =>
-                      run(
-                        () => revokeSessions.mutateAsync({ userId: user.id }),
-                        t("settings:adminPanel.manage.sessionsRevoked"),
-                      )
-                    }
-                  >
-                    {t("settings:adminPanel.manage.revokeAll")}
-                  </Button>
-                )
-              }
-            >
-              {sessionsLoading ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("settings:adminPanel.loading")}
-                </p>
-              ) : sessions.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("settings:adminPanel.manage.noSessions")}
-                </p>
-              ) : (
-                <ul className="divide-y divide-border rounded-md border border-border">
-                  {sessions.map((session) => (
-                    <li
-                      key={session.id}
-                      className="flex items-center justify-between gap-3 px-3 py-2"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm">
-                          {session.userAgent ||
-                            t("settings:adminPanel.manage.unknownDevice")}
-                          {session.current && (
-                            <Badge variant="info" className="ml-2">
-                              {t("settings:adminPanel.manage.currentSession")}
-                            </Badge>
-                          )}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {session.ipAddress ?? "-"} ·{" "}
-                          {t("settings:adminPanel.manage.lastActive", {
-                            date: formatDateTime(session.lastActiveAt),
-                          })}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive"
-                        disabled={revokeSessions.isPending}
-                        onClick={() =>
-                          run(
-                            () =>
-                              revokeSessions.mutateAsync({
-                                userId: user.id,
-                                sessionId: session.id,
-                              }),
-                            t("settings:adminPanel.manage.sessionRevoked"),
-                          )
-                        }
+                ) : sessions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("settings:adminPanel.manage.noSessions")}
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-border rounded-md border border-border">
+                    {sessions.map((session) => (
+                      <li
+                        key={session.id}
+                        className="flex items-center justify-between gap-3 px-3 py-2"
                       >
-                        {t("settings:adminPanel.manage.revoke")}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Section>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm">
+                            {session.userAgent ||
+                              t("settings:adminPanel.manage.unknownDevice")}
+                            {session.current && (
+                              <Badge variant="info" className="ml-2">
+                                {t("settings:adminPanel.manage.currentSession")}
+                              </Badge>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {session.ipAddress ?? "-"} ·{" "}
+                            {t("settings:adminPanel.manage.lastActive", {
+                              date: formatDateTime(session.lastActiveAt),
+                            })}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive"
+                          disabled={revokeSessions.isPending}
+                          onClick={() =>
+                            run(
+                              () =>
+                                revokeSessions.mutateAsync({
+                                  userId: user.id,
+                                  sessionId: session.id,
+                                }),
+                              t("settings:adminPanel.manage.sessionRevoked"),
+                            )
+                          }
+                        >
+                          {t("settings:adminPanel.manage.revoke")}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Section>
+            )}
 
-            <Section
-              title={t("settings:adminPanel.manage.apiKeys")}
-              action={
-                apiKeys.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={revokeKeys.isPending}
-                    onClick={() =>
-                      run(
-                        () => revokeKeys.mutateAsync({ userId: user.id }),
-                        t("settings:adminPanel.manage.apiKeysRevoked"),
-                      )
-                    }
-                  >
-                    {t("settings:adminPanel.manage.revokeAll")}
-                  </Button>
-                )
-              }
-            >
-              {keysLoading ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("settings:adminPanel.loading")}
-                </p>
-              ) : apiKeys.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("settings:adminPanel.manage.noApiKeys")}
-                </p>
-              ) : (
-                <ul className="divide-y divide-border rounded-md border border-border">
-                  {apiKeys.map((key) => (
-                    <li
-                      key={key.id}
-                      className="flex items-center justify-between gap-3 px-3 py-2"
+            {canKeys && (
+              <Section
+                title={t("settings:adminPanel.manage.apiKeys")}
+                action={
+                  apiKeys.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={revokeKeys.isPending}
+                      onClick={() =>
+                        run(
+                          () => revokeKeys.mutateAsync({ userId: user.id }),
+                          t("settings:adminPanel.manage.apiKeysRevoked"),
+                        )
+                      }
                     >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm">
-                          {key.name ||
-                            t("settings:adminPanel.manage.unnamedKey")}{" "}
-                          <code className="text-xs bg-background px-1.5 py-0.5 rounded border border-border">
-                            {key.start ?? key.prefix ?? ""}…
-                          </code>
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {t("settings:adminPanel.manage.lastUsed", {
-                            date: formatDateTime(key.lastUsedAt),
-                          })}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive"
-                        disabled={revokeKeys.isPending}
-                        onClick={() =>
-                          run(
-                            () =>
-                              revokeKeys.mutateAsync({
-                                userId: user.id,
-                                keyId: key.id,
-                              }),
-                            t("settings:adminPanel.manage.apiKeyRevoked"),
-                          )
-                        }
-                      >
-                        {t("settings:adminPanel.manage.revoke")}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Section>
-
-            <Section title={t("settings:adminPanel.manage.dangerZone")}>
-              <Button
-                variant="destructive"
-                size="sm"
-                disabled={isSelf}
-                onClick={() => setConfirmDelete(true)}
+                      {t("settings:adminPanel.manage.revokeAll")}
+                    </Button>
+                  )
+                }
               >
-                {t("settings:adminPanel.manage.deleteUser")}
-              </Button>
-            </Section>
+                {keysLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("settings:adminPanel.loading")}
+                  </p>
+                ) : apiKeys.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("settings:adminPanel.manage.noApiKeys")}
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-border rounded-md border border-border">
+                    {apiKeys.map((key) => (
+                      <li
+                        key={key.id}
+                        className="flex items-center justify-between gap-3 px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm">
+                            {key.name ||
+                              t("settings:adminPanel.manage.unnamedKey")}{" "}
+                            <code className="text-xs bg-background px-1.5 py-0.5 rounded border border-border">
+                              {key.start ?? key.prefix ?? ""}…
+                            </code>
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {t("settings:adminPanel.manage.lastUsed", {
+                              date: formatDateTime(key.lastUsedAt),
+                            })}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive"
+                          disabled={revokeKeys.isPending}
+                          onClick={() =>
+                            run(
+                              () =>
+                                revokeKeys.mutateAsync({
+                                  userId: user.id,
+                                  keyId: key.id,
+                                }),
+                              t("settings:adminPanel.manage.apiKeyRevoked"),
+                            )
+                          }
+                        >
+                          {t("settings:adminPanel.manage.revoke")}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Section>
+            )}
+
+            {canManage && (
+              <Section title={t("settings:adminPanel.manage.dangerZone")}>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={isSelf}
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  {t("settings:adminPanel.manage.deleteUser")}
+                </Button>
+              </Section>
+            )}
           </div>
         </DialogContent>
       </Dialog>

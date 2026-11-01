@@ -20,8 +20,10 @@ import {
   useDeleteTelegramIntegration,
   useUpdateTelegramIntegration,
 } from "@/hooks/mutations/telegram-integration/use-telegram-integration";
+import useGetConfig from "@/hooks/queries/config/use-get-config";
 import useGetTelegramIntegration from "@/hooks/queries/telegram-integration/use-get-telegram-integration";
 import { toast } from "@/lib/toast";
+import { DisabledIntegration } from "./disabled-integration";
 
 type TelegramIntegrationFormValues = {
   botToken: string;
@@ -86,6 +88,8 @@ export function TelegramIntegrationSettings({
   projectId: string;
 }) {
   const { t } = useTranslation();
+  const { data: config } = useGetConfig();
+  const disabled = config?.disabledIntegrations.includes("telegram");
   const schema = React.useMemo(
     () =>
       z.object({
@@ -330,6 +334,15 @@ export function TelegramIntegrationSettings({
   if (error) {
     return null;
   }
+
+  if (disabled)
+    return (
+      <DisabledIntegration
+        connected={Boolean(integration)}
+        pending={isDeleting}
+        onDisconnect={handleDelete}
+      />
+    );
 
   return (
     <div className="space-y-4">

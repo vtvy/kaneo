@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import useCreateWorkspace from "@/hooks/queries/workspace/use-create-workspace";
+import { useCanCreateWorkspace } from "@/hooks/use-can-create-workspace";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "@/lib/toast";
 
@@ -29,6 +30,7 @@ type CreateWorkspaceModalProps = {
 
 function CreateWorkspaceModal({ open, onClose }: CreateWorkspaceModalProps) {
   const { t } = useTranslation();
+  const canCreateWorkspace = useCanCreateWorkspace();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -52,7 +54,7 @@ function CreateWorkspaceModal({ open, onClose }: CreateWorkspaceModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!canCreateWorkspace || !name.trim()) return;
 
     try {
       const createdWorkspace = await mutateAsync({ name, description });
@@ -79,6 +81,8 @@ function CreateWorkspaceModal({ open, onClose }: CreateWorkspaceModalProps) {
       );
     }
   };
+
+  if (!canCreateWorkspace) return null;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>

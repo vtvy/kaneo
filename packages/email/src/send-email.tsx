@@ -150,3 +150,69 @@ export const sendNotificationEmail = async (
     throw error;
   }
 };
+
+export type FeedbackEmailData = {
+  message: string;
+  senderName: string;
+  senderEmail: string;
+  pageUrl?: string;
+};
+
+function singleLine(value: string) {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+export const sendFeedbackEmail = async (
+  to: string,
+  data: FeedbackEmailData,
+): Promise<EmailResult> => {
+  if (!isSmtpConfigured()) {
+    return { success: false, reason: "SMTP_NOT_CONFIGURED" };
+  }
+
+  const senderName =
+    singleLine(data.senderName) || data.senderEmail || "Unknown user";
+  const senderEmail = singleLine(data.senderEmail);
+  const pageUrl = data.pageUrl?.trim() ?? "";
+  const safePageUrl = /^https?:\/\//i.test(pageUrl) ? pageUrl : "";
+  const subject = `Kaneo feedback from ${senderName}`;
+  const text = [
+    data.message.trim(),
+    "",
+    `From: ${senderName}${senderEmail ? ` <${senderEmail}>` : ""}`,
+    safePageUrl ? `Page: ${safePageUrl}` : "",
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+  const html = [
+    `<div style="white-space:pre-wrap;font-family:sans-serif">${escapeHtml(data.message.trim())}</div>`,
+    "<hr />",
+    `<p>From: ${escapeHtml(senderName)}${senderEmail ? ` &lt;${escapeHtml(senderEmail)}&gt;` : ""}</p>`,
+    safePageUrl
+      ? `<p>Page: <a href="${escapeHtml(safePageUrl)}">${escapeHtml(safePageUrl)}</a></p>`
+      : "",
+  ].join("");
+
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM,
+      to,
+      replyTo: senderEmail || undefined,
+      subject,
+      text,
+      html,
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending feedback email", error);
+    throw error;
+  }
+};

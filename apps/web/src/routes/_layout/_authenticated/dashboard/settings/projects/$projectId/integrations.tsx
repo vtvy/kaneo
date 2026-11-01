@@ -4,6 +4,7 @@ import {
   FolderGit,
   Github,
   Gitlab,
+  HardDrive,
   MessageCircle,
   Radio,
   Send,
@@ -17,6 +18,7 @@ import { GenericWebhookIntegrationSettings } from "@/components/project/generic-
 import { GiteaIntegrationSettings } from "@/components/project/gitea-integration-settings";
 import { GitHubIntegrationSettings } from "@/components/project/github-integration-settings";
 import { GitlabIntegrationSettings } from "@/components/project/gitlab-integration-settings";
+import { GoogleDriveIntegrationSettings } from "@/components/project/google-drive-integration-settings";
 import { SlackIntegrationSettings } from "@/components/project/slack-integration-settings";
 import { TelegramIntegrationSettings } from "@/components/project/telegram-integration-settings";
 import {
@@ -36,7 +38,7 @@ function RouteComponent() {
   const { t } = useTranslation();
   const { projectId } = Route.useParams();
   const { data: config } = useGetConfig();
-  // Providers an instance admin turned off are hidden (the API refuses them).
+  // Disabled providers stay visible so existing connections can be removed.
   const disabledIntegrations = new Set(config?.disabledIntegrations ?? []);
 
   return (
@@ -54,7 +56,16 @@ function RouteComponent() {
 
         <div className="space-y-6">
           <IntegrationSection
-            hidden={disabledIntegrations.has("github")}
+            icon={<HardDrive className="size-4" />}
+            title="Google Drive"
+            subtitle={t("settings:googleDrive.sectionSubtitle")}
+          >
+            <GoogleDriveIntegrationSettings
+              projectId={projectId}
+              disabled={disabledIntegrations.has("google-drive")}
+            />
+          </IntegrationSection>
+          <IntegrationSection
             icon={<Github className="size-4" />}
             subtitle={t("settings:projectIntegrations.githubSectionSubtitle")}
             title={t("settings:projectIntegrations.githubSectionTitle")}
@@ -63,7 +74,6 @@ function RouteComponent() {
           </IntegrationSection>
 
           <IntegrationSection
-            hidden={disabledIntegrations.has("gitea")}
             icon={<FolderGit className="size-4" />}
             subtitle={t("settings:projectIntegrations.giteaSectionSubtitle")}
             title={t("settings:projectIntegrations.giteaSectionTitle")}
@@ -72,7 +82,6 @@ function RouteComponent() {
           </IntegrationSection>
 
           <IntegrationSection
-            hidden={disabledIntegrations.has("gitlab")}
             icon={<Gitlab className="size-4" />}
             subtitle={t("settings:projectIntegrations.gitlabSectionSubtitle")}
             title={t("settings:projectIntegrations.gitlabSectionTitle")}
@@ -81,7 +90,6 @@ function RouteComponent() {
           </IntegrationSection>
 
           <IntegrationSection
-            hidden={disabledIntegrations.has("discord")}
             icon={<MessageCircle className="size-4" />}
             subtitle={t("settings:projectIntegrations.discordSectionSubtitle")}
             title={t("settings:projectIntegrations.discordSectionTitle")}
@@ -90,7 +98,6 @@ function RouteComponent() {
           </IntegrationSection>
 
           <IntegrationSection
-            hidden={disabledIntegrations.has("generic-webhook")}
             icon={<Radio className="size-4" />}
             subtitle={t(
               "settings:projectIntegrations.genericWebhookSectionSubtitle",
@@ -101,7 +108,6 @@ function RouteComponent() {
           </IntegrationSection>
 
           <IntegrationSection
-            hidden={disabledIntegrations.has("slack")}
             icon={<Webhook className="size-4" />}
             subtitle={t("settings:projectIntegrations.slackSectionSubtitle")}
             title={t("settings:projectIntegrations.slackSectionTitle")}
@@ -110,7 +116,6 @@ function RouteComponent() {
           </IntegrationSection>
 
           <IntegrationSection
-            hidden={disabledIntegrations.has("telegram")}
             icon={<Send className="size-4" />}
             subtitle={t("settings:projectIntegrations.telegramSectionSubtitle")}
             title={t("settings:projectIntegrations.telegramSectionTitle")}
@@ -128,18 +133,14 @@ function IntegrationSection({
   subtitle,
   icon,
   defaultOpen = false,
-  hidden = false,
   children,
 }: {
-  hidden?: boolean;
   title: string;
   subtitle: string;
   icon: ReactNode;
   defaultOpen?: boolean;
   children: ReactNode;
 }) {
-  if (hidden) return null;
-
   return (
     <Collapsible
       className="rounded-xl border border-border bg-background"

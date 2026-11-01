@@ -4,6 +4,7 @@ import { auth } from "../../auth";
 import getSettings from "../../utils/get-settings";
 import type { AdminAuditRequest } from "../audit/admin-audit-request";
 import { recordAdminAction } from "../audit/record-admin-action";
+import { getInstanceAccess } from "../roles/get-instance-access";
 
 export type CreateUserInput = {
   name: string;
@@ -36,6 +37,14 @@ export async function createUser(
   request: AdminAuditRequest,
   input: CreateUserInput,
 ) {
+  if (
+    input.role === "admin" &&
+    !(await getInstanceAccess(request.actorUserId)).isAdmin
+  ) {
+    throw new HTTPException(403, {
+      message: "Only built-in administrators can create administrators",
+    });
+  }
   const email = input.email.trim().toLowerCase();
   let created: { id: string; email: string; name: string };
   try {

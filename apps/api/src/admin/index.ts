@@ -14,7 +14,10 @@ import revokeUserSessions from "./controllers/revoke-user-sessions";
 import setUserRole from "./controllers/set-user-role";
 import unbanUser from "./controllers/unban-user";
 import adminInstanceRoutes from "./instance-routes";
-import { requireInstanceAdmin } from "./require-instance-admin";
+import roleRoutes from "./role-routes";
+import { getInstanceAccess } from "./roles/get-instance-access";
+import { requireInstancePermission } from "./roles/require-instance-permission";
+import { adminRoutePermission } from "./roles/route-permission";
 import {
   adminApiKeySchema,
   adminSessionSchema,
@@ -27,6 +30,7 @@ import {
   setRoleBody,
   userIdParam,
 } from "./schema";
+import webhookRoutes from "./webhook-routes";
 
 const jsonContent = (schema: v.GenericSchema) => ({
   "application/json": { schema: resolver(schema) },
@@ -38,8 +42,8 @@ const ok = (description: string, schema: v.GenericSchema) => ({
 
 const revokedSchema = v.object({ revoked: v.number() });
 
-// Every route is instance-admin only; the middleware re-checks the role in
-// the database on each request. The audit log has no update or delete route.
+// Every protected route checks its specific permission in the database on
+// each request. The audit log has no update or delete route.
 const admin = new Hono<{
   Variables: {
     userId: string;
@@ -47,13 +51,27 @@ const admin = new Hono<{
     apiKey?: { id: string };
   };
 }>()
-  .use("*", requireInstanceAdmin)
+  .get(
+    "/access",
+    describeRoute({
+      operationId: "adminGetInstanceAccess",
+      tags: ["Admin"],
+      description:
+        "Current user's instance permissions, read freshly from the database",
+    }),
+    async (c) => {
+      if (c.get("apiKey"))
+        return c.json({ permissions: [] as string[], isAdmin: false });
+      return c.json(await getInstanceAccess(c.get("userId")));
+    },
+  )
+  .use("*", requireInstancePermission(adminRoutePermission))
   .get(
     "/users",
     describeRoute({
       operationId: "adminListUsers",
       tags: ["Admin"],
-      description: "List and filter instance users (instance admin only)",
+      description: "List and filter instance users (requires users:read)",
       responses: ok(
         "Users",
         v.object({ users: v.array(adminUserSchema), total: v.number() }),
@@ -273,6 +291,8 @@ const admin = new Hono<{
       return c.json(await listAuditLog(c.req.valid("query")));
     },
   )
+  .route("/", roleRoutes)
+  .route("/", webhookRoutes)
   .route("/", adminInstanceRoutes);
 
 export default admin;

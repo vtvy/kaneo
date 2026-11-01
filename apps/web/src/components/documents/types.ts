@@ -9,6 +9,8 @@ export type DocumentFolder = {
 };
 
 export type DocumentItem = {
+  source?: string;
+  externalUrl?: string | null;
   id: string;
   projectId: string;
   folderId: string | null;

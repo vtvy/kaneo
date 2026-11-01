@@ -85,6 +85,8 @@ export async function resetTestDatabase() {
   await db.execute(
     sql.raw(`
       TRUNCATE TABLE
+        "instance_webhook",
+        "instance_role",
         "activity",
         "account",
         "apikey",

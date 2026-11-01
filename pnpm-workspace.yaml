@@ -21,7 +21,7 @@ overrides:
   minimatch: 10.2.3
   rollup: 4.59.0
   seroval: ">=1.5.3 <2"
-  effect: ">=3.20.0"
+  "effect@3": ">=3.20.0 <4"
   fast-xml-parser: ">=5.5.7"
   socket.io-parser: ">=4.2.6"
   picomatch: ">=4.0.4"
@@ -48,3 +48,5 @@ overrides:
   # Stay on 1.6.x: 1.7 removes client plugins the web app imports.
   better-auth: ">=1.6.33 <1.7.0"
   "@better-auth/core": ">=1.6.33 <1.7.0"
+
+  "@effect/platform-node-shared@^4.0.6": 4.0.6
