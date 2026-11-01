@@ -8,6 +8,7 @@ export function useUpdateTaskTitle() {
   return useMutation({
     mutationFn: (task: Task) => updateTaskTitle(task.id, task),
     onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["work-items"] });
       queryClient.invalidateQueries({
         queryKey: ["task", variables.id],
       });

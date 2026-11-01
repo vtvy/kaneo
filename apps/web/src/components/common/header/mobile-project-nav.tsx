@@ -25,12 +25,14 @@ type MobileProjectNavProps = {
   projectId: string;
   projectName?: string;
   activeView:
+    | "work-items"
     | "backlog"
     | "board"
     | "calendar"
     | "gantt"
     | "sprints"
     | "documents";
+  onSelectWorkItems?: () => void;
   onSelectBoard: () => void;
   onSelectBacklog: () => void;
   onSelectGantt: () => void;
@@ -46,6 +48,7 @@ export default function MobileProjectNav({
   projectId,
   projectName,
   activeView,
+  onSelectWorkItems,
   onSelectBoard,
   onSelectBacklog,
   onSelectGantt,
@@ -87,6 +90,15 @@ export default function MobileProjectNav({
               {t("tasks:view.heading")}
             </p>
             <div className="grid grid-cols-3 gap-1">
+              {onSelectWorkItems && (
+                <button
+                  type="button"
+                  className="rounded-md p-2 text-xs"
+                  onClick={() => choose(onSelectWorkItems)}
+                >
+                  Work items
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => choose(onSelectBacklog)}
@@ -97,7 +109,7 @@ export default function MobileProjectNav({
                     : "border-transparent text-muted-foreground hover:bg-accent",
                 )}
               >
-                {t("tasks:view.backlog")}
+                Backlogs
               </button>
               <button
                 type="button"
@@ -110,7 +122,7 @@ export default function MobileProjectNav({
                 )}
               >
                 <SquareKanban className="size-3.5" />
-                {t("tasks:view.board")}
+                Boards
               </button>
               {onSelectCalendar && (
                 <button

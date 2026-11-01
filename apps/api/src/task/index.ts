@@ -313,6 +313,9 @@ const task = new Hono<{
     validator(
       "json",
       v.object({
+        workItemType: v.optional(
+          v.picklist(["epic", "feature", "backlog_item", "task", "bug"]),
+        ),
         title: v.string(),
         description: v.string(),
         startDate: v.optional(dateStringSchema),
@@ -351,11 +354,13 @@ const task = new Hono<{
         userId,
         createGitlabIssue,
         customFields,
+        workItemType,
       } = c.req.valid("json");
 
       const task = await createTask({
         projectId,
         currentUserId: c.get("userId"),
+        workItemType,
         userId: userId,
         title,
         description,

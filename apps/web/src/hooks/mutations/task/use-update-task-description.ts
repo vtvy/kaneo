@@ -8,6 +8,7 @@ export function useUpdateTaskDescription() {
   return useMutation({
     mutationFn: (task: Task) => updateTaskDescription(task.id, task),
     onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["work-items"] });
       queryClient.invalidateQueries({
         queryKey: ["task", variables.id],
       });

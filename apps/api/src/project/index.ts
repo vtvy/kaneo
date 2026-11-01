@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import * as v from "valibot";
 import { projectPermission } from "../project-rbac/require-project-permission";
@@ -98,6 +99,8 @@ const project = new Hono<{
         slug,
         userId,
       );
+      if (!newProject)
+        throw new HTTPException(500, { message: "Project creation failed" });
       return c.json(toPublicProject(newProject));
     },
   )
@@ -172,6 +175,8 @@ const project = new Hono<{
         workspaceId,
         sprintCycleWeeks,
       );
+      if (!updatedProject)
+        throw new HTTPException(404, { message: "Project not found" });
       return c.json(toPublicProject(updatedProject));
     },
   )

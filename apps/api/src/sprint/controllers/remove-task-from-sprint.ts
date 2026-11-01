@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { taskTable } from "../../database/schema";
 import { publishEvent } from "../../events";
-import syncTaskSprintMembership from "./sync-task-sprint-membership";
+import { assignWorkItemSprint } from "../../work-item/assign-sprint";
 
 async function removeTaskFromSprint({
   taskId,
@@ -24,19 +24,13 @@ async function removeTaskFromSprint({
 
   const previousSprintId = task.sprintId;
 
-  const [updatedTask] = await db
-    .update(taskTable)
-    .set({ sprintId: null })
-    .where(eq(taskTable.id, taskId))
-    .returning();
+  const updatedTask = await assignWorkItemSprint(taskId, task.projectId, null);
 
   if (!updatedTask) {
     throw new HTTPException(500, {
       message: "Failed to remove task from sprint",
     });
   }
-
-  await syncTaskSprintMembership(taskId, null);
 
   await publishEvent("task.sprint_changed", {
     taskId,

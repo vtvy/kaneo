@@ -14,6 +14,7 @@ export function useUpdateTaskPoints() {
     mutationFn: ({ id, points }: UpdateTaskPointsVariables) =>
       updateTaskPoints(id, points),
     onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["work-items"] });
       queryClient.invalidateQueries({
         queryKey: ["task", variables.id],
       });

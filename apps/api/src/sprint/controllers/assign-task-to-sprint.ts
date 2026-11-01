@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { sprintTable, taskTable } from "../../database/schema";
 import { publishEvent } from "../../events";
-import syncTaskSprintMembership from "./sync-task-sprint-membership";
+import { assignWorkItemSprint } from "../../work-item/assign-sprint";
 
 async function assignTaskToSprint({
   id,
@@ -24,6 +24,11 @@ async function assignTaskToSprint({
     });
   }
 
+  if (sprint.state === "completed")
+    throw new HTTPException(400, {
+      message: "Cannot assign work to a completed sprint",
+    });
+
   const task = await db.query.taskTable.findFirst({
     where: eq(taskTable.id, taskId),
   });
@@ -40,19 +45,13 @@ async function assignTaskToSprint({
     });
   }
 
-  const [updatedTask] = await db
-    .update(taskTable)
-    .set({ sprintId: id })
-    .where(eq(taskTable.id, taskId))
-    .returning();
+  const updatedTask = await assignWorkItemSprint(taskId, task.projectId, id);
 
   if (!updatedTask) {
     throw new HTTPException(500, {
       message: "Failed to assign task to sprint",
     });
   }
-
-  await syncTaskSprintMembership(taskId, id);
 
   await publishEvent("task.sprint_changed", {
     taskId,

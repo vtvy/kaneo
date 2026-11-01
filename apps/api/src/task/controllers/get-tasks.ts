@@ -128,6 +128,8 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
 
   const taskSelection = {
     id: taskTable.id,
+    type: taskTable.type,
+    parentId: taskTable.parentId,
     title: taskTable.title,
     number: taskTable.number,
     description: taskTable.description,

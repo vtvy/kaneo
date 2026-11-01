@@ -102,6 +102,7 @@ import {
 } from "./utils/openapi-spec";
 import { seedDefaultWorkspaceRoles } from "./utils/seed-default-workspace-roles";
 import { validateWorkspaceAccess } from "./utils/validate-workspace-access";
+import workItems from "./work-item";
 import workflowRule from "./workflow-rule";
 import workspace from "./workspace";
 import {
@@ -598,6 +599,7 @@ export function createApp() {
 
   const projectApi = api.route("/project", project);
   const taskApi = api.route("/task", task);
+  const workItemsApi = api.route("/work-items", workItems);
   const dashboardApi = api.route("/dashboard", dashboard);
   const sprintApi = api.route("/sprint", sprint);
   const columnApi = api.route("/column", column);
@@ -804,6 +806,7 @@ export function createApp() {
     searchApi,
     slackIntegrationApi,
     sprintApi,
+    workItemsApi,
     taskApi,
     taskRelationApi,
     telegramIntegrationApi,
@@ -949,6 +952,7 @@ const {
   searchApi,
   slackIntegrationApi,
   sprintApi,
+  workItemsApi,
   taskApi,
   taskRelationApi,
   telegramIntegrationApi,
@@ -970,6 +974,7 @@ if (isMainModule) {
 export type AppType =
   | typeof configApi
   | typeof projectApi
+  | typeof workItemsApi
   | typeof taskApi
   | typeof dashboardApi
   | typeof sprintApi

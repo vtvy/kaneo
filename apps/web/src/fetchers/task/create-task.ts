@@ -19,6 +19,7 @@ async function createTask(
   sprintId?: string | null,
   createGitlabIssue?: boolean,
   customFields?: CreateTaskRequest["customFields"],
+  workItemType?: CreateTaskRequest["workItemType"],
 ) {
   if (!projectId) {
     throw new Error("No project selected for task creation");
@@ -27,6 +28,7 @@ async function createTask(
   const response = await client.task[":projectId"].$post({
     json: {
       title,
+      workItemType,
       description,
       userId,
       status,

@@ -28,6 +28,8 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/preview-card";
+import { WorkItemBadge } from "@/components/work-items";
+import CardChildren from "@/components/work-items/card-children";
 import { useDeleteTask } from "@/hooks/mutations/task/use-delete-task";
 import useExternalLinks from "@/hooks/queries/external-link/use-external-links";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
@@ -262,10 +264,13 @@ function TaskCard({ task }: TaskCardProps) {
                   hyphens: "auto",
                 }}
               >
-                {task.title}
+                <WorkItemBadge type={task.type} /> {task.title}
               </div>
             </div>
 
+            {task.type && task.type !== "task" && workspace?.id && (
+              <CardChildren task={task} workspaceId={workspace.id} />
+            )}
             {showLabels && (
               <div className="mb-2.5">
                 <TaskCardLabels taskId={task.id} />
