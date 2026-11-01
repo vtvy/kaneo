@@ -30,6 +30,7 @@ import useGetWorkspaces from "@/hooks/queries/workspace/use-get-workspaces";
 import { useProjectWebSocket } from "@/hooks/use-project-websocket";
 import { useTrackRecentVisits } from "@/hooks/use-track-recent-visits";
 import { cn } from "@/lib/cn";
+import { useBackgroundStore } from "@/store/background";
 import { clearLastProjectForWorkspace } from "@/store/recent-visits";
 
 type ProjectLayoutProps = {
@@ -58,6 +59,7 @@ export default function ProjectLayout({
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
+  const background = useBackgroundStore((state) => state.background);
   const { data: project, isError: isProjectError } = useGetProject({
     id: projectId,
     workspaceId,
@@ -171,7 +173,11 @@ export default function ProjectLayout({
 
   return (
     <Layout>
-      <Layout.Header className="h-11 border-border/80 px-2">
+      <Layout.Header
+        className={cn("h-11 border-border/80 px-2", {
+          "bg-card/90 backdrop-blur": !!background,
+        })}
+      >
         <div className="flex w-full items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             <TooltipProvider>

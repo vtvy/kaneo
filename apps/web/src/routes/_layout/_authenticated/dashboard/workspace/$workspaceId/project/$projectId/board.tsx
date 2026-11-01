@@ -24,10 +24,12 @@ import { useBoardSprintFilter } from "@/hooks/use-board-sprint-filter";
 import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useTaskFiltersWithLabelsSupport } from "@/hooks/use-task-filters-with-labels-support";
+import { cn } from "@/lib/cn";
 import type { SortConfig } from "@/lib/sort-tasks";
 import { sortTasks } from "@/lib/sort-tasks";
 import { getCurrentSprint } from "@/lib/sprint";
 import useActiveSprintStore from "@/store/active-sprint";
+import { useBackgroundStore } from "@/store/background";
 import useProjectStore from "@/store/project";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 
@@ -86,6 +88,7 @@ function BoardSkeleton() {
 
 function RouteComponent() {
   const { t } = useTranslation();
+  const background = useBackgroundStore((state) => state.background);
   const { projectId, workspaceId } = Route.useParams();
   const { taskId } = Route.useSearch();
   const navigate = useNavigate();
@@ -291,7 +294,11 @@ function RouteComponent() {
           searchInputRef={boardSearchInputRef}
         />
 
-        <div className="flex h-full flex-1 overflow-hidden bg-background">
+        <div
+          className={cn("flex h-full flex-1 overflow-hidden", {
+            "bg-background": !background,
+          })}
+        >
           {displayedProject ? (
             viewMode === "board" ? (
               <KanbanBoard

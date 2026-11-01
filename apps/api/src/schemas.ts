@@ -49,6 +49,7 @@ export const projectSchema = v.object({
   isPublic: v.nullable(v.boolean()),
   archivedAt: v.nullable(v.date()),
   sprintCycleWeeks: v.optional(v.number()),
+  backgroundVersion: v.optional(v.nullable(v.string())),
 });
 
 export const taskSchema = v.object({

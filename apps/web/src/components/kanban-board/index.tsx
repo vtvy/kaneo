@@ -19,7 +19,10 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import updateTask from "@/fetchers/task/update-task";
 import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { useProjectBackground } from "@/hooks/use-project-background";
+import { cn } from "@/lib/cn";
 import { toast } from "@/lib/toast";
+import { useBackgroundStore } from "@/store/background";
 import useBulkSelectionStore from "@/store/bulk-selection";
 import useProjectStore from "@/store/project";
 import type { ProjectWithTasks } from "@/types/project";
@@ -50,6 +53,17 @@ function KanbanBoard({ project, disableDragDrop = false }: KanbanBoardProps) {
   } = useBulkSelectionStore();
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const navigate = useNavigate();
+  const background = useProjectBackground({
+    backgroundVersion: project.backgroundVersion,
+    projectId: project.id,
+    viewMode: "board",
+  });
+  const setBackground = useBackgroundStore((state) => state.setBackground);
+
+  useEffect(() => {
+    setBackground(background);
+    return () => setBackground(null);
+  }, [background, setBackground]);
 
   const refreshBoard = () => {
     const token = saveEpoch.current;
@@ -245,7 +259,11 @@ function KanbanBoard({ project, disableDragDrop = false }: KanbanBoardProps) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex h-full w-full flex-col bg-linear-to-b from-muted/20 to-background">
+      <div
+        className={cn("flex h-full w-full flex-col", {
+          "bg-linear-to-b from-muted/20 to-background": !background,
+        })}
+      >
         <div
           className={`min-h-0 flex-1 scroll-px-4 overflow-x-auto [-webkit-overflow-scrolling:touch] ${
             activeId === null ? "snap-x snap-mandatory sm:snap-none" : ""

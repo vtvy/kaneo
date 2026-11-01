@@ -1,15 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   applyKeyPrefix,
+  assertProjectBackgroundKeyMatchesContext,
   assertTaskImageKeyMatchesContext,
   buildObjectKey,
   buildObjectKeyPrefix,
+  buildProjectBackgroundObjectKeyPrefix,
   createTaskImageUploadUrl,
   getFileExtension,
   isImageContentType,
   parseBoolean,
   parsePositiveInt,
   sanitizePathSegment,
+  validateProjectBackgroundUploadInput,
   validateTaskAssetUploadInput,
 } from "../../../apps/api/src/storage/s3";
 
@@ -213,6 +216,49 @@ describe("S3 helpers", () => {
     const searchParams = new URL(upload.uploadUrl).searchParams;
     expect(searchParams.has("x-amz-checksum-crc32")).toBe(false);
     expect(searchParams.has("x-amz-sdk-checksum-algorithm")).toBe(false);
+  });
+
+  it("accepts only the exact project background key", () => {
+    process.env.S3_ENDPOINT = "https://storage.example.test";
+    process.env.S3_BUCKET = "kaneo";
+    process.env.S3_ACCESS_KEY_ID = "test-access-key";
+    process.env.S3_SECRET_ACCESS_KEY = "test-secret-key";
+    delete process.env.S3_KEY_PREFIX;
+
+    const prefix = buildProjectBackgroundObjectKeyPrefix({
+      workspaceId: "Workspace 1",
+      projectId: "Project 2",
+    });
+    const version = "abc123";
+    const key = `${prefix}/background-${version}`;
+
+    expect(
+      assertProjectBackgroundKeyMatchesContext(key, {
+        workspaceId: "Workspace 1",
+        projectId: "Project 2",
+        version,
+      }),
+    ).toBe(true);
+    expect(
+      assertProjectBackgroundKeyMatchesContext(`${prefix}/background-other`, {
+        workspaceId: "Workspace 1",
+        projectId: "Project 2",
+        version,
+      }),
+    ).toBe(false);
+    expect(
+      assertProjectBackgroundKeyMatchesContext(`${prefix}/../secret`, {
+        workspaceId: "Workspace 1",
+        projectId: "Project 2",
+        version: "..",
+      }),
+    ).toBe(false);
+    expect(() =>
+      validateProjectBackgroundUploadInput("image/svg+xml", 100),
+    ).toThrow("SVG");
+    expect(() =>
+      validateProjectBackgroundUploadInput("image/png", 100),
+    ).not.toThrow();
   });
 });
 

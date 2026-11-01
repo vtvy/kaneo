@@ -6,6 +6,7 @@ import {
   cleanupContainerStorage,
   collectContainerStorage,
 } from "../../storage/cleanup-container";
+import { deleteS3Object } from "../../storage/s3";
 import getProject from "./get-project";
 
 async function deleteProject(id: string, workspaceId: string) {
@@ -44,6 +45,9 @@ async function deleteProject(id: string, workspaceId: string) {
   }
 
   await cleanupContainerStorage(capturedStorage);
+  if (existingProject.backgroundObjectKey) {
+    deleteS3Object(existingProject.backgroundObjectKey).catch(() => {});
+  }
   return existingProject;
 }
 

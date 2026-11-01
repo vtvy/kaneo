@@ -332,6 +332,7 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
       description: project.description,
       isPublic: project.isPublic,
       workspaceId: project.workspaceId,
+      backgroundVersion: project.backgroundVersion,
       columns,
     },
     pagination: usePagination

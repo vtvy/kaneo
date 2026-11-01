@@ -77,6 +77,8 @@ function RouteComponent() {
     setShowLabels,
     showPriority,
     setShowPriority,
+    showProjectBackgrounds,
+    setShowProjectBackgrounds,
     showTaskItemCounts,
     setShowTaskItemCounts,
     resetDisplayPreferences,
@@ -420,6 +422,27 @@ function RouteComponent() {
               </p>
             </div>
             <Switch checked={showPriority} onCheckedChange={setShowPriority} />
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label
+                className="text-sm font-medium"
+                htmlFor="show-project-backgrounds"
+              >
+                {t("settings:preferencesPage.projectBackgrounds")}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t("settings:preferencesPage.projectBackgroundsDescription")}
+              </p>
+            </div>
+            <Switch
+              id="show-project-backgrounds"
+              checked={showProjectBackgrounds}
+              onCheckedChange={setShowProjectBackgrounds}
+            />
           </div>
 
           <Separator />
