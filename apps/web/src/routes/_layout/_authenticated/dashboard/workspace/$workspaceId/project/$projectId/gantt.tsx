@@ -10,8 +10,15 @@ import {
   startOfWeek,
   subDays,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Calendar, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import ProjectLayout from "@/components/common/project-layout";
 import { GanttTaskBar } from "@/components/gantt/gantt-task-bar";
@@ -70,6 +77,8 @@ function RouteComponent() {
   const taskColumnWidthRem = isMobile ? 12 : 14;
   const showTaskRail = !isMobile || isTaskRailOpen;
   const timelineTrackRef = useRef<HTMLDivElement>(null);
+  const todayCellRef = useRef<HTMLDivElement>(null);
+  const hasCenteredOnTodayRef = useRef(false);
   const [pixelsPerDay, setPixelsPerDay] = useState(44);
 
   useEffect(() => {
@@ -138,6 +147,19 @@ function RouteComponent() {
     };
   }, [scheduled, dayColumnWidthRem, weekStartsOn]);
 
+  const todayInRange = useMemo(
+    () => timeline?.days.some((day) => isToday(day)) ?? false,
+    [timeline],
+  );
+
+  const scrollToToday = useCallback((behavior: ScrollBehavior = "smooth") => {
+    todayCellRef.current?.scrollIntoView({
+      behavior,
+      inline: "center",
+      block: "nearest",
+    });
+  }, []);
+
   useLayoutEffect(() => {
     const element = timelineTrackRef.current;
     if (!element || !timeline) return;
@@ -153,6 +175,12 @@ function RouteComponent() {
     observer.observe(element);
     return () => observer.disconnect();
   }, [timeline]);
+
+  useLayoutEffect(() => {
+    if (hasCenteredOnTodayRef.current || !todayInRange) return;
+    hasCenteredOnTodayRef.current = true;
+    scrollToToday("auto");
+  }, [todayInRange, scrollToToday]);
 
   return (
     <ProjectLayout
@@ -173,14 +201,26 @@ function RouteComponent() {
               </h1>
             </div>
 
-            <div className="relative w-full max-w-sm">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder={t("tasks:gantt.searchPlaceholder")}
-                className="h-9 min-h-11 touch-manipulation sm:h-8 sm:min-h-0 [&_[data-slot=input]]:pl-8 [&_[data-slot=input]]:text-xs"
-              />
+            <div className="flex w-full max-w-sm flex-col gap-2 sm:max-w-none sm:flex-row sm:items-center lg:w-auto">
+              <div className="relative w-full sm:max-w-sm">
+                <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder={t("tasks:gantt.searchPlaceholder")}
+                  className="h-9 min-h-11 touch-manipulation sm:h-8 sm:min-h-0 [&_[data-slot=input]]:pl-8 [&_[data-slot=input]]:text-xs"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="xs"
+                className="min-h-11 touch-manipulation sm:min-h-0"
+                onClick={() => scrollToToday()}
+                disabled={!todayInRange}
+              >
+                <Calendar className="size-3.5" />
+                {t("tasks:gantt.jumpToToday")}
+              </Button>
             </div>
 
             <Button
@@ -247,10 +287,12 @@ function RouteComponent() {
                         const showMonth =
                           index === 0 ||
                           !isSameMonth(day, timeline.days[index - 1] ?? day);
+                        const isCurrentDay = isToday(day);
 
                         return (
                           <div
                             key={day.toISOString()}
+                            ref={isCurrentDay ? todayCellRef : undefined}
                             className={cn(
                               "border-r border-border/70 px-0.5 py-2 text-center sm:px-1",
                               isWeekend(day) && "bg-muted/25",
@@ -262,7 +304,7 @@ function RouteComponent() {
                             <div
                               className={cn(
                                 "mx-auto flex size-6 items-center justify-center rounded-full text-xs font-medium",
-                                isToday(day) &&
+                                isCurrentDay &&
                                   "bg-primary text-primary-foreground",
                               )}
                             >

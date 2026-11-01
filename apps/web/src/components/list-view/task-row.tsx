@@ -73,7 +73,13 @@ function TaskRow({ task, projectSlug }: TaskRowProps) {
   const [isDeleteTaskModalOpen, setIsDeleteTaskModalOpen] = useState(false);
   const { mutateAsync: deleteTask } = useDeleteTask();
   const { data: externalLinks } = useExternalLinks(task.id);
-  const { toggleSelection, isSelected, isFocused } = useBulkSelectionStore();
+  const {
+    toggleSelection,
+    isSelected,
+    isFocused,
+    selectRange,
+    setSelectionAnchor,
+  } = useBulkSelectionStore();
   const isTaskSelected = isSelected(task.id);
   const isTaskFocused = isFocused(task.id);
 
@@ -130,11 +136,19 @@ function TaskRow({ task, projectSlug }: TaskRowProps) {
     if (!project || !task) return;
     if (e.defaultPrevented) return;
 
+    if (e.type === "click" && e.shiftKey) {
+      e.preventDefault();
+      selectRange(task.id);
+      return;
+    }
+
     if (e.metaKey || e.ctrlKey) {
       e.preventDefault();
       toggleSelection(task.id);
       return;
     }
+
+    setSelectionAnchor(task.id);
 
     const currentParams = new URLSearchParams(window.location.search);
     const currentTaskId = currentParams.get("taskId");

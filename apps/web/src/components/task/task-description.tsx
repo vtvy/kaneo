@@ -61,6 +61,7 @@ import {
   isYouTubeUrl,
   normalizeUrl,
 } from "@/lib/editor-url-utils";
+import { pasteMarkdown } from "@/lib/paste-markdown";
 import { getSharedShikiHighlighter } from "@/lib/shiki-highlighter";
 import { toast } from "@/lib/toast";
 import { uploadTaskImage } from "@/lib/upload-task-image";
@@ -625,6 +626,8 @@ export default function TaskDescription({ taskId }: TaskDescriptionProps) {
             );
             return true;
           }
+
+          if (pasteMarkdown(view, event)) return true;
 
           const pastedText = plainText.trim();
           if (!pastedText || /\s/.test(pastedText)) return false;
