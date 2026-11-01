@@ -21,13 +21,14 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { produce } from "immer";
 import { Archive, ChevronRight, Flag, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { priorityColorsTaskCard } from "@/constants/priority-colors";
 import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
 import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { cn } from "@/lib/cn";
 import { getColumnIcon } from "@/lib/column";
+import { flattenSubtaskRows } from "@/lib/subtask-tree";
 import { toast } from "@/lib/toast";
 import useBulkSelectionStore from "@/store/bulk-selection";
 import useProjectStore from "@/store/project";
@@ -56,6 +57,19 @@ function ListView({ project, disableDragDrop = false }: ListViewProps) {
   const navigate = useNavigate();
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [overColumnId, setOverColumnId] = useState<string | null>(null);
+  const [expandedSubtasks, setExpandedSubtasks] = useState<
+    Record<string, boolean>
+  >({});
+  const tasksById = useMemo(() => {
+    const tasks = new Map<
+      string,
+      (typeof project.columns)[number]["tasks"][number]
+    >();
+    for (const column of project?.columns ?? []) {
+      for (const task of column.tasks) tasks.set(task.id, task);
+    }
+    return tasks;
+  }, [project?.columns]);
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
   >(() => {
@@ -352,11 +366,25 @@ function ListView({ project, disableDragDrop = false }: ListViewProps) {
               items={column.tasks}
               strategy={verticalListSortingStrategy}
             >
-              {column.tasks.map((task) => (
+              {flattenSubtaskRows({
+                tasks: column.tasks,
+                tasksById,
+                isExpanded: (rowId) => expandedSubtasks[rowId] === true,
+              }).map((row) => (
                 <TaskRow
-                  key={task.id}
-                  task={task}
+                  key={row.rowId}
+                  task={row.task}
                   projectSlug={project?.slug ?? ""}
+                  depth={row.depth}
+                  childCount={row.childCount}
+                  expanded={expandedSubtasks[row.rowId] === true}
+                  sortableId={row.depth === 0 ? row.task.id : row.rowId}
+                  onToggleExpand={() =>
+                    setExpandedSubtasks((current) => ({
+                      ...current,
+                      [row.rowId]: !current[row.rowId],
+                    }))
+                  }
                 />
               ))}
             </SortableContext>

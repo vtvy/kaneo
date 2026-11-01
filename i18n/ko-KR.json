@@ -608,6 +608,10 @@
 			"firstDayOfWeek": "주의 첫 요일",
 			"firstDayOfWeekDescription": "캘린더와 주간 범위가 일요일 또는 월요일에 시작할지 선택합니다",
 			"selectFirstDayOfWeek": "첫 요일 선택",
+			"priorityIcons": "Priority icons",
+			"priorityIconsDescription": "Choose classic arrows or the compact marks",
+			"priorityIconsClassic": "Classic",
+			"priorityIconsMarks": "Marks",
 			"weekStartsOnSunday": "일요일",
 			"weekStartsOnMonday": "월요일",
 			"weekStartsOnSaturday": "Saturday",
@@ -2455,6 +2459,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "일반 텍스트",
 					"python": "Python",
 					"rust": "Rust",
@@ -2572,6 +2577,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2640,7 +2646,8 @@
 			"deleteError": "작업 삭제에 실패했습니다",
 			"deleteDialogTitle": "작업을 삭제하시겠습니까?",
 			"deleteDialogDescription": "작업과 모든 데이터가 영구적으로 제거됩니다. 이 작업은 취소할 수 없습니다.",
-			"deleteAction": "작업 삭제"
+			"deleteAction": "작업 삭제",
+			"progress": "{{completed}} of {{total}} subtasks"
 		},
 		"properties": {
 			"title": "속성",
@@ -2839,6 +2846,8 @@
 		"listView": {
 			"addTask": "작업 추가",
 			"archiveAllTooltip": "완료된 모든 작업 보관",
+			"collapseSubtasks": "Hide subtasks",
+			"expandSubtasks": "Show subtasks",
 			"noTasks": "작업 없음"
 		},
 		"kanban": {
@@ -3179,7 +3188,10 @@
 		},
 		"invitations": {
 			"expires": "Expires {{date}}",
-			"pendingBadge": "pending"
+			"pendingBadge": "pending",
+			"copyFailed": "Could not copy the invitation link",
+			"copyLink": "Copy invitation link",
+			"linkCopied": "Invitation link copied"
 		}
 	},
 	"publicProject": {

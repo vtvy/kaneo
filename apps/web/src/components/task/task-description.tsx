@@ -143,6 +143,7 @@ const CODE_LANGUAGE_OPTIONS = [
   { value: "kotlin", label: "Kotlin" },
   { value: "makefile", label: "Makefile" },
   { value: "markdown", label: "Markdown" },
+  { value: "mermaid", label: "Mermaid" },
   { value: "ocaml", label: "OCaml" },
   { value: "php", label: "PHP" },
   { value: "perl", label: "Perl" },
@@ -163,6 +164,7 @@ const CODE_LANGUAGE_OPTIONS = [
 
 const SHIKI_LANGUAGE_ALIASES: Record<string, string> = {
   excel: "csv",
+  mermaid: "text",
   plaintext: "text",
   reasonml: "ocaml",
 };

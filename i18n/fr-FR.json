@@ -608,6 +608,10 @@
 			"firstDayOfWeek": "Premier jour de la semaine",
 			"firstDayOfWeekDescription": "Choisissez si les calendriers et les semaines commencent le dimanche ou le lundi",
 			"selectFirstDayOfWeek": "Sélectionnez le premier jour",
+			"priorityIcons": "Priority icons",
+			"priorityIconsDescription": "Choose classic arrows or the compact marks",
+			"priorityIconsClassic": "Classic",
+			"priorityIconsMarks": "Marks",
 			"weekStartsOnSunday": "Dimanche",
 			"weekStartsOnMonday": "Lundi",
 			"weekStartsOnSaturday": "Saturday",
@@ -2455,6 +2459,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Plaintext",
 					"python": "Python",
 					"rust": "Rust",
@@ -2572,6 +2577,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2640,7 +2646,8 @@
 			"deleteError": "Échec de la suppression de la tâche",
 			"deleteDialogTitle": "Supprimer la tâche ?",
 			"deleteDialogDescription": "Cela supprimera définitivement la tâche et toutes ses données. Vous ne pouvez pas annuler cette action.",
-			"deleteAction": "Supprimer la tâche"
+			"deleteAction": "Supprimer la tâche",
+			"progress": "{{completed}} of {{total}} subtasks"
 		},
 		"properties": {
 			"title": "Propriétés",
@@ -2839,6 +2846,8 @@
 		"listView": {
 			"addTask": "Ajouter une tâche",
 			"archiveAllTooltip": "Archiver toutes les tâches terminées",
+			"collapseSubtasks": "Hide subtasks",
+			"expandSubtasks": "Show subtasks",
 			"noTasks": "Aucune tâche"
 		},
 		"kanban": {
@@ -3179,7 +3188,10 @@
 		},
 		"invitations": {
 			"expires": "Expires {{date}}",
-			"pendingBadge": "pending"
+			"pendingBadge": "pending",
+			"copyFailed": "Could not copy the invitation link",
+			"copyLink": "Copy invitation link",
+			"linkCopied": "Invitation link copied"
 		}
 	},
 	"publicProject": {

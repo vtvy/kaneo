@@ -616,6 +616,10 @@
 			"firstDayOfWeek": "Перший день тижня",
 			"firstDayOfWeekDescription": "Оберіть, чи календарі та тижні починаються в неділю або понеділок",
 			"selectFirstDayOfWeek": "Обрати перший день",
+			"priorityIcons": "Priority icons",
+			"priorityIconsDescription": "Choose classic arrows or the compact marks",
+			"priorityIconsClassic": "Classic",
+			"priorityIconsMarks": "Marks",
 			"weekStartsOnSunday": "Неділя",
 			"weekStartsOnMonday": "Понеділок",
 			"weekStartsOnSaturday": "Saturday",
@@ -2479,6 +2483,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Звичайний текст",
 					"python": "Python",
 					"rust": "Rust",
@@ -2598,6 +2603,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2666,7 +2672,8 @@
 			"deleteError": "Не вдалося видалити завдання",
 			"deleteDialogTitle": "Видалити завдання?",
 			"deleteDialogDescription": "Це назавжди видалить завдання та всі його дані. Цю дію неможливо скасувати.",
-			"deleteAction": "Видалити завдання"
+			"deleteAction": "Видалити завдання",
+			"progress": "{{completed}} of {{total}} subtasks"
 		},
 		"properties": {
 			"title": "Властивості",
@@ -2873,6 +2880,8 @@
 		"listView": {
 			"addTask": "Додати завдання",
 			"archiveAllTooltip": "Архівувати всі завершені завдання",
+			"collapseSubtasks": "Hide subtasks",
+			"expandSubtasks": "Show subtasks",
 			"noTasks": "Немає завдань"
 		},
 		"kanban": {
@@ -3255,7 +3264,10 @@
 		},
 		"invitations": {
 			"expires": "Expires {{date}}",
-			"pendingBadge": "pending"
+			"pendingBadge": "pending",
+			"copyFailed": "Could not copy the invitation link",
+			"copyLink": "Copy invitation link",
+			"linkCopied": "Invitation link copied"
 		}
 	},
 	"publicProject": {

@@ -63,6 +63,8 @@ function RouteComponent() {
     setTheme,
     weekStartsOn,
     setWeekStartsOn,
+    priorityIconStyle,
+    setPriorityIconStyle,
     viewMode,
     setViewMode,
     showTaskNumbers,
@@ -229,6 +231,43 @@ function RouteComponent() {
                     {weekStartLabels[day]}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">
+                {t("settings:preferencesPage.priorityIcons")}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t("settings:preferencesPage.priorityIconsDescription")}
+              </p>
+            </div>
+            <Select
+              value={priorityIconStyle}
+              onValueChange={(value) => {
+                if (value === "classic" || value === "marks") {
+                  setPriorityIconStyle(value);
+                }
+              }}
+            >
+              <SelectTrigger size="sm" className="w-40">
+                <SelectValue>
+                  {priorityIconStyle === "marks"
+                    ? t("settings:preferencesPage.priorityIconsMarks")
+                    : t("settings:preferencesPage.priorityIconsClassic")}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="classic">
+                  {t("settings:preferencesPage.priorityIconsClassic")}
+                </SelectItem>
+                <SelectItem value="marks">
+                  {t("settings:preferencesPage.priorityIconsMarks")}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>

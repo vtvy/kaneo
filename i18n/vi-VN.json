@@ -608,6 +608,10 @@
 			"firstDayOfWeek": "Ngày đầu tuần",
 			"firstDayOfWeekDescription": "Chọn ngày mà lịch và khoảng tuần bắt đầu",
 			"selectFirstDayOfWeek": "Chọn ngày đầu",
+			"priorityIcons": "Biểu tượng ưu tiên",
+			"priorityIconsDescription": "Chọn mũi tên kiểu cũ hoặc dấu gạch gọn",
+			"priorityIconsClassic": "Kiểu cũ",
+			"priorityIconsMarks": "Dấu gạch",
 			"weekStartsOnSunday": "Chủ nhật",
 			"weekStartsOnMonday": "Thứ hai",
 			"weekStartsOnSaturday": "Thứ bảy",
@@ -2455,6 +2459,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Văn bản thuần",
 					"python": "Python",
 					"rust": "Rust",
@@ -2572,6 +2577,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2640,7 +2646,8 @@
 			"deleteError": "Không thể xóa công việc",
 			"deleteDialogTitle": "Xóa công việc?",
 			"deleteDialogDescription": "Thao tác này sẽ xóa vĩnh viễn công việc và toàn bộ dữ liệu liên quan. Bạn không thể hoàn tác.",
-			"deleteAction": "Xóa công việc"
+			"deleteAction": "Xóa công việc",
+			"progress": "{{completed}}/{{total}} công việc con"
 		},
 		"properties": {
 			"title": "Thuộc tính",
@@ -2839,6 +2846,8 @@
 		"listView": {
 			"addTask": "Thêm công việc",
 			"archiveAllTooltip": "Lưu trữ tất cả công việc đã hoàn thành",
+			"collapseSubtasks": "Ẩn công việc con",
+			"expandSubtasks": "Hiện công việc con",
 			"noTasks": "Không có công việc"
 		},
 		"kanban": {
@@ -3179,7 +3188,10 @@
 		},
 		"invitations": {
 			"expires": "Hết hạn {{date}}",
-			"pendingBadge": "đang chờ"
+			"pendingBadge": "đang chờ",
+			"copyFailed": "Không sao chép được liên kết mời",
+			"copyLink": "Sao chép liên kết mời",
+			"linkCopied": "Đã sao chép liên kết mời"
 		}
 	},
 	"publicProject": {

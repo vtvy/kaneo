@@ -6,8 +6,10 @@ import {
   Calendar,
   CalendarClock,
   CalendarX,
+  ChevronRight,
   GitMerge,
   GitPullRequest,
+  ListTree,
 } from "lucide-react";
 import { type CSSProperties, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -33,7 +35,7 @@ import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { cn } from "@/lib/cn";
 import { dueDateStatusColors, getDueDateStatus } from "@/lib/due-date-status";
-import { getPriorityIcon } from "@/lib/priority";
+import { PriorityGlyph } from "@/lib/priority";
 import { toast } from "@/lib/toast";
 import queryClient from "@/query-client";
 import useBulkSelectionStore from "@/store/bulk-selection";
@@ -47,9 +49,22 @@ import { ContextMenu, ContextMenuTrigger } from "../ui/context-menu";
 type TaskRowProps = {
   task: Task;
   projectSlug: string;
+  depth?: number;
+  childCount?: number;
+  expanded?: boolean;
+  sortableId?: string;
+  onToggleExpand?: () => void;
 };
 
-function TaskRow({ task, projectSlug }: TaskRowProps) {
+function TaskRow({
+  task,
+  projectSlug,
+  depth = 0,
+  childCount = 0,
+  expanded = false,
+  sortableId,
+  onToggleExpand,
+}: TaskRowProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const {
@@ -59,7 +74,7 @@ function TaskRow({ task, projectSlug }: TaskRowProps) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id });
+  } = useSortable({ id: sortableId ?? task.id, disabled: depth > 0 });
 
   const { project } = useProjectStore();
   const { data: workspace } = useActiveWorkspace();
@@ -209,12 +224,34 @@ function TaskRow({ task, projectSlug }: TaskRowProps) {
               "group relative flex items-center gap-3 px-4 py-1.5 transition-colors cursor-pointer",
               isTaskSelected ? "bg-accent/45" : "hover:bg-accent/60",
             )}
+            style={{ paddingLeft: `${16 + depth * 20}px` }}
             {...attributes}
             {...listeners}
           >
+            {childCount > 0 ? (
+              <button
+                type="button"
+                className="flex-shrink-0 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                aria-expanded={expanded}
+                aria-label={t(
+                  expanded
+                    ? "tasks:listView.collapseSubtasks"
+                    : "tasks:listView.expandSubtasks",
+                )}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleExpand?.();
+                }}
+              >
+                <ChevronRight
+                  className={cn("h-3.5 w-3.5", expanded && "rotate-90")}
+                />
+              </button>
+            ) : null}
             {showPriority && (
               <div className="flex-shrink-0 first:[&_svg]:h-4 first:[&_svg]:w-4">
-                {getPriorityIcon(task.priority ?? "")}
+                <PriorityGlyph priority={task.priority ?? ""} />
               </div>
             )}
             {showTaskNumbers && (
@@ -230,6 +267,24 @@ function TaskRow({ task, projectSlug }: TaskRowProps) {
                 </span>
                 <div className="flex items-center gap-1">
                   {showLabels && <TaskCardLabels taskId={task.id} />}
+                  {task.subtaskCounts && task.subtaskCounts.total > 0 && (
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium",
+                        task.subtaskCounts.completed ===
+                          task.subtaskCounts.total
+                          ? "border-emerald-500/40 text-emerald-600"
+                          : "border-border text-muted-foreground",
+                      )}
+                      title={t("tasks:subtasks.progress", {
+                        completed: task.subtaskCounts.completed,
+                        total: task.subtaskCounts.total,
+                      })}
+                    >
+                      <ListTree className="h-3 w-3" />
+                      {task.subtaskCounts.completed}/{task.subtaskCounts.total}
+                    </span>
+                  )}
 
                   {pullRequests.length === 1 && (
                     <HoverCard openDelay={200} closeDelay={100}>

@@ -43,6 +43,9 @@ type UserPreferencesStore = {
 
   weekStartsOn: WeekStartDay;
   setWeekStartsOn: (weekStartsOn: WeekStartDay) => void;
+
+  priorityIconStyle: "classic" | "marks";
+  setPriorityIconStyle: (style: "classic" | "marks") => void;
 };
 
 export const useUserPreferencesStore = create<UserPreferencesStore>()(
@@ -115,6 +118,9 @@ export const useUserPreferencesStore = create<UserPreferencesStore>()(
 
       weekStartsOn: 0,
       setWeekStartsOn: (weekStartsOn) => set({ weekStartsOn }),
+
+      priorityIconStyle: "classic",
+      setPriorityIconStyle: (priorityIconStyle) => set({ priorityIconStyle }),
     }),
     {
       name: "user-preferences",

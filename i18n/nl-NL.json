@@ -519,6 +519,10 @@
 			"firstDayOfWeek": "Eerste dag van de week",
 			"firstDayOfWeekDescription": "Kies of kalenders en weekoverzichten op zondag of maandag beginnen",
 			"selectFirstDayOfWeek": "Selecteer de eerste dag",
+			"priorityIcons": "Priority icons",
+			"priorityIconsDescription": "Choose classic arrows or the compact marks",
+			"priorityIconsClassic": "Classic",
+			"priorityIconsMarks": "Marks",
 			"weekStartsOnSunday": "Zondag",
 			"weekStartsOnMonday": "Maandag",
 			"weekStartsOnSaturday": "Saturday",
@@ -2455,6 +2459,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Platte tekst",
 					"python": "Python",
 					"rust": "Rust",
@@ -2572,6 +2577,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2640,7 +2646,8 @@
 			"deleteError": "Verwijderen taak mislukt",
 			"deleteDialogTitle": "Taak verwijderen?",
 			"deleteDialogDescription": "Dit zal de taak en alle data permanent verwijderen. Dit kan niet ongedaan worden gemaakt.",
-			"deleteAction": "Taak verwijderen"
+			"deleteAction": "Taak verwijderen",
+			"progress": "{{completed}} of {{total}} subtasks"
 		},
 		"properties": {
 			"title": "Eigenschappen",
@@ -2828,6 +2835,8 @@
 		"listView": {
 			"addTask": "Taak toevoegen",
 			"archiveAllTooltip": "Alle voltooide taken archiveren",
+			"collapseSubtasks": "Hide subtasks",
+			"expandSubtasks": "Show subtasks",
 			"noTasks": "Geen taken"
 		},
 		"kanban": {
@@ -3179,7 +3188,10 @@
 		},
 		"invitations": {
 			"expires": "Expires {{date}}",
-			"pendingBadge": "pending"
+			"pendingBadge": "pending",
+			"copyFailed": "Could not copy the invitation link",
+			"copyLink": "Copy invitation link",
+			"linkCopied": "Invitation link copied"
 		}
 	},
 	"publicProject": {

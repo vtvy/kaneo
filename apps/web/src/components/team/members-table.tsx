@@ -1,5 +1,11 @@
 import { DEFAULT_ROLE_NAMES } from "@kaneo/permissions";
-import { EllipsisIcon, MailIcon, ShieldIcon, TrashIcon } from "lucide-react";
+import {
+  CopyIcon,
+  EllipsisIcon,
+  MailIcon,
+  ShieldIcon,
+  TrashIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import useCancelInvitation from "@/hooks/mutations/workspace-user/use-cancel-invitation";
@@ -8,6 +14,7 @@ import useUpdateWorkspaceUserRole from "@/hooks/mutations/workspace-user/use-upd
 import useWorkspaceRoles from "@/hooks/queries/workspace/use-workspace-roles";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
+import { copyText } from "@/lib/copy-text";
 import { formatDateMedium } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import type {
@@ -366,15 +373,35 @@ function MembersTable({ workspaceId, invitations, users }: Props) {
               </TableCell>
               <TableCell className="pe-6 py-3 text-right">
                 {canInvite ? (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setInvitationToCancel(invitation)}
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    aria-label={t("team:membersTable.ariaCancelInvitation")}
-                  >
-                    <TrashIcon className="size-4" />
-                  </Button>
+                  <div className="inline-flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const link = `${window.location.origin}/invitation/accept/${invitation.id}`;
+                        copyText(link)
+                          .then(() =>
+                            toast.success(t("team:invitations.linkCopied")),
+                          )
+                          .catch(() =>
+                            toast.error(t("team:invitations.copyFailed")),
+                          );
+                      }}
+                      className="h-8 w-8 text-muted-foreground"
+                      aria-label={t("team:invitations.copyLink")}
+                    >
+                      <CopyIcon className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setInvitationToCancel(invitation)}
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      aria-label={t("team:membersTable.ariaCancelInvitation")}
+                    >
+                      <TrashIcon className="size-4" />
+                    </Button>
+                  </div>
                 ) : null}
               </TableCell>
             </TableRow>

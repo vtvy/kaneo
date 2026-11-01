@@ -127,6 +127,7 @@ const CODE_LANG_VALUES = [
   "java",
   "javascript",
   "markdown",
+  "mermaid",
   "plaintext",
   "python",
   "rust",
@@ -139,6 +140,7 @@ const CODE_LANG_VALUES = [
 type EmbedComposerErrorKey = "embedErrorInvalidUrl" | "embedErrorYoutubeOnly";
 
 const COMMENT_SHIKI_LANGUAGE_ALIASES: Record<string, string> = {
+  mermaid: "text",
   plaintext: "text",
 };
 

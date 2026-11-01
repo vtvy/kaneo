@@ -363,6 +363,16 @@ input:-webkit-autofill:active {
     line-height: 1;
   }
 
+  .kaneo-mermaid {
+    margin-top: 0.5rem;
+    overflow-x: auto;
+  }
+
+  .kaneo-mermaid svg {
+    max-width: 100%;
+    height: auto;
+  }
+
   .kaneo-tiptap-content .ProseMirror {
     min-height: 1.85rem;
     padding: 0.2rem 0 2.9rem;

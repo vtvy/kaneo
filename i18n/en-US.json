@@ -608,6 +608,10 @@
 			"firstDayOfWeek": "First Day of Week",
 			"firstDayOfWeekDescription": "Choose which day calendars and weekly ranges start on",
 			"selectFirstDayOfWeek": "Select first day",
+			"priorityIcons": "Priority icons",
+			"priorityIconsDescription": "Choose classic arrows or the compact marks",
+			"priorityIconsClassic": "Classic",
+			"priorityIconsMarks": "Marks",
 			"weekStartsOnSunday": "Sunday",
 			"weekStartsOnMonday": "Monday",
 			"weekStartsOnSaturday": "Saturday",
@@ -2455,6 +2459,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Plaintext",
 					"python": "Python",
 					"rust": "Rust",
@@ -2572,6 +2577,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2640,7 +2646,8 @@
 			"deleteError": "Failed to delete task",
 			"deleteDialogTitle": "Delete Task?",
 			"deleteDialogDescription": "This will permanently remove the task and all its data. You can't undo this action.",
-			"deleteAction": "Delete Task"
+			"deleteAction": "Delete Task",
+			"progress": "{{completed}} of {{total}} subtasks"
 		},
 		"properties": {
 			"title": "Properties",
@@ -2839,6 +2846,8 @@
 		"listView": {
 			"addTask": "Add task",
 			"archiveAllTooltip": "Archive all completed tasks",
+			"collapseSubtasks": "Hide subtasks",
+			"expandSubtasks": "Show subtasks",
 			"noTasks": "No tasks"
 		},
 		"kanban": {
@@ -3179,7 +3188,10 @@
 		},
 		"invitations": {
 			"expires": "Expires {{date}}",
-			"pendingBadge": "pending"
+			"pendingBadge": "pending",
+			"copyFailed": "Could not copy the invitation link",
+			"copyLink": "Copy invitation link",
+			"linkCopied": "Invitation link copied"
 		}
 	},
 	"publicProject": {

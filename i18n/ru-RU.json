@@ -616,6 +616,10 @@
 			"firstDayOfWeek": "Первый день недели",
 			"firstDayOfWeekDescription": "Выберите, начинаются ли календари и недели с воскресенья или понедельника",
 			"selectFirstDayOfWeek": "Выберите первый день",
+			"priorityIcons": "Priority icons",
+			"priorityIconsDescription": "Choose classic arrows or the compact marks",
+			"priorityIconsClassic": "Classic",
+			"priorityIconsMarks": "Marks",
 			"weekStartsOnSunday": "Воскресенье",
 			"weekStartsOnMonday": "Понедельник",
 			"weekStartsOnSaturday": "Saturday",
@@ -2479,6 +2483,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Простой текст",
 					"python": "Python",
 					"rust": "Rust",
@@ -2598,6 +2603,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2666,7 +2672,8 @@
 			"deleteError": "Не удалось удалить задачу",
 			"deleteDialogTitle": "Удалить задачу?",
 			"deleteDialogDescription": "Задача и все её данные будут безвозвратно удалены. Это действие нельзя отменить.",
-			"deleteAction": "Удалить задачу"
+			"deleteAction": "Удалить задачу",
+			"progress": "{{completed}} of {{total}} subtasks"
 		},
 		"properties": {
 			"title": "Свойства",
@@ -2877,6 +2884,8 @@
 		"listView": {
 			"addTask": "Добавить задачу",
 			"archiveAllTooltip": "Архивировать все завершённые задачи",
+			"collapseSubtasks": "Hide subtasks",
+			"expandSubtasks": "Show subtasks",
 			"noTasks": "Нет задач"
 		},
 		"kanban": {
@@ -3263,7 +3272,10 @@
 		},
 		"invitations": {
 			"expires": "Expires {{date}}",
-			"pendingBadge": "pending"
+			"pendingBadge": "pending",
+			"copyFailed": "Could not copy the invitation link",
+			"copyLink": "Copy invitation link",
+			"linkCopied": "Invitation link copied"
 		}
 	},
 	"publicProject": {
