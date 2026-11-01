@@ -1,5 +1,5 @@
 import { Effect, Option } from "effect";
-import { getProject, listColumns } from "../api/endpoints.js";
+import { getProject, getWorkspace, listColumns } from "../api/endpoints.js";
 import { KaneoApi } from "../api/kaneo-api.js";
 import {
   type Column,
@@ -37,14 +37,20 @@ export const fetchTask = Effect.fn("tasks.fetch")(function* (
     new NotFound({ message: `Task ${trimmed} not found.` });
 
   if (isTicketId(trimmed)) {
+    const workspaceId = Option.getOrUndefined(session.workspace)?.id;
+    if (!workspaceId) {
+      return yield* new InvalidArgument({
+        message: `Pass a workspace to look up ${trimmed.toUpperCase()}.`,
+        hint: "Pass -w <workspace id>.",
+      });
+    }
+    const workspace = yield* getWorkspace(workspaceId);
     return yield* api
       .request(
         "GET",
-        `/api/task/by-ticket-id/${encodeURIComponent(trimmed.toUpperCase())}`,
+        `/api/task/ticket/${encodeURIComponent(trimmed.toUpperCase())}`,
         TaskDetailSchema,
-        {
-          query: { workspaceId: Option.getOrUndefined(session.workspace)?.id },
-        },
+        { query: { workspaceSlug: workspace.slug } },
       )
       .pipe(
         Effect.catchTags({

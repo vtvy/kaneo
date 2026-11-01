@@ -38,22 +38,14 @@ function useWorkspaceRoles(workspaceId: string | undefined) {
         query: { organizationId: workspaceId },
       });
       if (result.error) throw new Error(result.error.message);
-      const roles = (result.data ?? []) as Array<{
-        id: string;
-        organizationId: string;
-        role: string;
-        permission: string;
-        createdAt: Date | string;
-        updatedAt?: Date | string | null;
-      }>;
 
-      return roles.map((r) => ({
-        id: r.id,
-        workspaceId: r.organizationId,
-        role: r.role,
-        permission: parsePermission(r.permission),
-        createdAt: r.createdAt,
-        updatedAt: r.updatedAt,
+      return (result.data ?? []).map((role) => ({
+        id: role.id,
+        workspaceId: role.organizationId,
+        role: role.role,
+        permission: parsePermission(role.permission),
+        createdAt: role.createdAt,
+        updatedAt: role.updatedAt,
       }));
     },
   });

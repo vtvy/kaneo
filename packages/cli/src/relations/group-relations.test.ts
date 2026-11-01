@@ -106,6 +106,22 @@ describe("groupRelations", () => {
     expect(grouped.relations[0]?.task.ticketId).toBeNull();
   });
 
+  it("treats a done status as completed when the server omits isCompleted", () => {
+    const withoutFlag = {
+      id: "child2",
+      title: "Task child2",
+      status: "done",
+      number: 4,
+      projectId: "p1",
+    };
+    const grouped = groupRelations(
+      [relation(tasks.me, withoutFlag, "subtask")],
+      "me",
+      context,
+    );
+    expect(grouped.subtasks[0]?.completed).toBe(true);
+  });
+
   it("is empty without relations", () => {
     expect(groupRelations([], "me", context)).toEqual({
       parent: null,

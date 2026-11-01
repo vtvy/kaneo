@@ -25,6 +25,7 @@ const EditableTask = Schema.Struct({
   id: Schema.String,
   projectId: Schema.String,
   title: Schema.String,
+  description: NullableString,
   status: Schema.String,
   priority: Schema.String,
   position: Schema.NullOr(Schema.Number),
@@ -125,6 +126,7 @@ export const updateTaskStartDate = Effect.fnUntraced(function* (
   return yield* api.request("PUT", path, UpdatedTask, {
     body: {
       title: current.title,
+      description: current.description ?? "",
       status: current.status,
       priority: current.priority || "no-priority",
       projectId: current.projectId,

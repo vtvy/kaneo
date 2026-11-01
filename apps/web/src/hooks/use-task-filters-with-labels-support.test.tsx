@@ -27,8 +27,6 @@ describe("useTaskFiltersWithLabelsSupport", () => {
       icon: null,
       description: null,
       isPublic: false,
-      createdAt: "2026-04-16T00:00:00.000Z",
-      updatedAt: "2026-04-16T00:00:00.000Z",
       workspaceId: "workspace-1",
       columns: [
         {
@@ -36,6 +34,7 @@ describe("useTaskFiltersWithLabelsSupport", () => {
           slug: "todo",
           name: "Todo",
           icon: null,
+          color: null,
           isFinal: false,
           tasks: [
             {
@@ -87,8 +86,6 @@ describe("useTaskFiltersWithLabelsSupport", () => {
           ],
         },
       ],
-      plannedTasks: [],
-      archivedTasks: [],
     };
 
     const { result } = renderHook(() =>

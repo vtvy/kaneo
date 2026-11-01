@@ -9,7 +9,7 @@ function useGetProject({
   workspaceId: string;
 }) {
   return useQuery({
-    queryFn: () => getProject({ id, workspaceId }),
+    queryFn: () => getProject({ id }),
     queryKey: ["projects", workspaceId, id],
     enabled: !!id,
   });

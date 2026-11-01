@@ -59,9 +59,13 @@ const BUILT_IN_RESOURCES = new Set([
   "invitation",
   "ac",
 ]);
-const CUSTOM_RESOURCES = (Object.keys(statement) as string[]).filter(
-  (key) => !BUILT_IN_RESOURCES.has(key),
-);
+type StatementResource = keyof typeof statement;
+
+function isCustomResource(key: string): key is StatementResource {
+  return !BUILT_IN_RESOURCES.has(key) && key in statement;
+}
+
+const CUSTOM_RESOURCES = Object.keys(statement).filter(isCustomResource);
 
 const RESOURCE_LABELS: Record<string, string> = {
   project: "Projects",
@@ -306,7 +310,7 @@ function RouteComponent() {
               </Empty>
             ) : (
               <Accordion
-                openMultiple
+                multiple
                 value={openCustom}
                 onValueChange={(value) =>
                   setOpenCustom(Array.isArray(value) ? value : [value])
@@ -440,7 +444,7 @@ function PermissionList({
     () =>
       CUSTOM_RESOURCES.map((resource) => ({
         resource,
-        actions: [...(statement[resource] ?? [])] as string[],
+        actions: statement[resource].slice(),
       })),
     [],
   );

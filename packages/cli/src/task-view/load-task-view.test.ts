@@ -20,8 +20,19 @@ import {
 
 type Routes = Readonly<Record<string, () => Response>>;
 
+const workspace = {
+  id: "ws_1",
+  name: "Acme",
+  slug: "acme",
+  logo: null,
+  description: null,
+  createdAt: "2026-01-01T00:00:00.000Z",
+  role: "owner",
+};
+
 const baseRoutes: Routes = {
-  "/api/task/by-ticket-id/KAN-12": () => json(resolvedTask.task),
+  "/api/workspace": () => json([workspace]),
+  "/api/task/ticket/KAN-12": () => json(resolvedTask.task),
   "/api/project/p1": () => json(resolvedTask.project),
   "/api/column/p1": () => json(resolvedTask.columns),
   "/api/label/task/t12": () => json(sectionValue(sectionsFixture.labels)),
@@ -63,12 +74,13 @@ function run(
   );
   const paths = () =>
     recorded.map((request) => new URL(request.url).pathname).sort();
-  return { result, paths };
+  const urls = () => recorded.map((request) => request.url);
+  return { result, paths, urls };
 }
 
 describe("loadTaskView", () => {
   it("loads the task and every section", async () => {
-    const { result, paths } = run();
+    const { result, paths, urls } = run();
     const loaded = Result.getOrThrow(await result);
     expect(loaded.resolved).toEqual(resolvedTask);
     expect(loaded.sections.labels._tag).toBe("Loaded");
@@ -83,9 +95,11 @@ describe("loadTaskView", () => {
       "/api/label/task/t12",
       "/api/project/p1",
       "/api/task-relation/t12",
-      "/api/task/by-ticket-id/KAN-12",
+      "/api/task/ticket/KAN-12",
       "/api/time-entry/task/t12",
+      "/api/workspace",
     ]);
+    expect(urls().some((url) => url.includes("workspaceSlug=acme"))).toBe(true);
   });
 
   it("skips the comments request when no comments are wanted", async () => {
@@ -134,7 +148,7 @@ describe("loadTaskView", () => {
 
   it("fails as usual when the task does not exist", async () => {
     const { result } = run({
-      "/api/task/by-ticket-id/KAN-12": () => json({ message: "nope" }, 404),
+      "/api/task/ticket/KAN-12": () => json({ message: "nope" }, 404),
     });
     const failure = await result;
     expect(Result.isFailure(failure) && failure.failure).toMatchObject({

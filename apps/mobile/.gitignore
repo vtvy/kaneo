@@ -1,0 +1,19 @@
+# Expo
+.expo/
+web-build/
+
+# Generated native projects. Create them with `expo prebuild`.
+/ios
+/android
+
+# Native build and signing files
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*

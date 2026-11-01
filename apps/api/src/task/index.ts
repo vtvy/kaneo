@@ -1156,6 +1156,12 @@ const task = new Hono<{
               id: assetTable.id,
             });
 
+      if (!asset) {
+        throw new HTTPException(500, {
+          message: "Failed to save asset",
+        });
+      }
+
       return c.json({
         id: asset.id,
         url: `/api/asset/${asset.id}`,

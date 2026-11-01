@@ -1,10 +1,9 @@
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import { NotFound } from "../errors/errors.js";
 import type { Credentials } from "../services/session.js";
 import { fromOrganizations } from "./from-organizations.js";
 import { KaneoApi, type Query } from "./kaneo-api.js";
 import {
-  AssignedTasks,
   BoardPage,
   ColumnList,
   CurrentUser,
@@ -68,13 +67,50 @@ export const getBoardPage = Effect.fnUntraced(function* (
   );
 });
 
+const MyTask = Schema.Struct({
+  id: Schema.String,
+  projectId: Schema.String,
+  number: Schema.NullOr(Schema.Number),
+  title: Schema.String,
+  status: Schema.String,
+  columnName: Schema.NullOr(Schema.String),
+  priority: Schema.String,
+  dueDate: Schema.NullOr(Schema.String),
+  projectName: Schema.String,
+  projectSlug: Schema.String,
+});
+
+type MyTaskRow = typeof MyTask.Type;
+
+export function toAssignedTasks(tasks: ReadonlyArray<MyTaskRow>) {
+  return {
+    tasks: tasks.map((task) => ({
+      id: task.id,
+      projectId: task.projectId,
+      number: task.number,
+      title: task.title,
+      status: task.status,
+      statusName: task.columnName,
+      priority: task.priority,
+      dueDate: task.dueDate,
+      projectName: task.projectName,
+      projectSlug: task.projectSlug,
+    })),
+    total: tasks.length,
+  };
+}
+
 export const listAssignedTasks = Effect.fnUntraced(function* (
   workspaceId: string,
 ) {
   const api = yield* KaneoApi;
-  return yield* api.request("GET", "/api/task/assigned", AssignedTasks, {
-    query: { workspaceId },
-  });
+  const tasks = yield* api.request(
+    "GET",
+    `/api/task/my/${encodeURIComponent(workspaceId)}`,
+    Schema.Array(MyTask),
+    { query: { scope: "assigned", open: "true" } },
+  );
+  return toAssignedTasks(tasks);
 });
 
 export const getProject = Effect.fnUntraced(function* (projectId: string) {

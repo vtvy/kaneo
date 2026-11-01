@@ -10,8 +10,6 @@ describe("updateTaskLabelsInProject", () => {
       icon: null,
       description: null,
       isPublic: false,
-      createdAt: "2026-04-16T00:00:00.000Z",
-      updatedAt: "2026-04-16T00:00:00.000Z",
       workspaceId: "workspace-1",
       columns: [
         {
@@ -19,6 +17,7 @@ describe("updateTaskLabelsInProject", () => {
           slug: "todo",
           name: "Todo",
           icon: null,
+          color: null,
           isFinal: false,
           tasks: [
             {
@@ -64,8 +63,6 @@ describe("updateTaskLabelsInProject", () => {
           ],
         },
       ],
-      plannedTasks: [],
-      archivedTasks: [],
     };
 
     const updatedProject = updateTaskLabelsInProject(
@@ -91,7 +88,7 @@ describe("updateTaskLabelsInProject", () => {
     expect(updatedProject.columns[0]?.tasks[1]?.labels).toEqual([]);
   });
 
-  it("removes a label from planned and archived task collections too", () => {
+  it("removes a label from the matching column task and leaves other columns unchanged", () => {
     const project = {
       id: "project-1",
       name: "Project",
@@ -99,64 +96,79 @@ describe("updateTaskLabelsInProject", () => {
       icon: null,
       description: null,
       isPublic: false,
-      createdAt: "2026-04-16T00:00:00.000Z",
-      updatedAt: "2026-04-16T00:00:00.000Z",
       workspaceId: "workspace-1",
-      columns: [],
-      plannedTasks: [
+      columns: [
         {
-          id: "task-3",
-          title: "Planned task",
-          number: 3,
-          description: null,
-          status: "planned",
-          priority: null,
-          startDate: null,
-          dueDate: null,
-          position: 0,
-          createdAt: "2026-04-16T00:00:00.000Z",
-          updatedAt: "2026-04-16T00:00:00.000Z",
-          userId: null,
-          assigneeId: null,
-          assigneeName: null,
-          assigneeImage: null,
-          projectId: "project-1",
-          labels: [
+          id: "todo",
+          slug: "todo",
+          name: "Todo",
+          icon: null,
+          color: null,
+          isFinal: false,
+          tasks: [
             {
-              id: "label-bug",
-              name: "bug",
-              color: "red",
+              id: "task-3",
+              title: "Todo task",
+              number: 3,
+              description: null,
+              status: "todo",
+              priority: null,
+              startDate: null,
+              dueDate: null,
+              position: 0,
+              createdAt: "2026-04-16T00:00:00.000Z",
+              updatedAt: "2026-04-16T00:00:00.000Z",
+              userId: null,
+              assigneeId: null,
+              assigneeName: null,
+              assigneeImage: null,
+              projectId: "project-1",
+              labels: [
+                {
+                  id: "label-bug",
+                  name: "bug",
+                  color: "red",
+                },
+              ],
+              externalLinks: [],
             },
           ],
-          externalLinks: [],
         },
-      ],
-      archivedTasks: [
         {
-          id: "task-4",
-          title: "Archived task",
-          number: 4,
-          description: null,
-          status: "archived",
-          priority: null,
-          startDate: null,
-          dueDate: null,
-          position: 0,
-          createdAt: "2026-04-16T00:00:00.000Z",
-          updatedAt: "2026-04-16T00:00:00.000Z",
-          userId: null,
-          assigneeId: null,
-          assigneeName: null,
-          assigneeImage: null,
-          projectId: "project-1",
-          labels: [
+          id: "done",
+          slug: "done",
+          name: "Done",
+          icon: null,
+          color: null,
+          isFinal: true,
+          tasks: [
             {
-              id: "label-bug",
-              name: "bug",
-              color: "red",
+              id: "task-4",
+              title: "Done task",
+              number: 4,
+              description: null,
+              status: "done",
+              priority: null,
+              startDate: null,
+              dueDate: null,
+              position: 0,
+              createdAt: "2026-04-16T00:00:00.000Z",
+              updatedAt: "2026-04-16T00:00:00.000Z",
+              userId: null,
+              assigneeId: null,
+              assigneeName: null,
+              assigneeImage: null,
+              projectId: "project-1",
+              labels: [
+                {
+                  id: "label-bug",
+                  name: "bug",
+                  color: "red",
+                },
+              ],
+              externalLinks: [],
             },
           ],
-          externalLinks: [],
         },
       ],
     };
@@ -167,8 +179,8 @@ describe("updateTaskLabelsInProject", () => {
       (labels) => labels.filter((label) => label.id !== "label-bug"),
     );
 
-    expect(updatedProject.plannedTasks[0]?.labels).toEqual([]);
-    expect(updatedProject.archivedTasks[0]?.labels).toEqual([
+    expect(updatedProject.columns[0]?.tasks[0]?.labels).toEqual([]);
+    expect(updatedProject.columns[1]?.tasks[0]?.labels).toEqual([
       {
         id: "label-bug",
         name: "bug",

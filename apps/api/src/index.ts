@@ -1,5 +1,4 @@
-import { dirname } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { dirname, resolve } from "node:path";
 import { serve } from "@hono/node-server";
 import { createNodeWebSocket } from "@hono/node-ws";
 import type { Session, User } from "better-auth/types";
@@ -436,10 +435,12 @@ export function createApp() {
 
     let authSpec: Record<string, unknown> = {};
     try {
-      authSpec = (await auth.api.generateOpenAPISchema()) as Record<
-        string,
-        unknown
-      >;
+      const generateOpenAPISchema = (
+        auth.api as { generateOpenAPISchema?: () => Promise<unknown> }
+      ).generateOpenAPISchema;
+      authSpec = generateOpenAPISchema
+        ? ((await generateOpenAPISchema()) as Record<string, unknown>)
+        : {};
     } catch (error) {
       console.error("Failed to generate Better Auth OpenAPI schema:", error);
     }
@@ -535,8 +536,9 @@ export function createApp() {
     const authHeader = c.req.header("Authorization");
     const apiKeyHeader = c.req.header("x-api-key");
     const bearerMatch = authHeader?.match(/^Bearer\s+(\S+)$/i);
+    const bearerToken = bearerMatch?.[1];
 
-    if (bearerMatch && !apiKeyHeader) {
+    if (bearerToken && !apiKeyHeader) {
       const session = await auth.api.getSession({
         headers: c.req.raw.headers,
       });
@@ -549,7 +551,7 @@ export function createApp() {
       const headers = new Headers(c.req.raw.headers);
 
       // Better Auth API key plugin validates from x-api-key by default.
-      headers.set("x-api-key", bearerMatch[1]);
+      headers.set("x-api-key", bearerToken);
 
       return auth.handler(
         new Request(c.req.raw, {
@@ -815,8 +817,21 @@ export function createApp() {
   };
 }
 
+function isDirectApiEntry(entry: string | undefined): boolean {
+  if (!entry) {
+    return false;
+  }
+  // tsconfig module is CommonJS, so this file cannot reference import.meta.
+  const normalized = resolve(entry).replaceAll("\\", "/");
+  return (
+    normalized.endsWith("/apps/api/src/index.ts") ||
+    normalized.endsWith("/apps/api/dist/index.js")
+  );
+}
+
 export async function runStartupTasks() {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
+  const entry = process.argv[1];
+  const currentDir = dirname(resolve(entry ?? "."));
 
   await prepareDatabaseStartup({
     waitForDatabase: async () => {
@@ -946,9 +961,7 @@ const {
   googleDriveIntegrationApi,
 } = createdApp;
 
-const isMainModule =
-  Boolean(process.argv[1]) &&
-  import.meta.url === pathToFileURL(process.argv[1]).href;
+const isMainModule = isDirectApiEntry(process.argv[1]);
 
 if (isMainModule) {
   void startServer(injectWebSocket);

@@ -210,7 +210,7 @@ async function globalSearch(params: SearchParams): Promise<{
           relevanceScore: 10, // Highest relevance for exact short-id match
           taskNumber: task.taskNumber || undefined,
           priority: task.priority || undefined,
-          status: task.status,
+          status: task.status ?? undefined,
         });
       }
     }
@@ -279,7 +279,7 @@ async function globalSearch(params: SearchParams): Promise<{
         relevanceScore: task.relevanceScore,
         taskNumber: task.taskNumber || undefined,
         priority: task.priority || undefined,
-        status: task.status,
+        status: task.status ?? undefined,
       });
     }
   }

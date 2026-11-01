@@ -75,7 +75,7 @@ export const updateTaskAssignee = Effect.fnUntraced(function* (
     "PUT",
     `/api/task/assignee/${encodeURIComponent(taskId)}`,
     UpdatedTask,
-    { body: { userId } },
+    { body: { userId: userId ?? "" } },
   );
 });
 

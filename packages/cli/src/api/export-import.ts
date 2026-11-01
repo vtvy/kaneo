@@ -11,8 +11,8 @@ export const ExportedTask = Schema.Struct({
   dueDate: NullableString,
   startDate: NullableString,
   userId: NullableString,
-  labels: Schema.Array(
-    Schema.Struct({ name: Schema.String, color: Schema.String }),
+  labels: Schema.optionalKey(
+    Schema.Array(Schema.Struct({ name: Schema.String, color: Schema.String })),
   ),
 });
 export type ExportedTask = typeof ExportedTask.Type;

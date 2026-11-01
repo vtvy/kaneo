@@ -129,7 +129,15 @@ export async function handlePush(payload: PushPayload) {
       `[Push] Target status: ${targetStatus}, current: ${task.status}`,
     );
 
-    const isTaskFinal = await isTaskInFinalState(task);
+    if (task.status === null) {
+      continue;
+    }
+
+    const isTaskFinal = await isTaskInFinalState({
+      projectId: task.projectId,
+      status: task.status,
+      columnId: task.columnId,
+    });
 
     if (task.status !== targetStatus && !isTaskFinal) {
       console.log(

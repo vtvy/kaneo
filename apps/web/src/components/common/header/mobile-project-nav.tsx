@@ -2,8 +2,10 @@ import {
   Calendar,
   CalendarDays,
   Check,
+  Files,
   Menu,
   Plus,
+  Repeat,
   SquareKanban,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -20,11 +22,19 @@ import { cn } from "@/lib/cn";
 type MobileProjectNavProps = {
   workspaceId: string;
   projectId: string;
-  activeView: "backlog" | "board" | "gantt" | "calendar";
+  activeView:
+    | "backlog"
+    | "board"
+    | "calendar"
+    | "gantt"
+    | "sprints"
+    | "documents";
   onSelectBoard: () => void;
   onSelectBacklog: () => void;
   onSelectGantt: () => void;
   onSelectCalendar?: () => void;
+  onSelectSprints: () => void;
+  onSelectDocuments: () => void;
   onSelectProject: (projectId: string) => void;
   onAddProject: () => void;
 };
@@ -37,6 +47,8 @@ export default function MobileProjectNav({
   onSelectBacklog,
   onSelectGantt,
   onSelectCalendar,
+  onSelectSprints,
+  onSelectDocuments,
   onSelectProject,
   onAddProject,
 }: MobileProjectNavProps) {
@@ -115,6 +127,32 @@ export default function MobileProjectNav({
               >
                 <CalendarDays className="size-3.5" />
                 Gantt
+              </button>
+              <button
+                type="button"
+                onClick={onSelectSprints}
+                className={cn(
+                  "flex w-full items-center justify-center gap-1 whitespace-nowrap rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
+                  activeView === "sprints"
+                    ? "border-border bg-secondary text-foreground"
+                    : "border-transparent text-muted-foreground hover:bg-accent",
+                )}
+              >
+                <Repeat className="size-3.5" />
+                Sprints
+              </button>
+              <button
+                type="button"
+                onClick={onSelectDocuments}
+                className={cn(
+                  "flex w-full items-center justify-center gap-1 whitespace-nowrap rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
+                  activeView === "documents"
+                    ? "border-border bg-secondary text-foreground"
+                    : "border-transparent text-muted-foreground hover:bg-accent",
+                )}
+              >
+                <Files className="size-3.5" />
+                {t("documents:nav.title")}
               </button>
             </div>
           </div>

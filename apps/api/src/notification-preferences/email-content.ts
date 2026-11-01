@@ -36,8 +36,21 @@ export function localizeNotificationEmail(
   }
 
   const copy = events[notification.type as keyof typeof events];
+  let template: string;
+  if ("content" in copy) {
+    template = copy.content;
+  } else if ("contentWithTask" in copy && "contentWithoutTask" in copy) {
+    const taskTitle = notification.eventData.taskTitle;
+    template =
+      typeof taskTitle === "string" && taskTitle.length > 0
+        ? copy.contentWithTask
+        : copy.contentWithoutTask;
+  } else {
+    return fallback;
+  }
+
   const values: Record<string, string> = {};
-  for (const [, key] of copy.content.matchAll(/\{\{(\w+)\}\}/g)) {
+  for (const [, key] of template.matchAll(/\{\{(\w+)\}\}/g)) {
     if (!key) continue;
     const value = notification.eventData[key];
     if (typeof value !== "string") return fallback;
@@ -52,9 +65,9 @@ export function localizeNotificationEmail(
 
   return {
     title: copy.title,
-    body: copy.content.replace(
+    body: template.replace(
       /\{\{(\w+)\}\}/g,
-      (match, key: string) => values[key] ?? match,
+      (match: string, key: string) => values[key] ?? match,
     ),
   };
 }

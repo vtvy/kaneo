@@ -256,9 +256,14 @@ export async function createTaskImageUploadUrl(
     ContentType: context.contentType,
   });
 
-  const uploadUrl = await getSignedUrl(client, command, {
-    expiresIn: config.presignTtlSeconds,
-  });
+  // Duplicate @smithy/types versions 4.13.1 and 4.14.1.
+  const uploadUrl = await getSignedUrl(
+    client as unknown as Parameters<typeof getSignedUrl>[0],
+    command as unknown as Parameters<typeof getSignedUrl>[1],
+    {
+      expiresIn: config.presignTtlSeconds,
+    },
+  );
 
   return {
     key,

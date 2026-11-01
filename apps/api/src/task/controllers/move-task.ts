@@ -34,7 +34,8 @@ async function resolveDestinationStatus(
     .where(eq(columnTable.projectId, destinationProjectId))
     .orderBy(asc(columnTable.position));
 
-  if (destinationColumns.length === 0) {
+  const fallbackColumn = destinationColumns[0];
+  if (!fallbackColumn) {
     throw new HTTPException(400, {
       message: "Destination project does not have a workflow",
     });
@@ -54,7 +55,7 @@ async function resolveDestinationStatus(
     (column) => column.slug === currentStatus,
   );
 
-  return requestedColumn ?? matchingCurrentColumn ?? destinationColumns[0];
+  return requestedColumn ?? matchingCurrentColumn ?? fallbackColumn;
 }
 
 async function getNextTaskPosition(
@@ -127,7 +128,7 @@ async function moveTask({
 
   const resolvedColumn = await resolveDestinationStatus(
     destinationProjectId,
-    existingTask.status,
+    existingTask.status ?? "",
     destinationStatus,
   );
 

@@ -87,7 +87,7 @@ export default function TaskMovePopover({
       return;
     }
 
-    if (canKeepCurrentStatus) {
+    if (canKeepCurrentStatus && task.status) {
       setSelectedStatus(task.status);
       return;
     }

@@ -98,7 +98,15 @@ export async function handlePullRequestOpened(payload: PROpenedPayload) {
       config.statusTransitions?.onPROpen || "in-review",
     );
 
-    const isTaskFinal = await isTaskInFinalState(task);
+    if (task.status === null) {
+      continue;
+    }
+
+    const isTaskFinal = await isTaskInFinalState({
+      projectId: task.projectId,
+      status: task.status,
+      columnId: task.columnId,
+    });
 
     if (task.status !== targetStatus && !isTaskFinal) {
       const statusResult = await updateTaskStatus(task.id, targetStatus);

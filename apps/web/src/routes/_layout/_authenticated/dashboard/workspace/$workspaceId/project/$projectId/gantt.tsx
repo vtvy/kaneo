@@ -73,10 +73,7 @@ function RouteComponent() {
   }, [isMobile]);
 
   const allTasks = useMemo(
-    () => [
-      ...(project?.columns.flatMap((column) => column.tasks) ?? []),
-      ...(project?.plannedTasks ?? []),
-    ],
+    () => project?.columns.flatMap((column) => column.tasks) ?? [],
     [project],
   );
 
@@ -116,7 +113,7 @@ function RouteComponent() {
         `${project?.slug ?? ""}-${task.number ?? ""}`
           .toLowerCase()
           .includes(normalizedQuery) ||
-        task.status.toLowerCase().includes(normalizedQuery)
+        (task.status ?? "").toLowerCase().includes(normalizedQuery)
       );
     });
   }, [parsedTasks, project?.slug, searchQuery]);
@@ -345,7 +342,9 @@ function RouteComponent() {
                             >
                               <div className="flex w-full items-center gap-1.5">
                                 <span className="max-w-[7rem] truncate rounded-full bg-secondary px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-secondary-foreground sm:max-w-none">
-                                  {getStatusLabel(task.status)}
+                                  {task.status
+                                    ? getStatusLabel(task.status)
+                                    : null}
                                 </span>
                                 <span className="truncate text-[10px] text-muted-foreground">
                                   {project?.slug}-{task.number}

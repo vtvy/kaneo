@@ -8,7 +8,8 @@ export const RelatedTask = Schema.Struct({
   id: Schema.String,
   title: Schema.String,
   status: Schema.String,
-  isCompleted: Schema.Boolean,
+  // The fork omits this and reports completion through the status slug.
+  isCompleted: Schema.optionalKey(Schema.Boolean),
   number: Schema.NullOr(Schema.Number),
   projectId: Schema.String,
 });

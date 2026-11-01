@@ -61,8 +61,9 @@ export function workspaceAccessMiddleware(
         workspaceId = c.req.query(source.key) || null;
       } else if (source.type === "body") {
         const body = await readJsonObjectBody(c);
+        const bodyWorkspaceId = body[source.key];
         workspaceId =
-          typeof body[source.key] === "string" ? body[source.key] : null;
+          typeof bodyWorkspaceId === "string" ? bodyWorkspaceId : null;
       } else if (source.type === "param") {
         workspaceId = c.req.param(source.key) || null;
       } else if (source.type === "lookup") {

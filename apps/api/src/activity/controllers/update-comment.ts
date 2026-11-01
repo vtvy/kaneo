@@ -41,50 +41,53 @@ async function updateComment(userId: string, id: string, content: string) {
     });
   }
 
-  const [task] = await db
-    .select({
-      projectId: taskTable.projectId,
-      title: taskTable.title,
-      workspaceId: projectTable.workspaceId,
-    })
-    .from(taskTable)
-    .innerJoin(projectTable, eq(taskTable.projectId, projectTable.id))
-    .where(eq(taskTable.id, updated.taskId))
-    .limit(1);
+  const taskId = updated.taskId;
+  if (taskId) {
+    const [task] = await db
+      .select({
+        projectId: taskTable.projectId,
+        title: taskTable.title,
+        workspaceId: projectTable.workspaceId,
+      })
+      .from(taskTable)
+      .innerJoin(projectTable, eq(taskTable.projectId, projectTable.id))
+      .where(eq(taskTable.id, taskId))
+      .limit(1);
 
-  if (task) {
-    // Only users newly @mentioned by this edit are notified; people already
-    // mentioned in the previous version were notified when it was posted.
-    const mentions = await resolveMentionRecipients({
-      content,
-      authorId: userId,
-      workspaceId: task.workspaceId,
-      projectId: task.projectId,
-      excludeIds: parseMentionIds(existing.content),
-    });
+    if (task) {
+      // Only users newly @mentioned by this edit are notified; people already
+      // mentioned in the previous version were notified when it was posted.
+      const mentions = await resolveMentionRecipients({
+        content,
+        authorId: userId,
+        workspaceId: task.workspaceId,
+        projectId: task.projectId,
+        excludeIds: parseMentionIds(existing.content),
+      });
 
-    let actorName = "";
-    if (mentions.length > 0) {
-      const [user] = await db
-        .select({ name: userTable.name })
-        .from(userTable)
-        .where(eq(userTable.id, userId));
-      actorName = user?.name ?? "";
+      let actorName = "";
+      if (mentions.length > 0) {
+        const [user] = await db
+          .select({ name: userTable.name })
+          .from(userTable)
+          .where(eq(userTable.id, userId));
+        actorName = user?.name ?? "";
+      }
+
+      await publishEvent("comment.updated", {
+        ...updated,
+        projectId: task.projectId,
+        userId,
+        mentions,
+        taskTitle: task.title,
+        actorName,
+      });
     }
 
-    await publishEvent("comment.updated", {
-      ...updated,
-      projectId: task.projectId,
-      userId,
-      mentions,
-      taskTitle: task.title,
-      actorName,
-    });
+    deleteOrphanedAssets(existing.content, content, {
+      taskId,
+    }).catch(() => {});
   }
-
-  deleteOrphanedAssets(existing.content, content, {
-    taskId: existing.taskId,
-  }).catch(() => {});
 
   return updated;
 }
