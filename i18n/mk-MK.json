@@ -634,7 +634,9 @@
 			"labels": "Етикети",
 			"labelsDescription": "Прикажи етикети и тагови на задачите",
 			"priority": "Приоритет",
-			"priorityDescription": "Прикажи индикатори за приоритет"
+			"priorityDescription": "Прикажи индикатори за приоритет",
+			"checklist": "Checklist",
+			"checklistDescription": "Show checklist progress on task cards and list rows"
 		},
 		"developerPage": {
 			"pageTitle": "Програмерски поставки",
@@ -2636,6 +2638,9 @@
 			"bug": "Bug",
 			"cause": "Cause"
 		},
+		"checklist": {
+			"progress": "{{completed}} of {{total}} checklist items"
+		},
 		"subtasks": {
 			"title": "Подзадачи",
 			"inputPlaceholder": "Наслов на подзадача...",
@@ -2977,7 +2982,8 @@
 		"customFields": {
 			"title": "Custom fields",
 			"empty": "Empty",
-			"updateError": "Failed to update the field"
+			"updateError": "Failed to update the field",
+			"clear": "Clear"
 		},
 		"calendar": {
 			"title": "Calendar",

@@ -77,6 +77,8 @@ function RouteComponent() {
     setShowLabels,
     showPriority,
     setShowPriority,
+    showTaskItemCounts,
+    setShowTaskItemCounts,
     resetDisplayPreferences,
     sidebarDefaultOpen,
     setSidebarDefaultOpen,
@@ -418,6 +420,23 @@ function RouteComponent() {
               </p>
             </div>
             <Switch checked={showPriority} onCheckedChange={setShowPriority} />
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">
+                {t("settings:preferencesPage.checklist")}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t("settings:preferencesPage.checklistDescription")}
+              </p>
+            </div>
+            <Switch
+              checked={showTaskItemCounts}
+              onCheckedChange={setShowTaskItemCounts}
+            />
           </div>
         </div>
       </div>

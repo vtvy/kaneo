@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { CustomFieldDefinition } from "@/components/project/custom-fields/types";
@@ -173,16 +173,67 @@ function MultiselectEditor({
   );
 }
 
+function ClearValueButton({
+  canEdit,
+  disabled,
+  onClear,
+}: {
+  canEdit: boolean;
+  disabled: boolean;
+  onClear: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="size-7 shrink-0 text-muted-foreground"
+      disabled={!canEdit || disabled}
+      aria-label={t("tasks:customFields.clear")}
+      onClick={onClear}
+    >
+      <X className="size-3.5" />
+    </Button>
+  );
+}
+
 export function FieldEditor(props: FieldEditorProps) {
   const { field, value, canEdit, onSave } = props;
 
   if (field.type === "boolean") {
     return (
-      <Checkbox
-        checked={value === "true"}
-        disabled={!canEdit}
-        onCheckedChange={(checked) => onSave(checked ? "true" : "false")}
-      />
+      <div className="flex items-center gap-1">
+        <Checkbox
+          checked={value === "true"}
+          disabled={!canEdit}
+          onCheckedChange={(checked) => onSave(checked ? "true" : "false")}
+        />
+        {!field.required && (
+          <ClearValueButton
+            canEdit={canEdit}
+            disabled={value === ""}
+            onClear={() => onSave("")}
+          />
+        )}
+      </div>
+    );
+  }
+  if (field.type === "date") {
+    return (
+      <div className="flex min-w-0 items-center gap-1">
+        <div className="min-w-0 flex-1">
+          <TextLikeEditor {...props} />
+        </div>
+        {!field.required && (
+          <ClearValueButton
+            canEdit={canEdit}
+            disabled={value === ""}
+            onClear={() => onSave("")}
+          />
+        )}
+      </div>
     );
   }
   if (field.type === "dropdown") return <DropdownEditor {...props} />;

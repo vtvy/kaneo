@@ -634,7 +634,9 @@
 			"labels": "라벨",
 			"labelsDescription": "작업 라벨과 태그를 표시합니다",
 			"priority": "우선순위",
-			"priorityDescription": "우선순위 표시기를 표시합니다"
+			"priorityDescription": "우선순위 표시기를 표시합니다",
+			"checklist": "Checklist",
+			"checklistDescription": "Show checklist progress on task cards and list rows"
 		},
 		"developerPage": {
 			"pageTitle": "개발자 설정",
@@ -2636,6 +2638,9 @@
 			"bug": "Bug",
 			"cause": "Cause"
 		},
+		"checklist": {
+			"progress": "{{completed}} of {{total}} checklist items"
+		},
 		"subtasks": {
 			"title": "하위 작업",
 			"inputPlaceholder": "하위 작업 제목...",
@@ -2977,7 +2982,8 @@
 		"customFields": {
 			"title": "Custom fields",
 			"empty": "Empty",
-			"updateError": "Failed to update the field"
+			"updateError": "Failed to update the field",
+			"clear": "Clear"
 		},
 		"calendar": {
 			"title": "Calendar",

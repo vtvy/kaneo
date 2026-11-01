@@ -10,6 +10,7 @@ import {
   GitMerge,
   GitPullRequest,
   ListTree,
+  SquareCheck,
 } from "lucide-react";
 import { type CSSProperties, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -35,6 +36,7 @@ import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { cn } from "@/lib/cn";
 import { dueDateStatusColors, getDueDateStatus } from "@/lib/due-date-status";
+import { getTaskItemStats } from "@/lib/get-task-item-stats";
 import { PriorityGlyph } from "@/lib/priority";
 import { toast } from "@/lib/toast";
 import queryClient from "@/query-client";
@@ -84,7 +86,12 @@ function TaskRow({
     showDueDates,
     showLabels,
     showTaskNumbers,
+    showTaskItemCounts,
   } = useUserPreferencesStore();
+  const taskItemStats = useMemo(
+    () => getTaskItemStats(task.description),
+    [task.description],
+  );
   const [isDeleteTaskModalOpen, setIsDeleteTaskModalOpen] = useState(false);
   const { mutateAsync: deleteTask } = useDeleteTask();
   const { data: externalLinks } = useExternalLinks(task.id);
@@ -267,6 +274,23 @@ function TaskRow({
                 </span>
                 <div className="flex items-center gap-1">
                   {showLabels && <TaskCardLabels taskId={task.id} />}
+                  {showTaskItemCounts && taskItemStats.total > 0 && (
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium",
+                        taskItemStats.completed === taskItemStats.total
+                          ? "border-emerald-500/40 text-emerald-600"
+                          : "border-border text-muted-foreground",
+                      )}
+                      title={t("tasks:checklist.progress", {
+                        completed: taskItemStats.completed,
+                        total: taskItemStats.total,
+                      })}
+                    >
+                      <SquareCheck className="h-3 w-3" />
+                      {taskItemStats.completed}/{taskItemStats.total}
+                    </span>
+                  )}
                   {task.subtaskCounts && task.subtaskCounts.total > 0 && (
                     <span
                       className={cn(
