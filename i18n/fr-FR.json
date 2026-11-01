@@ -3455,7 +3455,10 @@
 			"showColumns": "Show field columns",
 			"noValue": "No value",
 			"checked": "Checked",
-			"unchecked": "Unchecked"
+			"unchecked": "Unchecked",
+			"loading": "Loading custom-field values. Results are shown without custom-field filters.",
+			"unavailable": "Custom-field values could not be loaded. Results are shown without custom-field filters.",
+			"refreshError": "Custom-field values could not be refreshed. Results may be out of date."
 		}
 	}
 }

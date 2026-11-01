@@ -32,15 +32,23 @@ import { cn } from "@/lib/cn";
 // column or filter is in use.
 export function useBacklogCustomFields(projectId: string, needValues: boolean) {
   const { data: fields = [] } = useGetCustomFieldsByProject(projectId);
-  const { data: values, isSuccess } = useGetCustomFieldValuesByProject(
-    projectId,
-    needValues && fields.length > 0,
-  );
+  const valuesEnabled = needValues && fields.length > 0;
+  const query = useGetCustomFieldValuesByProject(projectId, valuesEnabled);
   const valuesByTask = useMemo<TaskFieldValues>(
-    () => indexCustomFieldValues(values ?? []),
-    [values],
+    () => indexCustomFieldValues(query.data ?? []),
+    [query.data],
   );
-  return { fields, valuesByTask, valuesLoaded: isSuccess };
+  return {
+    fields,
+    valuesByTask,
+    valuesLoaded: query.isSuccess,
+    valuesStatus: {
+      hasData: query.data !== undefined,
+      isLoading: valuesEnabled && query.isPending,
+      isError: query.isError,
+      retry: query.refetch,
+    },
+  };
 }
 
 function useOptionLabel() {
@@ -165,6 +173,45 @@ export function CustomFieldFilterChips({
       />
     );
   });
+}
+
+export function CustomFieldFilterStatus({
+  active,
+  status,
+}: {
+  active: boolean;
+  status: {
+    hasData: boolean;
+    isLoading: boolean;
+    isError: boolean;
+    retry: () => unknown;
+  };
+}) {
+  const { t } = useTranslation();
+  if (!active || (!status.isLoading && !status.isError)) return null;
+
+  if (status.isLoading) {
+    return (
+      <p role="status" className="w-full text-sm text-muted-foreground">
+        {t("backlog:customFields.loading")}
+      </p>
+    );
+  }
+
+  return (
+    <p role="alert" className="w-full text-sm text-destructive">
+      {status.hasData
+        ? t("backlog:customFields.refreshError")
+        : t("backlog:customFields.unavailable")}{" "}
+      <button
+        type="button"
+        className="underline"
+        onClick={() => void status.retry()}
+      >
+        {t("common:error.tryAgain")}
+      </button>
+    </p>
+  );
 }
 
 export function CustomFieldColumnsMenu({

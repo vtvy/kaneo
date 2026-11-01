@@ -3455,7 +3455,10 @@
 			"showColumns": "Hiện cột trường",
 			"noValue": "Không có giá trị",
 			"checked": "Đã đánh dấu",
-			"unchecked": "Chưa đánh dấu"
+			"unchecked": "Chưa đánh dấu",
+			"loading": "Đang tải giá trị trường tùy chỉnh. Kết quả hiện chưa áp dụng bộ lọc trường.",
+			"unavailable": "Không tải được giá trị trường tùy chỉnh. Kết quả hiện chưa áp dụng bộ lọc trường.",
+			"refreshError": "Không làm mới được giá trị trường tùy chỉnh. Kết quả có thể đã cũ."
 		}
 	}
 }
