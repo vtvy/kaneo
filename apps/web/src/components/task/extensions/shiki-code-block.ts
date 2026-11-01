@@ -4,6 +4,7 @@ import type { EditorState, Transaction } from "@tiptap/pm/state";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { Highlighter } from "shiki";
+import { createMermaidWidget } from "@/lib/mermaid-widget";
 
 type ShikiCodeBlockOptions = {
   defaultLanguage: string;
@@ -45,6 +46,16 @@ function getDecorations(doc: ProseMirrorNode, options: ShikiCodeBlockOptions) {
 
       const rawLanguage =
         (block.node.attrs.language as string | undefined) || "";
+      if (rawLanguage.toLowerCase() === "mermaid") {
+        decorations.push(
+          Decoration.widget(
+            block.pos + block.node.nodeSize - 1,
+            createMermaidWidget(code),
+            { side: 1, ignoreSelection: true },
+          ),
+        );
+        return;
+      }
       const normalizedLanguage = options.resolveLanguage(
         rawLanguage || options.defaultLanguage,
       );

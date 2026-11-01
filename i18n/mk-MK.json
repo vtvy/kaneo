@@ -608,8 +608,13 @@
 			"firstDayOfWeek": "Прв ден од неделата",
 			"firstDayOfWeekDescription": "Избери дали календарите и неделите почнуваат во недела или понеделник",
 			"selectFirstDayOfWeek": "Избери прв ден",
+			"priorityIcons": "Priority icons",
+			"priorityIconsDescription": "Choose classic arrows or the compact marks",
+			"priorityIconsClassic": "Classic",
+			"priorityIconsMarks": "Marks",
 			"weekStartsOnSunday": "Недела",
 			"weekStartsOnMonday": "Понеделник",
+			"weekStartsOnSaturday": "Saturday",
 			"defaultView": "Стандарден приказ",
 			"defaultViewDescription": "Избери го претпочитаниот режим на приказ на задачи",
 			"selectViewMode": "Избери режим на приказ",
@@ -2454,6 +2459,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Обичен текст",
 					"python": "Python",
 					"rust": "Rust",
@@ -2571,6 +2577,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2639,7 +2646,8 @@
 			"deleteError": "Неуспешно бришење на задача",
 			"deleteDialogTitle": "Избриши задача?",
 			"deleteDialogDescription": "Ова трајно ќе ја отстрани задачата и сите нејзини податоци. Не можеш да ја вратиш оваа акција.",
-			"deleteAction": "Избриши задача"
+			"deleteAction": "Избриши задача",
+			"progress": "{{completed}} of {{total}} subtasks"
 		},
 		"properties": {
 			"title": "Својства",
@@ -2813,6 +2821,7 @@
 			"searchPlaceholder": "Пребарај закажани тикети...",
 			"hideTasks": "Сокриј задачи",
 			"showTasks": "Прикажи задачи",
+			"jumpToToday": "Jump to today",
 			"noTasks": "Нема закажани задачи",
 			"noTasksSubtitle": "Додади почетен датум, краен рок, или двете на задачите за да ги поставиш на временската линија на проектот.",
 			"noTasksFound": "Не се пронајдени задачи",
@@ -2821,7 +2830,8 @@
 			"updateDatesError": "Неуспешно ажурирање на датуми на задача",
 			"resizeStart": "Промени почетен датум",
 			"resizeDue": "Промени краен рок",
-			"taskAriaLabel": "{{title}} — отвори или повлечи за преместување"
+			"taskAriaLabel": "{{title}} — отвори или повлечи за преместување",
+			"undatedHeading": "No date"
 		},
 		"delete": {
 			"title": "Избриши задача?",
@@ -2836,6 +2846,8 @@
 		"listView": {
 			"addTask": "Додади задача",
 			"archiveAllTooltip": "Архивирај ги сите завршени задачи",
+			"collapseSubtasks": "Hide subtasks",
+			"expandSubtasks": "Show subtasks",
 			"noTasks": "Нема задачи"
 		},
 		"kanban": {
@@ -3007,7 +3019,8 @@
 				"revoke": "Revoke feed",
 				"revoked": "Calendar feed revoked.",
 				"revokeError": "Could not revoke the calendar feed."
-			}
+			},
+			"undatedHeading": "No date"
 		}
 	},
 	"invitations": {
@@ -3175,7 +3188,10 @@
 		},
 		"invitations": {
 			"expires": "Expires {{date}}",
-			"pendingBadge": "pending"
+			"pendingBadge": "pending",
+			"copyFailed": "Could not copy the invitation link",
+			"copyLink": "Copy invitation link",
+			"linkCopied": "Invitation link copied"
 		}
 	},
 	"publicProject": {

@@ -11,8 +11,13 @@ export async function copyText(text: string): Promise<void> {
     typeof window !== "undefined" &&
     window.isSecureContext
   ) {
-    await navigator.clipboard.writeText(text);
-    return;
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Permission can be denied even on localhost. Fall through to the
+      // textarea path, which still works from a user click.
+    }
   }
 
   const textarea = document.createElement("textarea");

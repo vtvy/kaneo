@@ -608,8 +608,13 @@
 			"firstDayOfWeek": "Premier jour de la semaine",
 			"firstDayOfWeekDescription": "Choisissez si les calendriers et les semaines commencent le dimanche ou le lundi",
 			"selectFirstDayOfWeek": "Sélectionnez le premier jour",
+			"priorityIcons": "Priority icons",
+			"priorityIconsDescription": "Choose classic arrows or the compact marks",
+			"priorityIconsClassic": "Classic",
+			"priorityIconsMarks": "Marks",
 			"weekStartsOnSunday": "Dimanche",
 			"weekStartsOnMonday": "Lundi",
+			"weekStartsOnSaturday": "Saturday",
 			"defaultView": "Vue par défaut",
 			"defaultViewDescription": "Choisissez votre mode d'affichage des tâches préféré",
 			"selectViewMode": "Sélectionnez un mode d'affichage",
@@ -2454,6 +2459,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Plaintext",
 					"python": "Python",
 					"rust": "Rust",
@@ -2571,6 +2577,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2639,7 +2646,8 @@
 			"deleteError": "Échec de la suppression de la tâche",
 			"deleteDialogTitle": "Supprimer la tâche ?",
 			"deleteDialogDescription": "Cela supprimera définitivement la tâche et toutes ses données. Vous ne pouvez pas annuler cette action.",
-			"deleteAction": "Supprimer la tâche"
+			"deleteAction": "Supprimer la tâche",
+			"progress": "{{completed}} of {{total}} subtasks"
 		},
 		"properties": {
 			"title": "Propriétés",
@@ -2813,6 +2821,7 @@
 			"searchPlaceholder": "Rechercher des tâches planifiées...",
 			"hideTasks": "Masquer les tâches",
 			"showTasks": "Afficher les tâches",
+			"jumpToToday": "Jump to today",
 			"noTasks": "Aucune tâche planifiée",
 			"noTasksSubtitle": "Ajoutez une date de début, une date d'échéance ou les deux pour placer les tâches dans la chronologie du projet.",
 			"noTasksFound": "Aucune tâche trouvée",
@@ -2821,7 +2830,8 @@
 			"updateDatesError": "Échec de la mise à jour des dates de la tâche",
 			"resizeStart": "Redimensionner la date de début",
 			"resizeDue": "Redimensionner la date d'échéance",
-			"taskAriaLabel": "{{title}} — ouvrir ou déplacer"
+			"taskAriaLabel": "{{title}} — ouvrir ou déplacer",
+			"undatedHeading": "No date"
 		},
 		"delete": {
 			"title": "Supprimer la tâche ?",
@@ -2836,6 +2846,8 @@
 		"listView": {
 			"addTask": "Ajouter une tâche",
 			"archiveAllTooltip": "Archiver toutes les tâches terminées",
+			"collapseSubtasks": "Hide subtasks",
+			"expandSubtasks": "Show subtasks",
 			"noTasks": "Aucune tâche"
 		},
 		"kanban": {
@@ -3007,7 +3019,8 @@
 				"revoke": "Revoke feed",
 				"revoked": "Calendar feed revoked.",
 				"revokeError": "Could not revoke the calendar feed."
-			}
+			},
+			"undatedHeading": "No date"
 		}
 	},
 	"invitations": {
@@ -3175,7 +3188,10 @@
 		},
 		"invitations": {
 			"expires": "Expires {{date}}",
-			"pendingBadge": "pending"
+			"pendingBadge": "pending",
+			"copyFailed": "Could not copy the invitation link",
+			"copyLink": "Copy invitation link",
+			"linkCopied": "Invitation link copied"
 		}
 	},
 	"publicProject": {

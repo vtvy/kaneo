@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import BacklogTable from "@/components/backlog-table";
+import BacklogBulkToolbar from "@/components/bulk-selection/backlog-bulk-toolbar";
 import ProjectLayout from "@/components/common/project-layout";
 import PageTitle from "@/components/page-title";
 import CreateTaskModal from "@/components/shared/modals/create-task-modal";
@@ -87,6 +88,7 @@ function RouteComponent() {
           />
         </div>
 
+        <BacklogBulkToolbar />
         <CreateTaskModal
           open={isTaskModalOpen}
           projectId={projectId}

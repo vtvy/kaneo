@@ -13,7 +13,7 @@ node packages/cli/dist/kaneo.mjs --help
 
 Dùng `--api-url` hoặc `KANEO_API_URL` trỏ tới máy chủ của bạn. `KANEO_WEB_URL` là URL giao diện nếu khác API. Khi dùng HTTP, chỉ dùng mạng tin cậy hoặc localhost. Login dùng device flow (client ID `kaneo-cli`). Token được lưu trong thư mục cấu hình người dùng; lệnh logout thu hồi session. Trên Windows quyền file phụ thuộc ACL của thư mục người dùng, không phải mode POSIX.
 
-Lệnh doctor kiểm tra những endpoint upstream CLI cần; một số tính năng upstream chưa có trên fork sẽ được báo thiếu. Các hướng dẫn cài binary/npm bên dưới dành cho bản upstream, không phải bản fork này.
+Lệnh doctor kiểm tra những endpoint fork này thực sự có. API chỉ đọc external link, nên doctor không đòi route ghi. `kaneo task link add` và `remove` vẫn gọi route ghi và sẽ lỗi trên server này. Các hướng dẫn cài binary/npm bên dưới dành cho bản upstream, không phải bản fork này.
 
 ---
 
@@ -111,6 +111,8 @@ Credentials are resolved in this order: `--token`, then `KANEO_API_KEY`, then th
 | `kaneo time start`, `stop`, `status`, `log`, `list`, `edit` | Track time with a timer or log it afterwards |
 | `kaneo project list`, `view`, `create`, `edit`, `archive`, `unarchive`, `move`, `delete` | Manage projects |
 | `kaneo column list`, `create`, `edit`, `move`, `delete` | Manage a project's columns |
+| `kaneo sprint list`, `tasks`, `backlog` | List sprints, the tasks in one sprint, and tasks that are not in a sprint |
+| `kaneo document list` | List a project's folders and the documents in its root |
 | `kaneo field list`, `create`, `delete` | Manage a project's custom fields |
 | `kaneo workflow list`, `set`, `delete` | Move tasks when GitHub, GitLab or Gitea events arrive |
 | `kaneo workspace list`, `use`, `create`, `edit`, `leave`, `delete` | Choose and manage workspaces |

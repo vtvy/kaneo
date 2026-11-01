@@ -616,8 +616,13 @@
 			"firstDayOfWeek": "Перший день тижня",
 			"firstDayOfWeekDescription": "Оберіть, чи календарі та тижні починаються в неділю або понеділок",
 			"selectFirstDayOfWeek": "Обрати перший день",
+			"priorityIcons": "Priority icons",
+			"priorityIconsDescription": "Choose classic arrows or the compact marks",
+			"priorityIconsClassic": "Classic",
+			"priorityIconsMarks": "Marks",
 			"weekStartsOnSunday": "Неділя",
 			"weekStartsOnMonday": "Понеділок",
+			"weekStartsOnSaturday": "Saturday",
 			"defaultView": "Перегляд за замовчуванням",
 			"defaultViewDescription": "Оберіть бажаний режим перегляду завдань",
 			"selectViewMode": "Обрати режим перегляду",
@@ -2478,6 +2483,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Звичайний текст",
 					"python": "Python",
 					"rust": "Rust",
@@ -2597,6 +2603,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2665,7 +2672,8 @@
 			"deleteError": "Не вдалося видалити завдання",
 			"deleteDialogTitle": "Видалити завдання?",
 			"deleteDialogDescription": "Це назавжди видалить завдання та всі його дані. Цю дію неможливо скасувати.",
-			"deleteAction": "Видалити завдання"
+			"deleteAction": "Видалити завдання",
+			"progress": "{{completed}} of {{total}} subtasks"
 		},
 		"properties": {
 			"title": "Властивості",
@@ -2843,6 +2851,7 @@
 			"searchPlaceholder": "Пошук запланованих тікетів...",
 			"hideTasks": "Сховати завдання",
 			"showTasks": "Показати завдання",
+			"jumpToToday": "Jump to today",
 			"noTasks": "Немає запланованих завдань",
 			"noTasksSubtitle": "Додайте дату початку, дату завершення або обидві до завдань, щоб розмістити їх на часовій шкалі проєкту.",
 			"noTasksFound": "Завдання не знайдено",
@@ -2851,7 +2860,8 @@
 			"updateDatesError": "Не вдалося оновити дати завдання",
 			"resizeStart": "Змінити дату початку",
 			"resizeDue": "Змінити дату завершення",
-			"taskAriaLabel": "{{title}} — відкрити або перетягнути для переміщення"
+			"taskAriaLabel": "{{title}} — відкрити або перетягнути для переміщення",
+			"undatedHeading": "No date"
 		},
 		"delete": {
 			"title": "Видалити завдання?",
@@ -2870,6 +2880,8 @@
 		"listView": {
 			"addTask": "Додати завдання",
 			"archiveAllTooltip": "Архівувати всі завершені завдання",
+			"collapseSubtasks": "Hide subtasks",
+			"expandSubtasks": "Show subtasks",
 			"noTasks": "Немає завдань"
 		},
 		"kanban": {
@@ -3075,7 +3087,8 @@
 				"revoke": "Revoke feed",
 				"revoked": "Calendar feed revoked.",
 				"revokeError": "Could not revoke the calendar feed."
-			}
+			},
+			"undatedHeading": "No date"
 		}
 	},
 	"invitations": {
@@ -3251,7 +3264,10 @@
 		},
 		"invitations": {
 			"expires": "Expires {{date}}",
-			"pendingBadge": "pending"
+			"pendingBadge": "pending",
+			"copyFailed": "Could not copy the invitation link",
+			"copyLink": "Copy invitation link",
+			"linkCopied": "Invitation link copied"
 		}
 	},
 	"publicProject": {

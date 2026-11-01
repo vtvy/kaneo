@@ -8,6 +8,7 @@ import {
   CalendarX,
   GitMerge,
   GitPullRequest,
+  ListTree,
 } from "lucide-react";
 import { type CSSProperties, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -30,8 +31,9 @@ import { useDeleteTask } from "@/hooks/mutations/task/use-delete-task";
 import useExternalLinks from "@/hooks/queries/external-link/use-external-links";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
+import { cn } from "@/lib/cn";
 import { dueDateStatusColors, getDueDateStatus } from "@/lib/due-date-status";
-import { getPriorityIcon } from "@/lib/priority";
+import { PriorityGlyph } from "@/lib/priority";
 import { toast } from "@/lib/toast";
 import queryClient from "@/query-client";
 import useBulkSelectionStore from "@/store/bulk-selection";
@@ -70,7 +72,13 @@ function TaskCard({ task }: TaskCardProps) {
   } = useUserPreferencesStore();
   const [isDeleteTaskModalOpen, setIsDeleteTaskModalOpen] = useState(false);
   const { data: externalLinks } = useExternalLinks(task.id);
-  const { toggleSelection, isSelected, isFocused } = useBulkSelectionStore();
+  const {
+    toggleSelection,
+    isSelected,
+    isFocused,
+    selectRange,
+    setSelectionAnchor,
+  } = useBulkSelectionStore();
   const isTaskSelected = isSelected(task.id);
   const isTaskFocused = isFocused(task.id);
 
@@ -130,10 +138,19 @@ function TaskCard({ task }: TaskCardProps) {
   ) {
     if (!project || !task || !workspace) return;
 
+    if (e.type === "click" && e.shiftKey) {
+      e.preventDefault();
+      selectRange(task.id);
+      return;
+    }
+
     if ((e as React.MouseEvent).metaKey || (e as React.KeyboardEvent).ctrlKey) {
+      e.preventDefault();
       toggleSelection(task.id);
       return;
     }
+
+    setSelectionAnchor(task.id);
 
     const currentParams = new URLSearchParams(window.location.search);
     const currentTaskId = currentParams.get("taskId");
@@ -251,7 +268,25 @@ function TaskCard({ task }: TaskCardProps) {
             <div className="flex items-center gap-1.5">
               {showPriority && (
                 <span className="inline-flex items-center gap-1 rounded border border-border/70 bg-muted/55 px-2 py-1 text-[10px] font-medium text-muted-foreground">
-                  {getPriorityIcon(task.priority ?? "")}
+                  <PriorityGlyph priority={task.priority ?? ""} />
+                </span>
+              )}
+
+              {task.subtaskCounts && task.subtaskCounts.total > 0 && (
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] font-medium",
+                    task.subtaskCounts.completed === task.subtaskCounts.total
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                      : "border-border/70 bg-muted/55 text-muted-foreground",
+                  )}
+                  title={t("tasks:subtasks.progress", {
+                    completed: task.subtaskCounts.completed,
+                    total: task.subtaskCounts.total,
+                  })}
+                >
+                  <ListTree className="h-3 w-3" />
+                  {task.subtaskCounts.completed}/{task.subtaskCounts.total}
                 </span>
               )}
 

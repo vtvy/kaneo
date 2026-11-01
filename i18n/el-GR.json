@@ -608,8 +608,13 @@
 			"firstDayOfWeek": "Πρώτη ημέρα της εβδομάδας",
 			"firstDayOfWeekDescription": "Επιλέξτε αν τα ημερολόγια και οι εβδομάδες ξεκινούν την Κυριακή ή τη Δευτέρα",
 			"selectFirstDayOfWeek": "Επιλέξτε την πρώτη ημέρα",
+			"priorityIcons": "Priority icons",
+			"priorityIconsDescription": "Choose classic arrows or the compact marks",
+			"priorityIconsClassic": "Classic",
+			"priorityIconsMarks": "Marks",
 			"weekStartsOnSunday": "Κυριακή",
 			"weekStartsOnMonday": "Δευτέρα",
+			"weekStartsOnSaturday": "Saturday",
 			"defaultView": "Προεπιλεγμένη προβολή",
 			"defaultViewDescription": "Επιλέξτε τον προτιμώμενο τρόπο προβολής εργασιών",
 			"selectViewMode": "Επιλέξτε τρόπο προβολής",
@@ -2454,6 +2459,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Απλό κείμενο",
 					"python": "Python",
 					"rust": "Rust",
@@ -2571,6 +2577,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2639,7 +2646,8 @@
 			"deleteError": "Αποτυχία διαγραφής εργασίας",
 			"deleteDialogTitle": "Διαγραφή εργασίας;",
 			"deleteDialogDescription": "Αυτό θα αφαιρέσει οριστικά την εργασία και όλα τα δεδομένα της. Δεν μπορείτε να αναιρέσετε αυτήν την ενέργεια.",
-			"deleteAction": "Διαγραφή εργασίας"
+			"deleteAction": "Διαγραφή εργασίας",
+			"progress": "{{completed}} of {{total}} subtasks"
 		},
 		"properties": {
 			"title": "Ιδιότητες",
@@ -2813,6 +2821,7 @@
 			"searchPlaceholder": "Αναζήτηση προγραμματισμένων αιτημάτων...",
 			"hideTasks": "Απόκρυψη εργασιών",
 			"showTasks": "Εμφάνιση εργασιών",
+			"jumpToToday": "Jump to today",
 			"noTasks": "Δεν υπάρχουν προγραμματισμένες εργασίες",
 			"noTasksSubtitle": "Προσθέστε ημερομηνία έναρξης, ημερομηνία λήξης ή και τα δύο στις εργασίες για να τοποθετηθούν στο χρονοδιάγραμμα του έργου.",
 			"noTasksFound": "Δεν βρέθηκαν εργασίες",
@@ -2821,7 +2830,8 @@
 			"updateDatesError": "Αποτυχία ενημέρωσης ημερομηνιών εργασίας",
 			"resizeStart": "Αλλαγή μεγέθους ημερομηνίας έναρξης",
 			"resizeDue": "Αλλαγή μεγέθους ημερομηνίας λήξης",
-			"taskAriaLabel": "{{title}} — άνοιγμα ή σύρσιμο για μετακίνηση"
+			"taskAriaLabel": "{{title}} — άνοιγμα ή σύρσιμο για μετακίνηση",
+			"undatedHeading": "No date"
 		},
 		"delete": {
 			"title": "Διαγραφή εργασίας;",
@@ -2836,6 +2846,8 @@
 		"listView": {
 			"addTask": "Προσθήκη εργασίας",
 			"archiveAllTooltip": "Αρχειοθέτηση όλων των ολοκληρωμένων εργασιών",
+			"collapseSubtasks": "Hide subtasks",
+			"expandSubtasks": "Show subtasks",
 			"noTasks": "Δεν υπάρχουν εργασίες"
 		},
 		"kanban": {
@@ -3007,7 +3019,8 @@
 				"revoke": "Revoke feed",
 				"revoked": "Calendar feed revoked.",
 				"revokeError": "Could not revoke the calendar feed."
-			}
+			},
+			"undatedHeading": "No date"
 		}
 	},
 	"invitations": {
@@ -3175,7 +3188,10 @@
 		},
 		"invitations": {
 			"expires": "Expires {{date}}",
-			"pendingBadge": "pending"
+			"pendingBadge": "pending",
+			"copyFailed": "Could not copy the invitation link",
+			"copyLink": "Copy invitation link",
+			"linkCopied": "Invitation link copied"
 		}
 	},
 	"publicProject": {

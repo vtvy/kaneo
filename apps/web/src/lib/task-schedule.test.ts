@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  appendUnseenById,
   parseTaskDate,
+  partitionBySchedule,
   toScheduledTask,
   toScheduledTasks,
 } from "./task-schedule";
@@ -82,6 +84,33 @@ describe("toScheduledTask", () => {
 
     expect(scheduled?.id).toBe("a");
     expect(scheduled?.title).toBe("Ship it");
+  });
+});
+
+describe("appendUnseenById", () => {
+  it("keeps board tasks and adds backlog tasks that are not on a column", () => {
+    const board = [task("on-board", null, null)];
+    const backlog = [
+      task("on-board", null, null),
+      task("no-status", null, "2026-08-13T00:00:00.000Z"),
+    ];
+
+    expect(appendUnseenById(board, backlog).map((entry) => entry.id)).toEqual([
+      "on-board",
+      "no-status",
+    ]);
+  });
+});
+
+describe("partitionBySchedule", () => {
+  it("keeps dated tasks on the schedule and undated tasks in the list", () => {
+    const result = partitionBySchedule([
+      task("dated", "2026-08-02T00:00:00.000Z", "2026-08-04T00:00:00.000Z"),
+      task("open", null, null),
+    ]);
+
+    expect(result.scheduled.map((entry) => entry.id)).toEqual(["dated"]);
+    expect(result.undated.map((entry) => entry.id)).toEqual(["open"]);
   });
 });
 

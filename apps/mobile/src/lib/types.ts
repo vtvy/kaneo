@@ -60,9 +60,30 @@ export type Comment = {
   id: string;
   content: string;
   createdAt: string;
+  userId?: string | null;
   user?: {
     name?: string;
   };
+};
+
+export type TaskLabel = {
+  id: string;
+  name: string;
+  color: string;
+};
+
+export type TaskFieldValue = {
+  id: string;
+  fieldId: string;
+  fieldName: string;
+  fieldType: string;
+  value: string | null;
+};
+
+export type CustomFieldDefinition = {
+  id: string;
+  name: string;
+  type: string;
 };
 
 export type Sprint = {

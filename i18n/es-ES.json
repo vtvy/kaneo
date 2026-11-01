@@ -519,8 +519,13 @@
 			"firstDayOfWeek": "Primer día de la semana",
 			"firstDayOfWeekDescription": "Elige si los calendarios y las semanas empiezan en domingo o lunes",
 			"selectFirstDayOfWeek": "Selecciona el primer día",
+			"priorityIcons": "Priority icons",
+			"priorityIconsDescription": "Choose classic arrows or the compact marks",
+			"priorityIconsClassic": "Classic",
+			"priorityIconsMarks": "Marks",
 			"weekStartsOnSunday": "Domingo",
 			"weekStartsOnMonday": "Lunes",
+			"weekStartsOnSaturday": "Saturday",
 			"defaultView": "Vista por defecto",
 			"defaultViewDescription": "Elige la vista por defecto para las tareas",
 			"selectViewMode": "Elige una vista por defecto",
@@ -2454,6 +2459,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Plaintext",
 					"python": "Python",
 					"rust": "Rust",
@@ -2571,6 +2577,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2639,7 +2646,8 @@
 			"deleteError": "Error al eliminar tarea",
 			"deleteDialogTitle": "¿Eliminar tarea?",
 			"deleteDialogDescription": "Esto eliminará permanentemente la tarea y sus datos. Esta acción no puede deshacerse.",
-			"deleteAction": "Eliminar tarea"
+			"deleteAction": "Eliminar tarea",
+			"progress": "{{completed}} of {{total}} subtasks"
 		},
 		"properties": {
 			"title": "Propiedades",
@@ -2802,6 +2810,7 @@
 			"searchPlaceholder": "Buscar tickets planificados...",
 			"hideTasks": "Esconder tareas",
 			"showTasks": "Mostrar tareas",
+			"jumpToToday": "Jump to today",
 			"noTasks": "No hay tareas planificadas",
 			"noTasksSubtitle": "Añade una fecha de comienzo, fecha de vencimiento o ambas para a las tareas para mostrarlas en la línea temporal del proyecto.",
 			"noTasksFound": "No se han encontrado tareas",
@@ -2810,7 +2819,8 @@
 			"updateDatesError": "Error al actualizar las fechas de la tarea",
 			"resizeStart": "Cambiar la fecha de comienzo",
 			"resizeDue": "Cambiar la fecha de vencimiento",
-			"taskAriaLabel": "{{title}} — abrir o arrastrar para mover"
+			"taskAriaLabel": "{{title}} — abrir o arrastrar para mover",
+			"undatedHeading": "No date"
 		},
 		"delete": {
 			"title": "¿Eliminar tarea?",
@@ -2825,6 +2835,8 @@
 		"listView": {
 			"addTask": "Añadir tarea",
 			"archiveAllTooltip": "Archivar todas las tareas completadas",
+			"collapseSubtasks": "Hide subtasks",
+			"expandSubtasks": "Show subtasks",
 			"noTasks": "No hay tareas"
 		},
 		"kanban": {
@@ -3007,7 +3019,8 @@
 				"revoke": "Revoke feed",
 				"revoked": "Calendar feed revoked.",
 				"revokeError": "Could not revoke the calendar feed."
-			}
+			},
+			"undatedHeading": "No date"
 		}
 	},
 	"invitations": {
@@ -3175,7 +3188,10 @@
 		},
 		"invitations": {
 			"expires": "Expires {{date}}",
-			"pendingBadge": "pending"
+			"pendingBadge": "pending",
+			"copyFailed": "Could not copy the invitation link",
+			"copyLink": "Copy invitation link",
+			"linkCopied": "Invitation link copied"
 		}
 	},
 	"publicProject": {

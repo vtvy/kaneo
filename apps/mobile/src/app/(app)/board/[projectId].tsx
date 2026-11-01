@@ -1,10 +1,11 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { Button, Field, Loading, Notice, Row, Screen } from "@/components/ui";
 import { createTask, getBoard } from "@/lib/api";
 import { errorMessage, priorityLabel, routeParam } from "@/lib/format";
 import type { BoardResponse } from "@/lib/types";
+import { useLiveRefresh } from "@/lib/use-live-refresh";
 import { useProjectAccess } from "@/lib/use-project-access";
 
 const PRIORITIES = ["no-priority", "low", "medium", "high", "urgent"] as const;
@@ -29,22 +30,24 @@ export default function BoardScreen() {
   const canRead = access.allowed("item", "read");
   const canCreate = access.allowed("item", "create");
 
-  const load = useCallback(() => {
-    if (!canRead) return;
-    setLoading(true);
-    getBoard(projectId)
-      .then((value) => {
-        setBoard(value);
-        setError(null);
-      })
-      .catch((reason: unknown) => setError(errorMessage(reason)))
-      .finally(() => setLoading(false));
-  }, [canRead, projectId]);
+  const load = useCallback(
+    (silent = false) => {
+      if (!canRead) return;
+      if (!silent) setLoading(true);
+      getBoard(projectId)
+        .then((value) => {
+          setBoard(value);
+          setError(null);
+        })
+        .catch((reason: unknown) => setError(errorMessage(reason)))
+        .finally(() => {
+          if (!silent) setLoading(false);
+        });
+    },
+    [canRead, projectId],
+  );
 
-  useEffect(() => {
-    if (access.loading) return;
-    load();
-  }, [access.loading, load]);
+  useLiveRefresh((silent) => load(silent), !access.loading);
 
   async function submit() {
     if (!title.trim()) {

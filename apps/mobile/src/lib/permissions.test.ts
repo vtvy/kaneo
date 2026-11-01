@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   can,
   canAssignTask,
+  canEditOwnComment,
   type ProjectAccess,
   parseProjectAccess,
 } from "./permissions";
@@ -79,5 +80,13 @@ describe("canAssignTask", () => {
 
   it("hides assign while permissions are unknown", () => {
     expect(canAssignTask(null, "user-1", "user-1")).toBe(false);
+  });
+});
+
+describe("canEditOwnComment", () => {
+  it("allows only the author", () => {
+    expect(canEditOwnComment("user-1", "user-1")).toBe(true);
+    expect(canEditOwnComment("user-1", "user-2")).toBe(false);
+    expect(canEditOwnComment(null, "user-1")).toBe(false);
   });
 });

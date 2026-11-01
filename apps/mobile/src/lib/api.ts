@@ -17,6 +17,7 @@ import type {
   BoardResponse,
   Comment,
   CurrentUser,
+  CustomFieldDefinition,
   DocumentItem,
   FolderItem,
   Member,
@@ -25,6 +26,8 @@ import type {
   Sprint,
   SprintTask,
   TaskDetail,
+  TaskFieldValue,
+  TaskLabel,
   Workspace,
 } from "@/lib/types";
 
@@ -340,6 +343,90 @@ export function createComment(
     method: "POST",
     body: { content },
   });
+}
+
+export function listTaskLabels(taskId: string): Promise<TaskLabel[]> {
+  return request(`/api/label/task/${taskId}`) as Promise<TaskLabel[]>;
+}
+
+export function listTaskFields(taskId: string): Promise<TaskFieldValue[]> {
+  return request(`/api/custom-field/task/${taskId}`) as Promise<
+    TaskFieldValue[]
+  >;
+}
+
+export function listProjectFields(
+  projectId: string,
+): Promise<CustomFieldDefinition[]> {
+  return request(`/api/custom-field/project/${projectId}`) as Promise<
+    CustomFieldDefinition[]
+  >;
+}
+
+export function setTaskFieldValue(
+  taskId: string,
+  fieldId: string,
+  value: string,
+): Promise<unknown> {
+  return request("/api/custom-field/value", {
+    method: "PUT",
+    body: { taskId, fieldId, value },
+  });
+}
+
+export function listWorkspaceLabels(workspaceId: string): Promise<TaskLabel[]> {
+  return request(`/api/label/workspace/${workspaceId}`) as Promise<TaskLabel[]>;
+}
+
+export function createLabel(input: {
+  name: string;
+  color: string;
+  workspaceId: string;
+  taskId?: string;
+}): Promise<TaskLabel> {
+  return request("/api/label", {
+    method: "POST",
+    body: input,
+  }) as Promise<TaskLabel>;
+}
+
+export function updateLabel(
+  labelId: string,
+  name: string,
+  color: string,
+): Promise<TaskLabel> {
+  return request(`/api/label/${labelId}`, {
+    method: "PUT",
+    body: { name, color },
+  }) as Promise<TaskLabel>;
+}
+
+export function assignLabel(
+  labelId: string,
+  taskId: string,
+): Promise<TaskLabel> {
+  return request(`/api/label/${labelId}/task`, {
+    method: "PUT",
+    body: { taskId },
+  }) as Promise<TaskLabel>;
+}
+
+export function detachLabel(labelId: string): Promise<unknown> {
+  return request(`/api/label/${labelId}/task`, { method: "DELETE" });
+}
+
+export function updateComment(
+  commentId: string,
+  content: string,
+): Promise<unknown> {
+  return request(`/api/comment/${commentId}`, {
+    method: "PUT",
+    body: { content },
+  });
+}
+
+export function deleteComment(commentId: string): Promise<unknown> {
+  return request(`/api/comment/${commentId}`, { method: "DELETE" });
 }
 
 export function listMembers(workspaceId: string): Promise<Member[]> {

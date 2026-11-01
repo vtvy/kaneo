@@ -5,8 +5,10 @@ import {
   CircleAlert,
   Minus,
 } from "lucide-react";
+import { PriorityMarks } from "@/components/task-chips/priority-marks";
+import { useUserPreferencesStore } from "@/store/user-preferences";
 
-export function getPriorityIcon(priority: string) {
+function ClassicPriorityIcon({ priority }: { priority: string }) {
   switch (priority) {
     case "urgent":
       return (
@@ -29,6 +31,19 @@ export function getPriorityIcon(priority: string) {
     default:
       return <Minus className="h-[12px] w-[12px] text-muted-foreground" />;
   }
+}
+
+export function getPriorityIcon(priority: string) {
+  if (useUserPreferencesStore.getState().priorityIconStyle === "marks") {
+    return <PriorityMarks priority={priority} />;
+  }
+  return <ClassicPriorityIcon priority={priority} />;
+}
+
+export function PriorityGlyph({ priority }: { priority: string }) {
+  const style = useUserPreferencesStore((state) => state.priorityIconStyle);
+  if (style === "marks") return <PriorityMarks priority={priority} />;
+  return <ClassicPriorityIcon priority={priority} />;
 }
 
 /**

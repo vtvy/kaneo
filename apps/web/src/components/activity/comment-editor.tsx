@@ -60,6 +60,7 @@ import {
   isYouTubeUrl,
   normalizeUrl,
 } from "@/lib/editor-url-utils";
+import { pasteMarkdown } from "@/lib/paste-markdown";
 import { getSharedShikiHighlighter } from "@/lib/shiki-highlighter";
 import { toast } from "@/lib/toast";
 import { uploadTaskImage } from "@/lib/upload-task-image";
@@ -126,6 +127,7 @@ const CODE_LANG_VALUES = [
   "java",
   "javascript",
   "markdown",
+  "mermaid",
   "plaintext",
   "python",
   "rust",
@@ -138,6 +140,7 @@ const CODE_LANG_VALUES = [
 type EmbedComposerErrorKey = "embedErrorInvalidUrl" | "embedErrorYoutubeOnly";
 
 const COMMENT_SHIKI_LANGUAGE_ALIASES: Record<string, string> = {
+  mermaid: "text",
   plaintext: "text",
 };
 
@@ -667,6 +670,8 @@ export default function CommentEditor({
             );
             return true;
           }
+
+          if (pasteMarkdown(view, event)) return true;
 
           const pastedText = plainText.trim();
           if (!pastedText || /\s/.test(pastedText)) return false;

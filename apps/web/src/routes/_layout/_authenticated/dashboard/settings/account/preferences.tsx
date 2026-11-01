@@ -18,7 +18,12 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useLocale } from "@/hooks/use-locale";
-import { useUserPreferencesStore } from "@/store/user-preferences";
+import {
+  isWeekStartDay,
+  useUserPreferencesStore,
+  WEEK_START_DAYS,
+  type WeekStartDay,
+} from "@/store/user-preferences";
 
 export const Route = createFileRoute(
   "/_layout/_authenticated/dashboard/settings/account/preferences",
@@ -58,6 +63,8 @@ function RouteComponent() {
     setTheme,
     weekStartsOn,
     setWeekStartsOn,
+    priorityIconStyle,
+    setPriorityIconStyle,
     viewMode,
     setViewMode,
     showTaskNumbers,
@@ -85,9 +92,10 @@ function RouteComponent() {
     board: t("settings:preferencesPage.board"),
     list: t("settings:preferencesPage.list"),
   };
-  const weekStartLabels: Record<"0" | "1", string> = {
-    "0": t("settings:preferencesPage.weekStartsOnSunday"),
-    "1": t("settings:preferencesPage.weekStartsOnMonday"),
+  const weekStartLabels: Record<WeekStartDay, string> = {
+    0: t("settings:preferencesPage.weekStartsOnSunday"),
+    1: t("settings:preferencesPage.weekStartsOnMonday"),
+    6: t("settings:preferencesPage.weekStartsOnSaturday"),
   };
 
   const selectedLocale: AppLocale = locale ?? defaultLocale;
@@ -198,8 +206,13 @@ function RouteComponent() {
             <Select
               value={String(weekStartsOn)}
               onValueChange={(value) => {
-                if (value === "0" || value === "1") {
-                  setWeekStartsOn(Number(value) as 0 | 1);
+                if (!value) {
+                  return;
+                }
+
+                const parsedWeekStart = Number(value);
+                if (isWeekStartDay(parsedWeekStart)) {
+                  setWeekStartsOn(parsedWeekStart);
                 }
               }}
             >
@@ -209,15 +222,51 @@ function RouteComponent() {
                     "settings:preferencesPage.selectFirstDayOfWeek",
                   )}
                 >
-                  {weekStartLabels[String(weekStartsOn) as "0" | "1"]}
+                  {weekStartLabels[weekStartsOn]}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0">
-                  {t("settings:preferencesPage.weekStartsOnSunday")}
+                {WEEK_START_DAYS.map((day) => (
+                  <SelectItem key={day} value={String(day)}>
+                    {weekStartLabels[day]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">
+                {t("settings:preferencesPage.priorityIcons")}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t("settings:preferencesPage.priorityIconsDescription")}
+              </p>
+            </div>
+            <Select
+              value={priorityIconStyle}
+              onValueChange={(value) => {
+                if (value === "classic" || value === "marks") {
+                  setPriorityIconStyle(value);
+                }
+              }}
+            >
+              <SelectTrigger size="sm" className="w-40">
+                <SelectValue>
+                  {priorityIconStyle === "marks"
+                    ? t("settings:preferencesPage.priorityIconsMarks")
+                    : t("settings:preferencesPage.priorityIconsClassic")}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="classic">
+                  {t("settings:preferencesPage.priorityIconsClassic")}
                 </SelectItem>
-                <SelectItem value="1">
-                  {t("settings:preferencesPage.weekStartsOnMonday")}
+                <SelectItem value="marks">
+                  {t("settings:preferencesPage.priorityIconsMarks")}
                 </SelectItem>
               </SelectContent>
             </Select>

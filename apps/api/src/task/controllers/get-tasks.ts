@@ -18,9 +18,11 @@ import {
   labelTable,
   projectTable,
   taskInvolvementTable,
+  taskRelationTable,
   taskTable,
   userTable,
 } from "../../database/schema";
+import { summarizeSubtasks } from "../subtask-counts";
 
 const reporterUser = alias(userTable, "reporter_user");
 
@@ -163,6 +165,41 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
 
   const taskIds = paginatedTasks.map((task) => task.id);
 
+  const subtaskRows =
+    taskIds.length > 0
+      ? await db
+          .select({
+            parentId: taskRelationTable.sourceTaskId,
+            childId: taskTable.id,
+            isFinal: columnTable.isFinal,
+          })
+          .from(taskRelationTable)
+          .innerJoin(
+            taskTable,
+            eq(taskRelationTable.targetTaskId, taskTable.id),
+          )
+          .leftJoin(
+            columnTable,
+            and(
+              eq(columnTable.projectId, taskTable.projectId),
+              eq(columnTable.slug, taskTable.status),
+            ),
+          )
+          .where(
+            and(
+              inArray(taskRelationTable.sourceTaskId, taskIds),
+              eq(taskRelationTable.relationType, "subtask"),
+            ),
+          )
+      : [];
+  const subtaskProgress = summarizeSubtasks(
+    subtaskRows.map((row) => ({
+      parentId: row.parentId,
+      childId: row.childId,
+      completed: row.isFinal === true,
+    })),
+  );
+
   const labelsData =
     taskIds.length > 0
       ? await db
@@ -266,12 +303,24 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
     isFinal: column.isFinal,
     tasks: paginatedTasks
       .filter((task) => task.status === column.slug)
-      .map((task) => ({
-        ...task,
-        labels: taskLabelsMap.get(task.id) || [],
-        externalLinks: taskExternalLinksMap.get(task.id) || [],
-        involvedUserIds: taskInvolvedUserIdsMap.get(task.id) || [],
-      })),
+      .map((task) => {
+        const progress = subtaskProgress.get(task.id);
+        return {
+          ...task,
+          labels: taskLabelsMap.get(task.id) || [],
+          externalLinks: taskExternalLinksMap.get(task.id) || [],
+          involvedUserIds: taskInvolvedUserIdsMap.get(task.id) || [],
+          ...(progress
+            ? {
+                subtaskCounts: {
+                  completed: progress.completed,
+                  total: progress.total,
+                },
+                subtaskIds: progress.childIds,
+              }
+            : {}),
+        };
+      }),
   }));
 
   return {

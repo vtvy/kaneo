@@ -608,8 +608,13 @@
 			"firstDayOfWeek": "Erster Wochentag",
 			"firstDayOfWeekDescription": "Lege fest, ob Kalender und Wochenbereiche am Sonntag oder Montag beginnen",
 			"selectFirstDayOfWeek": "Ersten Tag auswählen",
+			"priorityIcons": "Priority icons",
+			"priorityIconsDescription": "Choose classic arrows or the compact marks",
+			"priorityIconsClassic": "Classic",
+			"priorityIconsMarks": "Marks",
 			"weekStartsOnSunday": "Sonntag",
 			"weekStartsOnMonday": "Montag",
+			"weekStartsOnSaturday": "Saturday",
 			"defaultView": "Standardansicht",
 			"defaultViewDescription": "Wähle deine bevorzugte Aufgabenansicht",
 			"selectViewMode": "Ansicht auswählen",
@@ -2454,6 +2459,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Klartext",
 					"python": "Python",
 					"rust": "Rust",
@@ -2571,6 +2577,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2639,7 +2646,8 @@
 			"deleteError": "Aufgabe konnte nicht gelöscht werden",
 			"deleteDialogTitle": "Aufgabe löschen?",
 			"deleteDialogDescription": "Dadurch wird die Aufgabe und alle zugehörigen Daten dauerhaft entfernt. Diese Aktion kann nicht rückgängig gemacht werden.",
-			"deleteAction": "Aufgabe löschen"
+			"deleteAction": "Aufgabe löschen",
+			"progress": "{{completed}} of {{total}} subtasks"
 		},
 		"properties": {
 			"title": "Eigenschaften",
@@ -2813,6 +2821,7 @@
 			"searchPlaceholder": "Geplante Tickets suchen...",
 			"hideTasks": "Aufgaben ausblenden",
 			"showTasks": "Aufgaben anzeigen",
+			"jumpToToday": "Jump to today",
 			"noTasks": "Keine geplanten Aufgaben",
 			"noTasksSubtitle": "Füge Aufgaben ein Startdatum, ein Fälligkeitsdatum oder beides hinzu, um sie auf der Projektzeitleiste zu platzieren.",
 			"noTasksFound": "Keine Aufgaben gefunden",
@@ -2821,7 +2830,8 @@
 			"updateDatesError": "Aufgabendaten konnten nicht aktualisiert werden",
 			"resizeStart": "Startdatum anpassen",
 			"resizeDue": "Fälligkeitsdatum anpassen",
-			"taskAriaLabel": "{{title}} — öffnen oder ziehen zum Verschieben"
+			"taskAriaLabel": "{{title}} — öffnen oder ziehen zum Verschieben",
+			"undatedHeading": "No date"
 		},
 		"delete": {
 			"title": "Aufgabe löschen?",
@@ -2836,6 +2846,8 @@
 		"listView": {
 			"addTask": "Aufgabe hinzufügen",
 			"archiveAllTooltip": "Alle abgeschlossenen Aufgaben archivieren",
+			"collapseSubtasks": "Hide subtasks",
+			"expandSubtasks": "Show subtasks",
 			"noTasks": "Keine Aufgaben"
 		},
 		"kanban": {
@@ -3007,7 +3019,8 @@
 				"revoke": "Revoke feed",
 				"revoked": "Calendar feed revoked.",
 				"revokeError": "Could not revoke the calendar feed."
-			}
+			},
+			"undatedHeading": "No date"
 		}
 	},
 	"invitations": {
@@ -3175,7 +3188,10 @@
 		},
 		"invitations": {
 			"expires": "Expires {{date}}",
-			"pendingBadge": "pending"
+			"pendingBadge": "pending",
+			"copyFailed": "Could not copy the invitation link",
+			"copyLink": "Copy invitation link",
+			"linkCopied": "Invitation link copied"
 		}
 	},
 	"publicProject": {

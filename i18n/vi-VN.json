@@ -606,10 +606,15 @@
 			"languageDescription": "Chọn ngôn ngữ giao diện",
 			"selectLanguage": "Chọn ngôn ngữ",
 			"firstDayOfWeek": "Ngày đầu tuần",
-			"firstDayOfWeekDescription": "Chọn lịch và khoảng tuần bắt đầu từ Chủ nhật hay Thứ hai",
-			"selectFirstDayOfWeek": "Chọn ngày đầu tuần",
+			"firstDayOfWeekDescription": "Chọn ngày mà lịch và khoảng tuần bắt đầu",
+			"selectFirstDayOfWeek": "Chọn ngày đầu",
+			"priorityIcons": "Biểu tượng ưu tiên",
+			"priorityIconsDescription": "Chọn mũi tên kiểu cũ hoặc dấu gạch gọn",
+			"priorityIconsClassic": "Kiểu cũ",
+			"priorityIconsMarks": "Dấu gạch",
 			"weekStartsOnSunday": "Chủ nhật",
 			"weekStartsOnMonday": "Thứ hai",
+			"weekStartsOnSaturday": "Thứ bảy",
 			"defaultView": "Chế độ xem mặc định",
 			"defaultViewDescription": "Chọn chế độ xem công việc ưa thích",
 			"selectViewMode": "Chọn chế độ xem",
@@ -2454,6 +2459,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Văn bản thuần",
 					"python": "Python",
 					"rust": "Rust",
@@ -2571,6 +2577,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2639,7 +2646,8 @@
 			"deleteError": "Không thể xóa công việc",
 			"deleteDialogTitle": "Xóa công việc?",
 			"deleteDialogDescription": "Thao tác này sẽ xóa vĩnh viễn công việc và toàn bộ dữ liệu liên quan. Bạn không thể hoàn tác.",
-			"deleteAction": "Xóa công việc"
+			"deleteAction": "Xóa công việc",
+			"progress": "{{completed}}/{{total}} công việc con"
 		},
 		"properties": {
 			"title": "Thuộc tính",
@@ -2813,11 +2821,13 @@
 			"searchPlaceholder": "Tìm công việc đã lên lịch...",
 			"hideTasks": "Ẩn công việc",
 			"showTasks": "Hiện công việc",
+			"jumpToToday": "Nhảy về hôm nay",
 			"noTasks": "Chưa có công việc được lên lịch",
 			"noTasksSubtitle": "Thêm ngày bắt đầu, hạn hoàn thành hoặc cả hai để hiển thị công việc trên dòng thời gian của dự án.",
 			"noTasksFound": "Không tìm thấy công việc",
 			"noTasksMatch": "Không có công việc đã lên lịch nào khớp với \"{{query}}\"",
 			"taskHeader": "Công việc",
+			"undatedHeading": "Chưa có ngày",
 			"updateDatesError": "Không thể cập nhật ngày của công việc",
 			"resizeStart": "Điều chỉnh ngày bắt đầu",
 			"resizeDue": "Điều chỉnh hạn hoàn thành",
@@ -2836,6 +2846,8 @@
 		"listView": {
 			"addTask": "Thêm công việc",
 			"archiveAllTooltip": "Lưu trữ tất cả công việc đã hoàn thành",
+			"collapseSubtasks": "Ẩn công việc con",
+			"expandSubtasks": "Hiện công việc con",
 			"noTasks": "Không có công việc"
 		},
 		"kanban": {
@@ -2974,6 +2986,7 @@
 			"today": "Hôm nay",
 			"noTasks": "Không có công việc có lịch",
 			"noTasksSubtitle": "Thêm ngày bắt đầu, hạn hoàn thành hoặc cả hai cho công việc để hiển thị trên lịch.",
+			"undatedHeading": "Chưa có ngày",
 			"noTasksThisMonth": "Không có lịch trong tháng này",
 			"moreTasks": "+{{count}} nữa",
 			"dayTasksAriaLabel": "Hiện tất cả công việc ngày {{date}}",
@@ -3175,7 +3188,10 @@
 		},
 		"invitations": {
 			"expires": "Hết hạn {{date}}",
-			"pendingBadge": "đang chờ"
+			"pendingBadge": "đang chờ",
+			"copyFailed": "Không sao chép được liên kết mời",
+			"copyLink": "Sao chép liên kết mời",
+			"linkCopied": "Đã sao chép liên kết mời"
 		}
 	},
 	"publicProject": {

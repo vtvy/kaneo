@@ -82,6 +82,20 @@ describe("copyText", () => {
     expect(document.querySelector("textarea")).toBeNull();
   });
 
+  it("falls back when the Clipboard API rejects the write", async () => {
+    const writeText = vi.fn(async () => {
+      throw new Error("denied");
+    });
+    setEnv({ secure: true, writeText });
+    const execCommand = mockExecCommand(true);
+
+    await copyText("denied-secret");
+
+    expect(writeText).toHaveBeenCalledWith("denied-secret");
+    expect(execCommand).toHaveBeenCalledWith("copy");
+    expect(copied).toBe("denied-secret");
+  });
+
   it("falls back when the Clipboard API is missing", async () => {
     setEnv({ secure: true });
     mockExecCommand(true);

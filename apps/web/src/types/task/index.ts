@@ -48,6 +48,8 @@ type Task = {
   columnId?: string | null;
   sprintId?: string | null;
   labels?: TaskLabel[];
+  subtaskCounts?: { completed: number; total: number };
+  subtaskIds?: string[];
   externalLinks?: TaskExternalLink[];
   involvedUserIds?: string[];
 };

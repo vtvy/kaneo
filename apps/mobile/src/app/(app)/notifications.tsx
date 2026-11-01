@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { FlatList } from "react-native";
 import { Button, Loading, Notice, Row, Screen } from "@/components/ui";
 import {
@@ -8,6 +8,7 @@ import {
 } from "@/lib/api";
 import { errorMessage, formatWhen } from "@/lib/format";
 import type { NotificationItem } from "@/lib/types";
+import { useLiveRefresh } from "@/lib/use-live-refresh";
 
 export default function NotificationsScreen() {
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -15,20 +16,20 @@ export default function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => {
-    setLoading(true);
+  const load = useCallback((silent = false) => {
+    if (!silent) setLoading(true);
     listNotifications()
       .then((value) => {
         setItems(value);
         setError(null);
       })
       .catch((reason: unknown) => setError(errorMessage(reason)))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!silent) setLoading(false);
+      });
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useLiveRefresh((silent) => load(silent));
 
   const unread = items.some((item) => !item.isRead);
 

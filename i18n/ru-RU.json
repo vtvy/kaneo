@@ -616,8 +616,13 @@
 			"firstDayOfWeek": "Первый день недели",
 			"firstDayOfWeekDescription": "Выберите, начинаются ли календари и недели с воскресенья или понедельника",
 			"selectFirstDayOfWeek": "Выберите первый день",
+			"priorityIcons": "Priority icons",
+			"priorityIconsDescription": "Choose classic arrows or the compact marks",
+			"priorityIconsClassic": "Classic",
+			"priorityIconsMarks": "Marks",
 			"weekStartsOnSunday": "Воскресенье",
 			"weekStartsOnMonday": "Понедельник",
+			"weekStartsOnSaturday": "Saturday",
 			"defaultView": "Вид по умолчанию",
 			"defaultViewDescription": "Выберите предпочтительный режим отображения задач",
 			"selectViewMode": "Выберите режим просмотра",
@@ -2478,6 +2483,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Простой текст",
 					"python": "Python",
 					"rust": "Rust",
@@ -2597,6 +2603,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -2665,7 +2672,8 @@
 			"deleteError": "Не удалось удалить задачу",
 			"deleteDialogTitle": "Удалить задачу?",
 			"deleteDialogDescription": "Задача и все её данные будут безвозвратно удалены. Это действие нельзя отменить.",
-			"deleteAction": "Удалить задачу"
+			"deleteAction": "Удалить задачу",
+			"progress": "{{completed}} of {{total}} subtasks"
 		},
 		"properties": {
 			"title": "Свойства",
@@ -2847,6 +2855,7 @@
 			"searchPlaceholder": "Поиск запланированных задач...",
 			"hideTasks": "Скрыть задачи",
 			"showTasks": "Показать задачи",
+			"jumpToToday": "Jump to today",
 			"noTasks": "Нет запланированных задач",
 			"noTasksSubtitle": "Добавьте дату начала, срок выполнения или оба значения к задачам, чтобы разместить их на временной шкале проекта.",
 			"noTasksFound": "Задачи не найдены",
@@ -2855,7 +2864,8 @@
 			"updateDatesError": "Не удалось обновить даты задачи",
 			"resizeStart": "Изменить дату начала",
 			"resizeDue": "Изменить срок выполнения",
-			"taskAriaLabel": "{{title}} — откройте или перетащите для перемещения"
+			"taskAriaLabel": "{{title}} — откройте или перетащите для перемещения",
+			"undatedHeading": "No date"
 		},
 		"delete": {
 			"title": "Удалить задачу?",
@@ -2874,6 +2884,8 @@
 		"listView": {
 			"addTask": "Добавить задачу",
 			"archiveAllTooltip": "Архивировать все завершённые задачи",
+			"collapseSubtasks": "Hide subtasks",
+			"expandSubtasks": "Show subtasks",
 			"noTasks": "Нет задач"
 		},
 		"kanban": {
@@ -3083,7 +3095,8 @@
 				"revoke": "Revoke feed",
 				"revoked": "Calendar feed revoked.",
 				"revokeError": "Could not revoke the calendar feed."
-			}
+			},
+			"undatedHeading": "No date"
 		}
 	},
 	"invitations": {
@@ -3259,7 +3272,10 @@
 		},
 		"invitations": {
 			"expires": "Expires {{date}}",
-			"pendingBadge": "pending"
+			"pendingBadge": "pending",
+			"copyFailed": "Could not copy the invitation link",
+			"copyLink": "Copy invitation link",
+			"linkCopied": "Invitation link copied"
 		}
 	},
 	"publicProject": {

@@ -61,6 +61,7 @@ import {
   isYouTubeUrl,
   normalizeUrl,
 } from "@/lib/editor-url-utils";
+import { pasteMarkdown } from "@/lib/paste-markdown";
 import { getSharedShikiHighlighter } from "@/lib/shiki-highlighter";
 import { toast } from "@/lib/toast";
 import { uploadTaskImage } from "@/lib/upload-task-image";
@@ -142,6 +143,7 @@ const CODE_LANGUAGE_OPTIONS = [
   { value: "kotlin", label: "Kotlin" },
   { value: "makefile", label: "Makefile" },
   { value: "markdown", label: "Markdown" },
+  { value: "mermaid", label: "Mermaid" },
   { value: "ocaml", label: "OCaml" },
   { value: "php", label: "PHP" },
   { value: "perl", label: "Perl" },
@@ -162,6 +164,7 @@ const CODE_LANGUAGE_OPTIONS = [
 
 const SHIKI_LANGUAGE_ALIASES: Record<string, string> = {
   excel: "csv",
+  mermaid: "text",
   plaintext: "text",
   reasonml: "ocaml",
 };
@@ -625,6 +628,8 @@ export default function TaskDescription({ taskId }: TaskDescriptionProps) {
             );
             return true;
           }
+
+          if (pasteMarkdown(view, event)) return true;
 
           const pastedText = plainText.trim();
           if (!pastedText || /\s/.test(pastedText)) return false;
