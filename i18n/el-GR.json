@@ -908,6 +908,8 @@
 			"off": "Ανενεργό",
 			"newColumnPlaceholder": "Όνομα νέας στήλης...",
 			"add": "Προσθήκη",
+			"deleteAria": "Delete {{name}} column",
+			"renameAria": "Rename {{name}} column",
 			"pickColorTitle": "Pick column color",
 			"chooseColor": "Choose color",
 			"noColor": "No color",
@@ -2251,6 +2253,7 @@
 			"projectSettings": "Ρυθμίσεις έργου",
 			"linkCopied": "Ο σύνδεσμος του έργου αντιγράφηκε στο πρόχειρο",
 			"addProject": "Προσθήκη έργου",
+			"switcherLabel": "Switch project or view",
 			"deleteConfirmTitle": "Διαγραφή έργου;",
 			"deleteConfirmDescription": "Αυτό θα αφαιρέσει οριστικά το έργο και όλα τα δεδομένα του. Δεν μπορείτε να αναιρέσετε αυτήν την ενέργεια.",
 			"deletedToast": "Το έργο διαγράφηκε",
@@ -2539,7 +2542,11 @@
 		"boardSearchPlaceholder": "Αναζήτηση αιτημάτων...",
 		"view": {
 			"board": "Πίνακας",
-			"list": "Λίστα"
+			"list": "Λίστα",
+			"backlog": "Backlog",
+			"gantt": "Gantt",
+			"sprints": "Sprints",
+			"heading": "View"
 		},
 		"common": {
 			"selectTask": "Επιλέξτε εργασία",

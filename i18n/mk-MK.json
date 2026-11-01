@@ -908,6 +908,8 @@
 			"off": "Исклучено",
 			"newColumnPlaceholder": "Име на нова колона...",
 			"add": "Додади",
+			"deleteAria": "Delete {{name}} column",
+			"renameAria": "Rename {{name}} column",
 			"pickColorTitle": "Pick column color",
 			"chooseColor": "Choose color",
 			"noColor": "No color",
@@ -2251,6 +2253,7 @@
 			"projectSettings": "Поставки на проектот",
 			"linkCopied": "Линкот на проектот е копиран во клипборд",
 			"addProject": "Додади проект",
+			"switcherLabel": "Switch project or view",
 			"deleteConfirmTitle": "Избриши проект?",
 			"deleteConfirmDescription": "Ова трајно ќе го отстрани проектот и сите негови податоци. Не можеш да ја вратиш оваа акција.",
 			"deletedToast": "Проектот е избришан",
@@ -2539,7 +2542,11 @@
 		"boardSearchPlaceholder": "Пребарај тикети...",
 		"view": {
 			"board": "Табла",
-			"list": "Листа"
+			"list": "Листа",
+			"backlog": "Backlog",
+			"gantt": "Gantt",
+			"sprints": "Sprints",
+			"heading": "View"
 		},
 		"common": {
 			"selectTask": "Избери задача",

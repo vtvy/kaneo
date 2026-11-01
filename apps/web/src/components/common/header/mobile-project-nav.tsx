@@ -8,6 +8,7 @@ import {
   Repeat,
   SquareKanban,
 } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import { cn } from "@/lib/cn";
 type MobileProjectNavProps = {
   workspaceId: string;
   projectId: string;
+  projectName?: string;
   activeView:
     | "backlog"
     | "board"
@@ -42,6 +44,7 @@ type MobileProjectNavProps = {
 export default function MobileProjectNav({
   workspaceId,
   projectId,
+  projectName,
   activeView,
   onSelectBoard,
   onSelectBacklog,
@@ -54,30 +57,39 @@ export default function MobileProjectNav({
 }: MobileProjectNavProps) {
   const { t } = useTranslation();
   const { data: projects = [] } = useGetProjects({ workspaceId });
+  const [open, setOpen] = useState(false);
+  const choose = (action: () => void) => {
+    setOpen(false);
+    action();
+  };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         render={
           <Button
             variant="ghost"
-            size="icon-xs"
-            className="size-7 border border-transparent"
+            size="sm"
+            aria-label={t("navigation:projectList.switcherLabel")}
+            className="h-7 max-w-[14rem] gap-1.5 px-2"
           />
         }
       >
-        <Menu className="size-4" />
+        <Menu className="size-4 shrink-0" />
+        <span className="truncate">
+          {projectName || t("navigation:sidebar.projects")}
+        </span>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-2">
         <div className="space-y-3">
           <div className="space-y-1">
             <p className="px-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-              View
+              {t("tasks:view.heading")}
             </p>
             <div className="grid grid-cols-3 gap-1">
               <button
                 type="button"
-                onClick={onSelectBacklog}
+                onClick={() => choose(onSelectBacklog)}
                 className={cn(
                   "flex w-full items-center justify-center gap-1 whitespace-nowrap rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
                   activeView === "backlog"
@@ -85,11 +97,11 @@ export default function MobileProjectNav({
                     : "border-transparent text-muted-foreground hover:bg-accent",
                 )}
               >
-                Backlog
+                {t("tasks:view.backlog")}
               </button>
               <button
                 type="button"
-                onClick={onSelectBoard}
+                onClick={() => choose(onSelectBoard)}
                 className={cn(
                   "flex w-full items-center justify-center gap-1 whitespace-nowrap rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
                   activeView === "board"
@@ -98,12 +110,12 @@ export default function MobileProjectNav({
                 )}
               >
                 <SquareKanban className="size-3.5" />
-                Board
+                {t("tasks:view.board")}
               </button>
               {onSelectCalendar && (
                 <button
                   type="button"
-                  onClick={onSelectCalendar}
+                  onClick={() => choose(onSelectCalendar)}
                   className={cn(
                     "flex w-full items-center justify-center gap-1 whitespace-nowrap rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
                     activeView === "calendar"
@@ -117,7 +129,7 @@ export default function MobileProjectNav({
               )}
               <button
                 type="button"
-                onClick={onSelectGantt}
+                onClick={() => choose(onSelectGantt)}
                 className={cn(
                   "flex w-full items-center justify-center gap-1 whitespace-nowrap rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
                   activeView === "gantt"
@@ -126,11 +138,11 @@ export default function MobileProjectNav({
                 )}
               >
                 <CalendarDays className="size-3.5" />
-                Gantt
+                {t("tasks:view.gantt")}
               </button>
               <button
                 type="button"
-                onClick={onSelectSprints}
+                onClick={() => choose(onSelectSprints)}
                 className={cn(
                   "flex w-full items-center justify-center gap-1 whitespace-nowrap rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
                   activeView === "sprints"
@@ -139,11 +151,11 @@ export default function MobileProjectNav({
                 )}
               >
                 <Repeat className="size-3.5" />
-                Sprints
+                {t("tasks:view.sprints")}
               </button>
               <button
                 type="button"
-                onClick={onSelectDocuments}
+                onClick={() => choose(onSelectDocuments)}
                 className={cn(
                   "flex w-full items-center justify-center gap-1 whitespace-nowrap rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
                   activeView === "documents"
@@ -159,7 +171,7 @@ export default function MobileProjectNav({
 
           <div className="space-y-1">
             <p className="px-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-              Projects
+              {t("navigation:sidebar.projects")}
             </p>
             <div className="max-h-56 space-y-0.5 overflow-y-auto">
               {(projects ?? []).map((project) => {
@@ -171,7 +183,7 @@ export default function MobileProjectNav({
                   <button
                     key={project.id}
                     type="button"
-                    onClick={() => onSelectProject(project.id)}
+                    onClick={() => choose(() => onSelectProject(project.id))}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
                       isCurrentProject
@@ -190,11 +202,11 @@ export default function MobileProjectNav({
 
           <button
             type="button"
-            onClick={onAddProject}
+            onClick={() => choose(onAddProject)}
             className="flex w-full items-center gap-2 rounded-md border border-border px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent"
           >
             <Plus className="size-3.5" />
-            Add project
+            {t("navigation:projectList.addProject")}
           </button>
         </div>
       </PopoverContent>

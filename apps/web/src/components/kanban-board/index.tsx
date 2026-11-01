@@ -199,7 +199,7 @@ function KanbanBoard({ project, disableDragDrop = false }: KanbanBoardProps) {
                   // biome-ignore lint/suspicious/noArrayIndexKey: It's a skeleton
                   i
                 }`}
-                className="h-full min-w-80 w-full flex-1 rounded-xl border border-border/70 bg-card"
+                className="h-full min-w-[min(20rem,calc(100vw-4.5rem))] w-full flex-1 rounded-xl border border-border/70 bg-card"
               >
                 <div className="px-4 py-3 flex items-center justify-between">
                   <div className="w-24 h-5 bg-muted/50 rounded animate-pulse" />
@@ -246,12 +246,16 @@ function KanbanBoard({ project, disableDragDrop = false }: KanbanBoardProps) {
       onDragEnd={handleDragEnd}
     >
       <div className="flex h-full w-full flex-col bg-linear-to-b from-muted/20 to-background">
-        <div className="min-h-0 flex-1 overflow-x-auto [-webkit-overflow-scrolling:touch]">
+        <div
+          className={`min-h-0 flex-1 scroll-px-4 overflow-x-auto [-webkit-overflow-scrolling:touch] ${
+            activeId === null ? "snap-x snap-mandatory sm:snap-none" : ""
+          }`}
+        >
           <div className="flex h-full min-w-max gap-4 px-4 py-4 transition-all duration-200 ease-out md:px-5">
             {displayed.columns?.map((column) => (
               <div
                 key={column.id}
-                className="h-full max-w-96 min-w-80 shrink-0 flex-1"
+                className="h-full max-w-96 min-w-[min(20rem,calc(100vw-4.5rem))] shrink-0 flex-1 snap-start"
               >
                 <Column column={column} />
               </div>

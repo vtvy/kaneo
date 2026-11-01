@@ -35,6 +35,20 @@ input:-webkit-autofill:active {
 
 @custom-variant dark (&:is(.dark *));
 
+@utility touch-hitbox {
+  @media (pointer: coarse) {
+    &::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: max(100%, 2.75rem);
+      height: max(100%, 2.75rem);
+      transform: translate(-50%, -50%);
+    }
+  }
+}
+
 @theme inline {
   --animate-skeleton: skeleton 2s -1s infinite linear;
   --font-sans: var(--font-sans);
@@ -383,6 +397,13 @@ input:-webkit-autofill:active {
     color: var(--foreground);
     caret-color: var(--foreground);
     outline: none;
+  }
+
+  @media (max-width: 639.98px) {
+    .kaneo-tiptap-content .ProseMirror[contenteditable="true"],
+    .kaneo-comment-editor-content .ProseMirror[contenteditable="true"] {
+      font-size: 1rem;
+    }
   }
 
   .kaneo-tiptap-slash-menu {

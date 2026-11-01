@@ -819,6 +819,8 @@
 			"off": "Uit",
 			"newColumnPlaceholder": "Nieuwe kolomnaam...",
 			"add": "Toevoegen",
+			"deleteAria": "Delete {{name}} column",
+			"renameAria": "Rename {{name}} column",
 			"pickColorTitle": "Pick column color",
 			"chooseColor": "Choose color",
 			"noColor": "No color",
@@ -2251,6 +2253,7 @@
 			"projectSettings": "Projectinstellingen",
 			"linkCopied": "Projectlink gekopieerd naar klembord",
 			"addProject": "Project toevoegen",
+			"switcherLabel": "Switch project or view",
 			"deleteConfirmTitle": "Project verwijderen?",
 			"deleteConfirmDescription": "Dit zal het project en alle data permanent verwijderen. Dit kan niet ongedaan worden gemaakt.",
 			"deletedToast": "Project verwijderd",
@@ -2539,7 +2542,11 @@
 		"boardSearchPlaceholder": "Tickets zoeken...",
 		"view": {
 			"board": "Bord",
-			"list": "Lijst"
+			"list": "Lijst",
+			"backlog": "Backlog",
+			"gantt": "Gantt",
+			"sprints": "Sprints",
+			"heading": "View"
 		},
 		"common": {
 			"selectTask": "Selecteer taak",
