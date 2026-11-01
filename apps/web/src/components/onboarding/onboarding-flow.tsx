@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -23,6 +24,8 @@ import { Input } from "@/components/ui/input";
 import useCreateWorkspace from "@/hooks/queries/workspace/use-create-workspace";
 import { useCanCreateWorkspace } from "@/hooks/use-can-create-workspace";
 import { authClient } from "@/lib/auth-client";
+import { createStarterProject } from "@/lib/onboarding/create-starter-project";
+import { starterTasks } from "@/lib/onboarding/starter-tasks";
 import { toast } from "@/lib/toast";
 
 type OnboardingStep = "workspace" | "success";
@@ -30,6 +33,7 @@ type OnboardingStep = "workspace" | "success";
 export type WorkspaceFormValues = {
   name: string;
   description?: string;
+  projectName: string;
 };
 
 const fadeTransition = {
@@ -55,6 +59,10 @@ export function OnboardingFlow() {
           .string()
           .min(1, t("auth:onboarding.validation.workspaceNameRequired")),
         description: z.string().optional(),
+        projectName: z
+          .string()
+          .trim()
+          .min(1, t("auth:onboarding.validation.projectNameRequired")),
       }),
     [t],
   );
@@ -64,6 +72,7 @@ export function OnboardingFlow() {
     defaultValues: {
       name: "",
       description: "",
+      projectName: t("auth:onboarding.projectNameDefault"),
     },
   });
 
@@ -79,6 +88,12 @@ export function OnboardingFlow() {
       await authClient.organization.setActive({
         organizationId: workspace.id,
       });
+      await createStarterProject({
+        workspaceId: workspace.id,
+        name: data.projectName.trim(),
+        tasks: starterTasks(t, "team"),
+      }).catch(() => null);
+      await queryClient.invalidateQueries({ queryKey: ["projects"] });
       setCreatedWorkspaceName(data.name);
       toast.success(t("auth:onboarding.toast.workspaceCreated"));
 
@@ -170,6 +185,25 @@ export function OnboardingFlow() {
                         {...field}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="projectName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">
+                      {t("auth:onboarding.projectName")}
+                    </FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      {t("auth:onboarding.projectNameHint")}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

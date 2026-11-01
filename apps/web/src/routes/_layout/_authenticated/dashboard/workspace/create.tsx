@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import useCreateWorkspace from "@/hooks/queries/workspace/use-create-workspace";
 import { useCanCreateWorkspace } from "@/hooks/use-can-create-workspace";
 import { authClient } from "@/lib/auth-client";
+import { createStarterProject } from "@/lib/onboarding/create-starter-project";
+import { starterTasks } from "@/lib/onboarding/starter-tasks";
 import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute(
@@ -23,6 +25,9 @@ function RouteComponent() {
   const canCreateWorkspace = useCanCreateWorkspace();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [projectName, setProjectName] = useState(() =>
+    t("auth:onboarding.projectNameDefault"),
+  );
   const inputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -38,7 +43,7 @@ function RouteComponent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !projectName.trim()) return;
 
     try {
       const createdWorkspace = await mutateAsync({ name, description });
@@ -48,6 +53,11 @@ function RouteComponent() {
       await authClient.organization.setActive({
         organizationId: createdWorkspace.id,
       });
+      await createStarterProject({
+        workspaceId: createdWorkspace.id,
+        name: projectName.trim(),
+        tasks: starterTasks(t, "team"),
+      }).catch(() => null);
 
       navigate({
         to: "/dashboard/workspace/$workspaceId",
@@ -132,12 +142,32 @@ function RouteComponent() {
                       className="h-10"
                     />
                   </div>
+
+                  <div>
+                    <label
+                      htmlFor="project-name"
+                      className="block text-sm font-medium text-foreground mb-2"
+                    >
+                      {t("auth:onboarding.projectName")}
+                    </label>
+                    <Input
+                      id="project-name"
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                      placeholder={t("auth:onboarding.projectNameDefault")}
+                      className="h-10"
+                      required
+                    />
+                    <p className="mt-1 text-muted-foreground text-sm">
+                      {t("auth:onboarding.projectNameHint")}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="pt-4">
                   <Button
                     type="submit"
-                    disabled={!name.trim() || isPending}
+                    disabled={!name.trim() || !projectName.trim() || isPending}
                     className="w-full h-12 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isPending
