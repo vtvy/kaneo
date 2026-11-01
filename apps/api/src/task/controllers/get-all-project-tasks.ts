@@ -18,6 +18,8 @@ function getAllProjectTasks(projectId: string) {
   return db
     .select({
       id: taskTable.id,
+      type: taskTable.type,
+      parentId: taskTable.parentId,
       title: taskTable.title,
       number: taskTable.number,
       status: taskTable.status,

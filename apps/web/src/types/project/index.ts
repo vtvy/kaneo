@@ -14,7 +14,11 @@ type TasksApiResponse = InferResponseType<
 
 type ProjectWithTasksRaw = TasksApiResponse["data"];
 
-export type ProjectWithTasks = Omit<ProjectWithTasksRaw, "columns"> & {
+export type ProjectWithTasks = Omit<
+  ProjectWithTasksRaw,
+  "columns" | "backgroundVersion"
+> & {
+  backgroundVersion?: string | null;
   columns: Array<
     Omit<ProjectWithTasksRaw["columns"][number], "tasks"> & {
       tasks: Task[];

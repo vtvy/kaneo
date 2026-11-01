@@ -1,6 +1,7 @@
 import { createId } from "@paralleldrive/cuid2";
 import { relations, sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   foreignKey,
   index,
@@ -513,6 +514,11 @@ export const taskTable = pgTable(
       onDelete: "cascade",
       onUpdate: "cascade",
     }),
+    type: text("type").notNull().default("task"),
+    backlogRank: integer("backlog_rank").notNull().default(0),
+    parentId: text("parent_id").references((): AnyPgColumn => taskTable.id, {
+      onDelete: "set null",
+    }),
     title: text("title").notNull(),
     description: text("description"),
     status: text("status"),
@@ -541,6 +547,7 @@ export const taskTable = pgTable(
       .notNull(),
   },
   (table) => [
+    index("task_parentId_idx").on(table.parentId),
     index("task_projectId_idx").on(table.projectId),
     index("task_dueDate_idx").on(table.dueDate),
     index("task_assigneeId_idx").on(table.userId),

@@ -372,6 +372,13 @@
 			"when": 1793544761143,
 			"tag": "0052_project_backgrounds",
 			"breakpoints": true
+		},
+		{
+			"idx": 53,
+			"version": "7",
+			"when": 1793631200000,
+			"tag": "0053_work_item_hierarchy",
+			"breakpoints": true
 		}
 	]
 }

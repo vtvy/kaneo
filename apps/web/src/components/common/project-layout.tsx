@@ -40,6 +40,7 @@ type ProjectLayoutProps = {
   children: ReactNode;
   showViewSwitcher?: boolean;
   activeView?:
+    | "work-items"
     | "backlog"
     | "board"
     | "calendar"
@@ -96,18 +97,25 @@ export default function ProjectLayout({
 
   const resolvedView =
     activeView ??
-    (location.pathname.includes("/backlog")
-      ? "backlog"
-      : location.pathname.includes("/calendar")
-        ? "calendar"
-        : location.pathname.includes("/gantt")
-          ? "gantt"
-          : location.pathname.includes("/sprints")
-            ? "sprints"
-            : location.pathname.includes("/documents")
-              ? "documents"
-              : "board");
+    (location.pathname.includes("/work-items")
+      ? "work-items"
+      : location.pathname.includes("/backlog")
+        ? "backlog"
+        : location.pathname.includes("/calendar")
+          ? "calendar"
+          : location.pathname.includes("/gantt")
+            ? "gantt"
+            : location.pathname.includes("/sprints")
+              ? "sprints"
+              : location.pathname.includes("/documents")
+                ? "documents"
+                : "board");
 
+  const handleNavigateToWorkItems = () =>
+    navigate({
+      to: "/dashboard/workspace/$workspaceId/project/$projectId/work-items",
+      params: { workspaceId, projectId },
+    });
   const handleNavigateToBacklog = () => {
     navigate({
       to: "/dashboard/workspace/$workspaceId/project/$projectId/backlog",
@@ -153,17 +161,19 @@ export default function ProjectLayout({
   const handleProjectSwitch = (nextProjectId: string) => {
     navigate({
       to:
-        resolvedView === "backlog"
-          ? "/dashboard/workspace/$workspaceId/project/$projectId/backlog"
-          : resolvedView === "calendar"
-            ? "/dashboard/workspace/$workspaceId/project/$projectId/calendar"
-            : resolvedView === "gantt"
-              ? "/dashboard/workspace/$workspaceId/project/$projectId/gantt"
-              : resolvedView === "sprints"
-                ? "/dashboard/workspace/$workspaceId/project/$projectId/sprints"
-                : resolvedView === "documents"
-                  ? "/dashboard/workspace/$workspaceId/project/$projectId/documents"
-                  : "/dashboard/workspace/$workspaceId/project/$projectId/board",
+        resolvedView === "work-items"
+          ? "/dashboard/workspace/$workspaceId/project/$projectId/work-items"
+          : resolvedView === "backlog"
+            ? "/dashboard/workspace/$workspaceId/project/$projectId/backlog"
+            : resolvedView === "calendar"
+              ? "/dashboard/workspace/$workspaceId/project/$projectId/calendar"
+              : resolvedView === "gantt"
+                ? "/dashboard/workspace/$workspaceId/project/$projectId/gantt"
+                : resolvedView === "sprints"
+                  ? "/dashboard/workspace/$workspaceId/project/$projectId/sprints"
+                  : resolvedView === "documents"
+                    ? "/dashboard/workspace/$workspaceId/project/$projectId/documents"
+                    : "/dashboard/workspace/$workspaceId/project/$projectId/board",
       params: {
         workspaceId,
         projectId: nextProjectId,
@@ -219,6 +229,7 @@ export default function ProjectLayout({
                 projectId={projectId}
                 projectName={project?.name}
                 activeView={resolvedView}
+                onSelectWorkItems={handleNavigateToWorkItems}
                 onSelectBacklog={handleNavigateToBacklog}
                 onSelectBoard={handleNavigateToBoard}
                 onSelectCalendar={handleNavigateToCalendar}
@@ -233,6 +244,15 @@ export default function ProjectLayout({
             {showViewSwitcher && (
               <div className="hidden h-8 items-center gap-0.5 rounded-lg border border-border/80 bg-background p-0.5 sm:inline-flex">
                 <Button
+                  size="xs"
+                  variant={
+                    resolvedView === "work-items" ? "secondary" : "ghost"
+                  }
+                  onClick={handleNavigateToWorkItems}
+                >
+                  Work items
+                </Button>
+                <Button
                   variant={resolvedView === "backlog" ? "secondary" : "ghost"}
                   size="xs"
                   onClick={handleNavigateToBacklog}
@@ -242,7 +262,7 @@ export default function ProjectLayout({
                   )}
                 >
                   <SquircleDashed className="size-3.5" />
-                  Backlog
+                  Backlogs
                 </Button>
                 <Button
                   variant={resolvedView === "board" ? "secondary" : "ghost"}
@@ -254,7 +274,7 @@ export default function ProjectLayout({
                   )}
                 >
                   <SquareKanban className="size-3.5" />
-                  Tasks
+                  Boards
                 </Button>
                 <Button
                   variant={resolvedView === "calendar" ? "secondary" : "ghost"}

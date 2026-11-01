@@ -68,6 +68,7 @@ function KanbanBoard({ project, disableDragDrop = false }: KanbanBoardProps) {
   const refreshBoard = () => {
     const token = saveEpoch.current;
     void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["work-items", project.id] }),
       queryClient.invalidateQueries({ queryKey: ["tasks", project.id] }),
       queryClient.invalidateQueries({
         queryKey: ["projects", project.workspaceId],

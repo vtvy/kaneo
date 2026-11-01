@@ -38,7 +38,11 @@ async function createTask({
   recurrence,
   createGitlabIssue,
   customFields,
+  workItemType = "task",
+  parentId = null,
 }: {
+  workItemType?: string;
+  parentId?: string | null;
   projectId: string;
   currentUserId: string;
   userId?: string;
@@ -122,6 +126,10 @@ async function createTask({
     );
 
   const nextPosition = (maxPositionResult?.maxPosition ?? 0) + 1;
+  const [rank] = await db
+    .select({ max: max(taskTable.backlogRank) })
+    .from(taskTable)
+    .where(eq(taskTable.projectId, projectId));
 
   const [createdTask] = await db
     .insert(taskTable)
@@ -138,6 +146,9 @@ async function createTask({
       description: description || "",
       priority: resolvedPriority,
       points: points ?? null,
+      type: workItemType,
+      backlogRank: (rank?.max ?? 0) + 1,
+      parentId,
       recurrence: recurrence ?? null,
       number: nextTaskNumber + 1,
       position: nextPosition,

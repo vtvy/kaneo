@@ -105,6 +105,14 @@ async function moveTask({
     });
   }
 
+  const child = await db.query.taskTable.findFirst({
+    where: eq(taskTable.parentId, taskId),
+  });
+  if (existingTask.parentId || child)
+    throw new HTTPException(400, {
+      message: "Detach this work item and its children before moving projects",
+    });
+
   const [sourceProject, destinationProject] = await Promise.all([
     db.query.projectTable.findFirst({
       where: eq(projectTable.id, existingTask.projectId),

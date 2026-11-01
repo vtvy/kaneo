@@ -20,6 +20,7 @@ function useCreateTask() {
       sprintId,
       createGitlabIssue,
       customFields,
+      workItemType,
     }: CreateTaskRequest) =>
       createTask(
         title,
@@ -34,8 +35,12 @@ function useCreateTask() {
         sprintId,
         createGitlabIssue,
         customFields,
+        workItemType,
       ),
     onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["work-items", variables.projectId],
+      });
       void queryClient.invalidateQueries({
         queryKey: ["tasks", variables.projectId],
       });

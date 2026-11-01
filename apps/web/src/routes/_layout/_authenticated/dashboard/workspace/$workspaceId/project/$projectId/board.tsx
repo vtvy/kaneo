@@ -14,6 +14,7 @@ import BoardSprintFilter, {
 } from "@/components/sprint/board-sprint-filter";
 import TaskDetailsSheet from "@/components/task/task-details-sheet";
 import { Button } from "@/components/ui/button";
+import { itemTypes } from "@/components/work-items";
 import { shortcuts } from "@/constants/shortcuts";
 import useGetLabelsByWorkspace from "@/hooks/queries/label/use-get-labels-by-workspace";
 import useGetSprintTasks from "@/hooks/queries/sprint/use-get-sprint-tasks";
@@ -97,6 +98,7 @@ function RouteComponent() {
   const { project, setProject, boardSyncLocked } = useProjectStore();
   const { viewMode, setViewMode } = useUserPreferencesStore();
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [workItemType, setWorkItemType] = useState("all");
   const [boardSearchQuery, setBoardSearchQuery] = useState("");
   const boardSearchInputRef = useRef<HTMLInputElement>(null);
   const [sort, setSort] = useState<SortConfig>({
@@ -217,15 +219,21 @@ function RouteComponent() {
   );
 
   const sortedProject = useMemo(() => {
-    if (!filteredProject || sort.field === "position") return filteredProject;
+    if (!filteredProject) return filteredProject;
     return {
       ...filteredProject,
       columns: filteredProject.columns.map((column) => ({
         ...column,
-        tasks: sortTasks(column.tasks, sort),
+        tasks: sortTasks(
+          column.tasks.filter(
+            (task) =>
+              workItemType === "all" || (task.type ?? "task") === workItemType,
+          ),
+          sort,
+        ),
       })),
     };
-  }, [filteredProject, sort]);
+  }, [filteredProject, sort, workItemType]);
 
   const displayedProject = useMemo(() => {
     if (!sortedProject || selectedSprintId === ALL_SPRINTS_VALUE)
@@ -258,7 +266,7 @@ function RouteComponent() {
           onClick={() => setIsTaskModalOpen(true)}
         >
           <Plus className="mr-1 h-3.5 w-3.5" />
-          {t("tasks:kanban.newTask")}
+          New Work Item
         </Button>
       )}
     </div>
@@ -276,6 +284,26 @@ function RouteComponent() {
         hideAppName
       />
       <div className="relative flex flex-col h-full min-h-0 overflow-hidden">
+        <div className="border-b px-3 py-2">
+          <label className="text-xs">
+            Work item type{" "}
+            <select
+              aria-label="Board work item type"
+              className="ml-2 rounded border bg-background px-2 py-1"
+              value={workItemType}
+              onChange={(event) => setWorkItemType(event.target.value)}
+            >
+              <option value="all">All types</option>
+              {itemTypes.map((type) => (
+                <option value={type} key={type}>
+                  {type === "backlog_item"
+                    ? "Backlog Item"
+                    : type[0]?.toUpperCase() + type.slice(1)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <BoardToolbar
           project={project}
           filters={filters}

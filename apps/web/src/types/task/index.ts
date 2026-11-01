@@ -24,6 +24,8 @@ export type TaskRecurrence = {
 
 type Task = {
   id: string;
+  type?: string;
+  parentId?: string | null;
   title: string;
   number: number | null;
   description: string | null;

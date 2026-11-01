@@ -46,6 +46,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { itemTypes } from "@/components/work-items";
 import pushTaskToGitlab from "@/fetchers/task/push-task-to-gitlab";
 import useSetCustomFieldValue from "@/hooks/mutations/custom-field/use-set-custom-field-value";
 import useCreateLabel from "@/hooks/mutations/label/use-create-label";
@@ -208,6 +209,8 @@ function CreateTaskModal({
   const canCreateLabelCapability = canManageLabels();
 
   const [title, setTitle] = useState("");
+  const [workItemType, setWorkItemType] =
+    useState<(typeof itemTypes)[number]>("task");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Priority>("no-priority");
   const [points, setPoints] = useState<number | null>(null);
@@ -427,6 +430,7 @@ function CreateTaskModal({
 
     const draftStatus = "planned";
     const draftPromise = createTask({
+      workItemType,
       title: title.trim() || t("common:modals.createTask.untitledTask"),
       description: description.trim() || "",
       userId: assigneeId,
@@ -464,6 +468,7 @@ function CreateTaskModal({
     resolvedProjectId,
     title,
     t,
+    workItemType,
   ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -509,6 +514,7 @@ function CreateTaskModal({
           )
         : normalizeTask(
             await createTask({
+              workItemType,
               title: title.trim(),
               description: description.trim() || "",
               userId: assigneeId,
@@ -763,7 +769,7 @@ function CreateTaskModal({
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem className="text-foreground font-medium text-sm">
-                  {t("common:modals.createTask.title")}
+                  New Work Item
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -778,6 +784,26 @@ function CreateTaskModal({
           className="flex flex-col flex-1 min-h-0 space-y-6"
         >
           <div className="flex-1 min-h-0 overflow-y-auto space-y-6 px-6">
+            <label className="flex items-center gap-2 text-xs">
+              Work item type
+              <select
+                aria-label="New work item type"
+                disabled={!!draftTask}
+                className="rounded border bg-background px-2 py-1"
+                value={workItemType}
+                onChange={(event) =>
+                  setWorkItemType(event.target.value as typeof workItemType)
+                }
+              >
+                {itemTypes.map((type) => (
+                  <option value={type} key={type}>
+                    {type === "backlog_item"
+                      ? "Backlog Item"
+                      : type[0]?.toUpperCase() + type.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </label>
             <Input
               unstyled
               value={title}

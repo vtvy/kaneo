@@ -8,6 +8,7 @@ export function useUpdateTaskAssignee() {
   return useMutation({
     mutationFn: (task: Task) => updateTaskAssignee(task.id, task),
     onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["work-items"] });
       queryClient.invalidateQueries({
         queryKey: ["task", variables.id],
       });

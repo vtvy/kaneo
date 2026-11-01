@@ -54,6 +54,9 @@ export function useProjectWebSocket(projectId: string) {
         try {
           const message = JSON.parse(event.data);
           if (message.type === "PROJECT_UPDATED") {
+            queryClient.invalidateQueries({
+              queryKey: ["work-items", projectId],
+            });
             queryClient.invalidateQueries({ queryKey: ["projects"] });
             queryClient.invalidateQueries({
               queryKey: ["tasks", message.projectId],
@@ -63,6 +66,9 @@ export function useProjectWebSocket(projectId: string) {
           if (message.type === "PROJECT_MOVED") {
             // The server closes this socket; refetch so the project shows up
             // under its new workspace (or disappears if access was lost).
+            queryClient.invalidateQueries({
+              queryKey: ["work-items", projectId],
+            });
             queryClient.invalidateQueries({ queryKey: ["projects"] });
             queryClient.invalidateQueries({
               queryKey: ["tasks", message.projectId],
@@ -80,6 +86,9 @@ export function useProjectWebSocket(projectId: string) {
           ) {
             queryClient.invalidateQueries({
               queryKey: ["tasks", message.projectId],
+            });
+            queryClient.invalidateQueries({
+              queryKey: ["work-items", message.projectId],
             });
             // Keep the backlog table live for any task change (create/update/
             // delete/move) across all clients, not just the board.
