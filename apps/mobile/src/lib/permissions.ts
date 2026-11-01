@@ -39,6 +39,13 @@ export function can(
   return access.statements[resource]?.includes(action) ?? false;
 }
 
+export function canEditOwnComment(
+  authorId: string | null | undefined,
+  currentUserId: string | null | undefined,
+): boolean {
+  return Boolean(authorId && currentUserId && authorId === currentUserId);
+}
+
 export function canAssignTask(
   access: ProjectAccess | null | undefined,
   reporterId: string | null | undefined,

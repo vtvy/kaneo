@@ -111,6 +111,8 @@ Credentials are resolved in this order: `--token`, then `KANEO_API_KEY`, then th
 | `kaneo time start`, `stop`, `status`, `log`, `list`, `edit` | Track time with a timer or log it afterwards |
 | `kaneo project list`, `view`, `create`, `edit`, `archive`, `unarchive`, `move`, `delete` | Manage projects |
 | `kaneo column list`, `create`, `edit`, `move`, `delete` | Manage a project's columns |
+| `kaneo sprint list`, `tasks`, `backlog` | List sprints, the tasks in one sprint, and tasks that are not in a sprint |
+| `kaneo document list` | List a project's folders and the documents in its root |
 | `kaneo field list`, `create`, `delete` | Manage a project's custom fields |
 | `kaneo workflow list`, `set`, `delete` | Move tasks when GitHub, GitLab or Gitea events arrive |
 | `kaneo workspace list`, `use`, `create`, `edit`, `leave`, `delete` | Choose and manage workspaces |

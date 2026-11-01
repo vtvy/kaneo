@@ -25,6 +25,8 @@ import type {
   Sprint,
   SprintTask,
   TaskDetail,
+  TaskFieldValue,
+  TaskLabel,
   Workspace,
 } from "@/lib/types";
 
@@ -340,6 +342,30 @@ export function createComment(
     method: "POST",
     body: { content },
   });
+}
+
+export function listTaskLabels(taskId: string): Promise<TaskLabel[]> {
+  return request(`/api/label/task/${taskId}`) as Promise<TaskLabel[]>;
+}
+
+export function listTaskFields(taskId: string): Promise<TaskFieldValue[]> {
+  return request(`/api/custom-field/task/${taskId}`) as Promise<
+    TaskFieldValue[]
+  >;
+}
+
+export function updateComment(
+  commentId: string,
+  content: string,
+): Promise<unknown> {
+  return request(`/api/comment/${commentId}`, {
+    method: "PUT",
+    body: { content },
+  });
+}
+
+export function deleteComment(commentId: string): Promise<unknown> {
+  return request(`/api/comment/${commentId}`, { method: "DELETE" });
 }
 
 export function listMembers(workspaceId: string): Promise<Member[]> {

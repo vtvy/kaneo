@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  appendUnseenById,
   parseTaskDate,
   toScheduledTask,
   toScheduledTasks,
@@ -82,6 +83,21 @@ describe("toScheduledTask", () => {
 
     expect(scheduled?.id).toBe("a");
     expect(scheduled?.title).toBe("Ship it");
+  });
+});
+
+describe("appendUnseenById", () => {
+  it("keeps board tasks and adds backlog tasks that are not on a column", () => {
+    const board = [task("on-board", null, null)];
+    const backlog = [
+      task("on-board", null, null),
+      task("no-status", null, "2026-08-13T00:00:00.000Z"),
+    ];
+
+    expect(appendUnseenById(board, backlog).map((entry) => entry.id)).toEqual([
+      "on-board",
+      "no-status",
+    ]);
   });
 });
 
