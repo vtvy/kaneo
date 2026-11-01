@@ -2856,7 +2856,8 @@
 		},
 		"kanban": {
 			"addTask": "Añadir tarea",
-			"newTask": "New task"
+			"newTask": "New task",
+			"reorderFailed": "Could not save the board order. Later moves were dropped."
 		},
 		"pr": {
 			"merged": "Mergeada",

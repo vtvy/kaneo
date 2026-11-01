@@ -2867,7 +2867,8 @@
 		},
 		"kanban": {
 			"addTask": "작업 추가",
-			"newTask": "New task"
+			"newTask": "New task",
+			"reorderFailed": "Could not save the board order. Later moves were dropped."
 		},
 		"pr": {
 			"merged": "병합됨",

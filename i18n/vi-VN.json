@@ -2867,7 +2867,8 @@
 		},
 		"kanban": {
 			"addTask": "Thêm công việc",
-			"newTask": "Công việc mới"
+			"newTask": "Công việc mới",
+			"reorderFailed": "Không lưu được thứ tự trên bảng. Các lần kéo sau đó đã được bỏ."
 		},
 		"pr": {
 			"merged": "Đã hợp nhất",
