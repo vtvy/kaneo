@@ -6,10 +6,14 @@ function useSetCustomFieldValue() {
 
   return useMutation({
     mutationFn: setCustomFieldValue,
-    onSuccess: (_data, variables) =>
-      queryClient.invalidateQueries({
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["custom-field-project-values"],
+      });
+      return queryClient.invalidateQueries({
         queryKey: ["custom-field-values", variables.taskId],
-      }),
+      });
+    },
   });
 }
 

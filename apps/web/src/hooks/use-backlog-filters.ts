@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  type CustomFieldFilterState,
+  normalizeCustomFieldFilters,
+} from "@/lib/backlog-custom-field-filters";
+import {
   CREATED_DATE_FILTER_OPTIONS,
   type CreatedDateFilterValue,
 } from "@/lib/created-date-filter";
@@ -35,6 +39,7 @@ export type BacklogSavedView = {
   name: string;
   filters: BacklogFilterState;
   createdAtFilters: CreatedDateFilterValue[];
+  customFieldFilters: CustomFieldFilterState;
   titleQuery: string;
   sort: BacklogSortState;
   isDefault?: boolean;
@@ -44,9 +49,17 @@ export type BacklogSavedView = {
 type PersistedBacklogState = {
   filters: BacklogFilterState;
   createdAtFilters: CreatedDateFilterValue[];
+  customFieldFilters: CustomFieldFilterState;
   titleQuery: string;
   sort: BacklogSortState;
+  /** Custom field ids shown as table columns (a display choice, not a filter). */
+  customFieldColumns: string[];
 };
+
+function normalizeIdList(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((item): item is string => typeof item === "string");
+}
 
 const FILTERABLE: BacklogFilterableColumn[] = [
   "status",
@@ -120,15 +133,26 @@ function normalizeSort(raw: unknown): BacklogSortState {
 
 function normalizePersistedState(raw: unknown): PersistedBacklogState {
   if (!raw || typeof raw !== "object") {
-    return { filters: {}, createdAtFilters: [], titleQuery: "", sort: null };
+    return {
+      filters: {},
+      createdAtFilters: [],
+      customFieldFilters: {},
+      titleQuery: "",
+      sort: null,
+      customFieldColumns: [],
+    };
   }
   const candidate = raw as Partial<PersistedBacklogState>;
   return {
     filters: normalizeFilters(candidate.filters),
     createdAtFilters: normalizeCreatedAtFilters(candidate.createdAtFilters),
+    customFieldFilters: normalizeCustomFieldFilters(
+      candidate.customFieldFilters,
+    ),
     titleQuery:
       typeof candidate.titleQuery === "string" ? candidate.titleQuery : "",
     sort: normalizeSort(candidate.sort),
+    customFieldColumns: normalizeIdList(candidate.customFieldColumns),
   };
 }
 
@@ -151,6 +175,9 @@ function normalizeSavedViews(raw: unknown): BacklogSavedView[] {
       name,
       filters: normalizeFilters(candidate.filters),
       createdAtFilters: normalizeCreatedAtFilters(candidate.createdAtFilters),
+      customFieldFilters: normalizeCustomFieldFilters(
+        candidate.customFieldFilters,
+      ),
       titleQuery:
         typeof candidate.titleQuery === "string" ? candidate.titleQuery : "",
       sort: normalizeSort(candidate.sort),
@@ -202,6 +229,7 @@ function isEmptyPersisted(state: PersistedBacklogState) {
   return (
     Object.keys(state.filters).length === 0 &&
     state.createdAtFilters.length === 0 &&
+    Object.keys(state.customFieldFilters).length === 0 &&
     !state.titleQuery &&
     !state.sort
   );
@@ -215,6 +243,9 @@ export function useBacklogFilters(projectId: string) {
   const [createdAtFilters, setCreatedAtFilters] = useState<
     CreatedDateFilterValue[]
   >([]);
+  const [customFieldFilters, setCustomFieldFilters] =
+    useState<CustomFieldFilterState>({});
+  const [customFieldColumns, setCustomFieldColumns] = useState<string[]>([]);
   const [titleQuery, setTitleQuery] = useState("");
   const [sort, setSort] = useState<BacklogSortState>(null);
   const [savedViews, setSavedViews] = useState<BacklogSavedView[]>([]);
@@ -227,6 +258,8 @@ export function useBacklogFilters(projectId: string) {
     const persisted = normalizePersistedState(readJson(filtersKey));
     setFilters(persisted.filters);
     setCreatedAtFilters(persisted.createdAtFilters);
+    setCustomFieldFilters(persisted.customFieldFilters);
+    setCustomFieldColumns(persisted.customFieldColumns);
     setTitleQuery(persisted.titleQuery);
     setSort(persisted.sort);
 
@@ -237,6 +270,7 @@ export function useBacklogFilters(projectId: string) {
     if (defaultView && isEmptyPersisted(persisted)) {
       setFilters(defaultView.filters);
       setCreatedAtFilters(defaultView.createdAtFilters);
+      setCustomFieldFilters(defaultView.customFieldFilters);
       setTitleQuery(defaultView.titleQuery);
       setSort(defaultView.sort);
     }
@@ -249,10 +283,21 @@ export function useBacklogFilters(projectId: string) {
     writeJson(filtersKey, {
       filters,
       createdAtFilters,
+      customFieldFilters,
       titleQuery,
       sort,
+      customFieldColumns,
     } satisfies PersistedBacklogState);
-  }, [filters, createdAtFilters, titleQuery, sort, filtersKey, hydrated]);
+  }, [
+    filters,
+    createdAtFilters,
+    customFieldFilters,
+    titleQuery,
+    sort,
+    customFieldColumns,
+    filtersKey,
+    hydrated,
+  ]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -262,6 +307,7 @@ export function useBacklogFilters(projectId: string) {
   const clearFilters = useCallback(() => {
     setFilters({});
     setCreatedAtFilters([]);
+    setCustomFieldFilters({});
     setTitleQuery("");
     setSort(null);
   }, []);
@@ -269,13 +315,16 @@ export function useBacklogFilters(projectId: string) {
   const clearAll = clearFilters;
 
   const hasColumnFilters =
-    Object.keys(filters).length > 0 || createdAtFilters.length > 0;
+    Object.keys(filters).length > 0 ||
+    createdAtFilters.length > 0 ||
+    Object.keys(customFieldFilters).length > 0;
   const hasActiveQuery =
     hasColumnFilters || titleQuery.trim().length > 0 || sort !== null;
 
   const applyView = useCallback((view: BacklogSavedView) => {
     setFilters(view.filters);
     setCreatedAtFilters(view.createdAtFilters);
+    setCustomFieldFilters(view.customFieldFilters);
     setTitleQuery(view.titleQuery);
     setSort(view.sort);
   }, []);
@@ -289,6 +338,7 @@ export function useBacklogFilters(projectId: string) {
         name: trimmed,
         filters,
         createdAtFilters,
+        customFieldFilters,
         titleQuery,
         sort,
         isDefault: options?.isDefault === true,
@@ -302,7 +352,7 @@ export function useBacklogFilters(projectId: string) {
       });
       return view;
     },
-    [filters, createdAtFilters, titleQuery, sort],
+    [filters, createdAtFilters, customFieldFilters, titleQuery, sort],
   );
 
   const renameView = useCallback((id: string, name: string) => {
@@ -327,8 +377,8 @@ export function useBacklogFilters(projectId: string) {
   }, []);
 
   const currentSnapshot = useMemo(
-    () => ({ filters, createdAtFilters, titleQuery, sort }),
-    [filters, createdAtFilters, titleQuery, sort],
+    () => ({ filters, createdAtFilters, customFieldFilters, titleQuery, sort }),
+    [filters, createdAtFilters, customFieldFilters, titleQuery, sort],
   );
 
   return {
@@ -336,6 +386,10 @@ export function useBacklogFilters(projectId: string) {
     setFilters,
     createdAtFilters,
     setCreatedAtFilters,
+    customFieldFilters,
+    setCustomFieldFilters,
+    customFieldColumns,
+    setCustomFieldColumns,
     titleQuery,
     setTitleQuery,
     sort,

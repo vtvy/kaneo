@@ -1,11 +1,12 @@
 import { asc, eq } from "drizzle-orm";
 import db from "../../database";
 import { sprintTable } from "../../database/schema";
+import { sprintColumns } from "../sprint-columns";
 import { getSprintTotalsForSprints } from "./get-sprint-totals";
 
 async function getSprintsByProject(projectId: string) {
   const sprints = await db
-    .select()
+    .select(sprintColumns)
     .from(sprintTable)
     .where(eq(sprintTable.projectId, projectId))
     .orderBy(asc(sprintTable.createdAt));

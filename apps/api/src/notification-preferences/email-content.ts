@@ -1,9 +1,10 @@
 import de from "../../../../i18n/de-DE.json";
 import en from "../../../../i18n/en-US.json";
 import ko from "../../../../i18n/ko-KR.json";
+import vi from "../../../../i18n/vi-VN.json";
 
 /** Active notification email locales (match shipped app languages). */
-const resources = { en, de, ko };
+const resources = { en, de, ko, vi };
 type Locale = keyof typeof resources;
 type NotificationContent = { title: string; body: string };
 type Notification = {

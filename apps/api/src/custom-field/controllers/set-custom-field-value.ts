@@ -7,23 +7,8 @@ import {
   customFieldValueTable,
   taskTable,
 } from "../../database/schema";
-import {
-  findNewHiddenPicks,
-  isChoiceType,
-  readHiddenOptions,
-  readOptions,
-} from "../choice-options";
-
-function isMultiselectEmpty(value: string): boolean {
-  if (!value || value.trim().length === 0) return true;
-
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) && parsed.length === 0;
-  } catch {
-    return false;
-  }
-}
+import { assertCustomFieldValue } from "../assert-field-value";
+import { isChoiceType } from "../choice-options";
 
 async function setCustomFieldValue(
   taskId: string,
@@ -56,86 +41,11 @@ async function setCustomFieldValue(
     });
   }
 
-  const normalizedValue = value.trim();
-
-  if (field.required) {
-    if (field.type === "multiselect") {
-      if (isMultiselectEmpty(normalizedValue)) {
-        throw new HTTPException(400, {
-          message: "This custom field is required",
-        });
-      }
-    } else if (normalizedValue.length === 0) {
-      throw new HTTPException(400, {
-        message: "This custom field is required",
-      });
-    }
-  }
-
-  if (field.type === "dropdown" && normalizedValue.length > 0) {
-    if (
-      Array.isArray(field.options) &&
-      !field.options.includes(normalizedValue)
-    ) {
-      throw new HTTPException(400, {
-        message: "Invalid option for this custom field",
-      });
-    }
-  }
-
-  if (field.type === "number" && normalizedValue.length > 0) {
-    if (Number.isNaN(Number(normalizedValue))) {
-      throw new HTTPException(400, {
-        message: "Value must be a valid number",
-      });
-    }
-  }
-
-  if (field.type === "boolean" && normalizedValue.length > 0) {
-    if (normalizedValue !== "true" && normalizedValue !== "false") {
-      throw new HTTPException(400, {
-        message: "Value must be true or false",
-      });
-    }
-  }
-
-  if (field.type === "multiselect" && normalizedValue.length > 0) {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(normalizedValue);
-    } catch {
-      throw new HTTPException(400, {
-        message: "Value must be a valid JSON array",
-      });
-    }
-
-    if (!Array.isArray(parsed)) {
-      throw new HTTPException(400, {
-        message: "Value must be a JSON array",
-      });
-    }
-
-    if (Array.isArray(field.options)) {
-      const options = field.options as string[];
-
-      const invalid = parsed.some(
-        (v) => typeof v !== "string" || !options.includes(v),
-      );
-
-      if (invalid) {
-        throw new HTTPException(400, {
-          message: "Invalid option(s) for this custom field",
-        });
-      }
-    }
-  }
-
-  const hidden = readHiddenOptions(
-    field.hiddenOptions,
-    readOptions(field.options),
-  );
-  if (isChoiceType(field.type) && hidden.length > 0) {
-    const [current] = await db
+  // Hidden options a task already holds stay allowed, so choice fields need
+  // the stored value.
+  let current: string | null = null;
+  if (isChoiceType(field.type)) {
+    const [row] = await db
       .select({ value: customFieldValueTable.value })
       .from(customFieldValueTable)
       .where(
@@ -145,19 +55,10 @@ async function setCustomFieldValue(
         ),
       )
       .limit(1);
-    if (
-      findNewHiddenPicks(
-        normalizedValue,
-        current?.value ?? null,
-        field.type,
-        hidden,
-      ).length > 0
-    ) {
-      throw new HTTPException(400, {
-        message: "Hidden options can't be selected",
-      });
-    }
+    current = row?.value ?? null;
   }
+
+  const normalizedValue = assertCustomFieldValue(field, value, current);
 
   const [result] = await db
     .insert(customFieldValueTable)

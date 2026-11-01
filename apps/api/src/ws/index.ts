@@ -101,6 +101,18 @@ function deliverToLocalConnections(
       connections.delete(conn);
     }
   }
+  // A moved project is re-authorized against its new workspace: drop every
+  // socket so clients reconnect (and people who lost access are refused).
+  if (message.type === "PROJECT_MOVED") {
+    for (const conn of connections) {
+      try {
+        conn.ws.close(1012, "Project moved");
+      } catch {
+        // Already closed.
+      }
+    }
+    connections.clear();
+  }
   if (connections.size === 0) {
     projectConnections.delete(projectId);
   }
@@ -238,6 +250,19 @@ subscribeToEvent<{
     { type: "TASK_MOVED", projectId: fromProjectId, taskId },
     initiatorId,
   );
+});
+
+subscribeToEvent<{
+  projectId: string;
+  sourceWorkspaceId: string;
+  targetWorkspaceId: string;
+}>("project.moved", async ({ projectId }) => {
+  // Sent immediately (not batched) so no queued update reaches a socket
+  // that was authorized for the old workspace.
+  await adapter?.publish({
+    projectId,
+    message: { type: "PROJECT_MOVED", projectId },
+  });
 });
 
 subscribeToEvent<{

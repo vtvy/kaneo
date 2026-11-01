@@ -57,6 +57,10 @@ import {
   type BacklogSortableColumn,
   useBacklogFilters,
 } from "@/hooks/use-backlog-filters";
+import {
+  matchesCustomFieldFilters,
+  toggleCustomFieldFilter,
+} from "@/lib/backlog-custom-field-filters";
 import { cn } from "@/lib/cn";
 import { getColumnColorValue } from "@/lib/column";
 import {
@@ -70,6 +74,13 @@ import { getPriorityBadgeColor, getPriorityIcon } from "@/lib/priority";
 import { toast } from "@/lib/toast";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 import type Task from "@/types/task";
+import {
+  CustomFieldCell,
+  CustomFieldColumnsMenu,
+  CustomFieldFilterChips,
+  CustomFieldFilterSubmenus,
+  useBacklogCustomFields,
+} from "./custom-field-columns";
 
 export type BacklogTask = {
   id: string;
@@ -190,6 +201,10 @@ function BacklogTable({
     setFilters,
     createdAtFilters,
     setCreatedAtFilters,
+    customFieldFilters,
+    setCustomFieldFilters,
+    customFieldColumns,
+    setCustomFieldColumns,
     titleQuery,
     setTitleQuery,
     sort,
@@ -204,6 +219,19 @@ function BacklogTable({
     deleteView,
     setDefaultView,
   } = useBacklogFilters(projectId);
+
+  const hasCustomFieldFilters = Object.keys(customFieldFilters).length > 0;
+  const {
+    fields: customFields,
+    valuesByTask,
+    valuesLoaded,
+  } = useBacklogCustomFields(
+    projectId,
+    customFieldColumns.length > 0 || hasCustomFieldFilters,
+  );
+  const visibleCustomFields = customFields.filter((field) =>
+    customFieldColumns.includes(field.id),
+  );
 
   const tasks = useMemo<BacklogTask[]>(
     () => (Array.isArray(data) ? (data as BacklogTask[]) : []),
@@ -297,6 +325,16 @@ function BacklogTable({
       result = result.filter((task) => wanted.includes(filterValue(task, key)));
     }
 
+    if (hasCustomFieldFilters && valuesLoaded) {
+      result = result.filter((task) =>
+        matchesCustomFieldFilters(
+          valuesByTask.get(task.id),
+          customFieldFilters,
+          customFields,
+        ),
+      );
+    }
+
     if (createdAtFilters.length > 0) {
       result = result.filter((task) =>
         matchesAnyCreatedDateFilter(
@@ -341,6 +379,11 @@ function BacklogTable({
     filterValue,
     titleQuery,
     weekStartsOn,
+    hasCustomFieldFilters,
+    valuesLoaded,
+    valuesByTask,
+    customFieldFilters,
+    customFields,
   ]);
 
   const handleOpenTask = (taskId: string) => {
@@ -370,6 +413,14 @@ function BacklogTable({
     setFilters((prev) => {
       const next = { ...prev };
       delete next[column];
+      return next;
+    });
+  };
+
+  const clearCustomFieldFilter = (fieldId: string) => {
+    setCustomFieldFilters((prev) => {
+      const next = { ...prev };
+      delete next[fieldId];
       return next;
     });
   };
@@ -642,6 +693,16 @@ function BacklogTable({
                       </div>
                     </DropdownMenuSubContent>
                   </DropdownMenuSub>
+                  <CustomFieldFilterSubmenus
+                    fields={customFields}
+                    filters={customFieldFilters}
+                    onToggle={(fieldId, value) =>
+                      setCustomFieldFilters((prev) =>
+                        toggleCustomFieldFilter(prev, fieldId, value),
+                      )
+                    }
+                    onClear={clearCustomFieldFilter}
+                  />
                   {hasActiveQuery ? (
                     <>
                       <DropdownMenuSeparator />
@@ -951,6 +1012,12 @@ function BacklogTable({
                 </button>
               ) : null}
 
+              <CustomFieldColumnsMenu
+                fields={customFields}
+                visible={customFieldColumns}
+                onChange={setCustomFieldColumns}
+              />
+
               {FILTERABLE_COLUMNS.map((columnKey) => {
                 const selected = filters[columnKey] ?? [];
                 if (selected.length === 0) return null;
@@ -986,6 +1053,11 @@ function BacklogTable({
                   onClear={() => setCreatedAtFilters([])}
                 />
               ) : null}
+              <CustomFieldFilterChips
+                fields={customFields}
+                filters={customFieldFilters}
+                onClear={clearCustomFieldFilter}
+              />
             </div>
           </div>
         </div>
@@ -1113,13 +1185,23 @@ function BacklogTable({
                     </TableHead>
                   );
                 })}
+                {visibleCustomFields.map((field) => (
+                  <TableHead
+                    key={field.id}
+                    className="w-40 select-none text-xs font-medium text-muted-foreground"
+                  >
+                    <span className="block truncate" title={field.name}>
+                      {field.name}
+                    </span>
+                  </TableHead>
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
               {processedTasks.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell
-                    colSpan={columns.length}
+                    colSpan={columns.length + visibleCustomFields.length}
                     className="h-24 text-center text-sm text-muted-foreground"
                   >
                     {t("backlog:noMatch")}
@@ -1310,6 +1392,14 @@ function BacklogTable({
                       <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                         {task.createdAt ? formatDateShort(task.createdAt) : "—"}
                       </TableCell>
+                      {visibleCustomFields.map((field) => (
+                        <TableCell key={field.id} className="max-w-40">
+                          <CustomFieldCell
+                            field={field}
+                            value={valuesByTask.get(task.id)?.get(field.id)}
+                          />
+                        </TableCell>
+                      ))}
                     </TableRow>
                   );
                 })

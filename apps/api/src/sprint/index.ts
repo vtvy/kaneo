@@ -4,6 +4,7 @@ import * as v from "valibot";
 import { projectPermission } from "../project-rbac/require-project-permission";
 import { dateStringSchema, sprintSchema, taskSchema } from "../schemas";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
+import { sprintCompletionSnapshotSchema } from "./completion-snapshot";
 import assignTaskToSprint from "./controllers/assign-task-to-sprint";
 import completeSprint from "./controllers/complete-sprint";
 import createSprint from "./controllers/create-sprint";
@@ -11,6 +12,7 @@ import deleteSprint from "./controllers/delete-sprint";
 import exportProjectSprints from "./controllers/export-project-sprints";
 import getBacklogTasks from "./controllers/get-backlog-tasks";
 import getSprint from "./controllers/get-sprint";
+import getSprintReport from "./controllers/get-sprint-report";
 import getSprintTasks from "./controllers/get-sprint-tasks";
 import getSprintsByProject from "./controllers/get-sprints-by-project";
 import getTaskSprintHistory from "./controllers/get-task-sprint-history";
@@ -225,6 +227,41 @@ const sprint = new Hono<{
       const { id } = c.req.valid("param");
       const tasks = await getSprintTasks(id);
       return c.json(tasks);
+    },
+  )
+  .get(
+    "/:id/report",
+    describeRoute({
+      operationId: "getSprintReport",
+      tags: ["Sprints"],
+      description:
+        "Get the completion report stored when the sprint was completed (snapshot is null when none was recorded)",
+      responses: {
+        200: {
+          description: "Sprint completion report",
+          content: {
+            "application/json": {
+              schema: resolver(
+                v.object({
+                  sprintId: v.string(),
+                  state: v.string(),
+                  completedAt: v.nullable(v.string()),
+                  completedByName: v.nullable(v.string()),
+                  snapshot: v.nullable(sprintCompletionSnapshotSchema),
+                }),
+              ),
+            },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    workspaceAccess.fromSprint(),
+    projectPermission.fromSprint({ item: ["read"] }),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const report = await getSprintReport(id);
+      return c.json(report);
     },
   )
   .post(

@@ -221,6 +221,7 @@ describe("backlog filter persistence lifecycle", () => {
     expect(second.result.current.currentSnapshot).toEqual({
       filters: {},
       createdAtFilters: [],
+      customFieldFilters: {},
       titleQuery: "",
       sort: null,
     });
@@ -264,5 +265,46 @@ describe("backlog filter persistence lifecycle", () => {
       if (key === backlogSavedViewsStorageKey("b"))
         expect(JSON.parse(value)[0].name).toBe("B");
     }
+  });
+});
+
+describe("backlog custom field filters and columns", () => {
+  beforeEach(() => window.localStorage.clear());
+  afterEach(() => window.localStorage.clear());
+
+  it("keeps custom field filters and columns across remounts", () => {
+    const first = renderHook(() => useBacklogFilters("cf"));
+    act(() => {
+      first.result.current.setCustomFieldFilters({ stage: ["Build"] });
+      first.result.current.setCustomFieldColumns(["stage"]);
+    });
+    expect(first.result.current.hasColumnFilters).toBe(true);
+    first.unmount();
+
+    const second = renderHook(() => useBacklogFilters("cf"));
+    expect(second.result.current.customFieldFilters).toEqual({
+      stage: ["Build"],
+    });
+    expect(second.result.current.customFieldColumns).toEqual(["stage"]);
+
+    act(() => second.result.current.clearFilters());
+    expect(second.result.current.customFieldFilters).toEqual({});
+    // Columns are a display choice, so clearing filters keeps them.
+    expect(second.result.current.customFieldColumns).toEqual(["stage"]);
+  });
+
+  it("saves custom field filters into views and applies them", () => {
+    const { result } = renderHook(() => useBacklogFilters("cf"));
+    act(() => result.current.setCustomFieldFilters({ done: ["true"] }));
+    let view: ReturnType<typeof result.current.saveView> = null;
+    act(() => {
+      view = result.current.saveView("Done only");
+    });
+    act(() => result.current.clearFilters());
+    expect(result.current.customFieldFilters).toEqual({});
+    act(() => {
+      if (view) result.current.applyView(view);
+    });
+    expect(result.current.customFieldFilters).toEqual({ done: ["true"] });
   });
 });

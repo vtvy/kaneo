@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import db from "../../database";
 import { sprintTable } from "../../database/schema";
+import { sprintColumns } from "../sprint-columns";
 import { assertNoSprintDateOverlap } from "./assert-no-sprint-date-overlap";
 
 async function updateSprint({
@@ -52,7 +53,7 @@ async function updateSprint({
     .update(sprintTable)
     .set(values)
     .where(eq(sprintTable.id, id))
-    .returning();
+    .returning(sprintColumns);
 
   if (!updatedSprint) {
     throw new HTTPException(500, {

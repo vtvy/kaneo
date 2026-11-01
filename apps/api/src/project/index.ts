@@ -3,6 +3,7 @@ import { describeRoute, resolver, validator } from "hono-openapi";
 import * as v from "valibot";
 import { projectPermission } from "../project-rbac/require-project-permission";
 import { projectSchema } from "../schemas";
+import { isInstanceAdmin } from "../utils/is-instance-admin";
 import { requireWorkspacePermission } from "../utils/require-workspace-permission";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import archiveProjectCtrl from "./controllers/archive-project";
@@ -10,6 +11,7 @@ import createProjectCtrl from "./controllers/create-project";
 import deleteProjectCtrl from "./controllers/delete-project";
 import getProjectCtrl from "./controllers/get-project";
 import getProjectsCtrl from "./controllers/get-projects";
+import moveProjectCtrl from "./controllers/move-project";
 import unarchiveProjectCtrl from "./controllers/unarchive-project";
 import updateProjectCtrl from "./controllers/update-project";
 
@@ -241,6 +243,41 @@ const project = new Hono<{
       const workspaceId = c.get("workspaceId");
       const unarchivedProject = await unarchiveProjectCtrl(id, workspaceId);
       return c.json(unarchivedProject);
+    },
+  )
+  .put(
+    "/:id/move",
+    describeRoute({
+      operationId: "moveProject",
+      tags: ["Projects"],
+      description:
+        "Move a project to another workspace. Requires managing the project (project role:manage or workspace owner/admin) and membership plus project creation permission in the target. Project members and assignees outside the target are removed or unassigned, and integrations are deactivated.",
+      responses: {
+        200: {
+          description: "Project moved successfully",
+          content: {
+            "application/json": { schema: resolver(projectSchema) },
+          },
+        },
+      },
+    }),
+    validator("param", v.object({ id: v.string() })),
+    validator(
+      "json",
+      v.object({ workspaceId: v.pipe(v.string(), v.minLength(1)) }),
+    ),
+    workspaceAccess.fromProject(),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const { workspaceId: targetWorkspaceId } = c.req.valid("json");
+      const movedProject = await moveProjectCtrl({
+        projectId: id,
+        sourceWorkspaceId: c.get("workspaceId"),
+        targetWorkspaceId,
+        userId: c.get("userId"),
+        isInstanceAdmin: await isInstanceAdmin(c),
+      });
+      return c.json(movedProject);
     },
   );
 

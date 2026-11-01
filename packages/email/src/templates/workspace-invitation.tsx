@@ -37,6 +37,17 @@ const messages = {
       "Falls du damit nicht gerechnet hast, kannst du diese E-Mail einfach ignorieren.",
     footer: "Kaneo Workspace-Einladung",
   },
+  vi: {
+    preview: "Bạn được mời tham gia {{workspaceName}} trên Kaneo",
+    title: "Tham gia {{workspaceName}}",
+    subtitle:
+      "{{inviterName}} ({{inviterEmail}}) đã mời bạn cộng tác trên Kaneo.",
+    cta: "Chấp nhận lời mời",
+    sameEmail:
+      "Bạn có thể chấp nhận lời mời bằng chính địa chỉ email đã nhận thư này.",
+    ignore: "Nếu bạn không mong đợi lời mời này, bạn có thể bỏ qua email.",
+    footer: "Lời mời tham gia không gian làm việc Kaneo",
+  },
 } as const;
 
 function interpolate(template: string, values: Record<string, string>) {

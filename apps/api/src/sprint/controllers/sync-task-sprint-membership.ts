@@ -3,14 +3,18 @@ import db from "../../database";
 import { taskSprintTable } from "../../database/schema";
 import { planSprintMembershipChange } from "../sprint-membership";
 
+type Executor = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 // Records the task's move into `nextSprintId` (null = backlog) in the
 // task_sprint history: closes the open row, then reopens or inserts the next.
+// Pass a transaction as `executor` to make the change part of it.
 async function syncTaskSprintMembership(
   taskId: string,
   nextSprintId: string | null,
+  executor: Executor = db,
 ) {
   const now = new Date();
-  const memberships = await db
+  const memberships = await executor
     .select({
       sprintId: taskSprintTable.sprintId,
       addedAt: taskSprintTable.addedAt,
@@ -22,7 +26,7 @@ async function syncTaskSprintMembership(
   const plan = planSprintMembershipChange(memberships, nextSprintId);
 
   if (plan.closeSprintIds.length > 0) {
-    await db
+    await executor
       .update(taskSprintTable)
       .set({ removedAt: now })
       .where(
@@ -35,7 +39,7 @@ async function syncTaskSprintMembership(
   }
 
   if (plan.reopenSprintId) {
-    await db
+    await executor
       .update(taskSprintTable)
       .set({ removedAt: null, addedAt: now })
       .where(
@@ -47,7 +51,7 @@ async function syncTaskSprintMembership(
   }
 
   if (plan.insertSprintId) {
-    await db
+    await executor
       .insert(taskSprintTable)
       .values({
         taskId,

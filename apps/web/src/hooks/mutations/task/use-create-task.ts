@@ -19,6 +19,7 @@ function useCreateTask() {
       points,
       sprintId,
       createGitlabIssue,
+      customFields,
     }: CreateTaskRequest) =>
       createTask(
         title,
@@ -32,6 +33,7 @@ function useCreateTask() {
         points,
         sprintId,
         createGitlabIssue,
+        customFields,
       ),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
@@ -40,6 +42,10 @@ function useCreateTask() {
       // The backlog table reads a separate flat list of the project's tasks.
       void queryClient.invalidateQueries({
         queryKey: ["all-project-tasks", variables.projectId],
+      });
+      // New tasks get field defaults or the values sent with them.
+      void queryClient.invalidateQueries({
+        queryKey: ["custom-field-project-values", variables.projectId],
       });
       // A task created into a sprint changes that sprint's list and totals.
       if (variables.sprintId) {

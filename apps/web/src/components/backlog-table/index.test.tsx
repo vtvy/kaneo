@@ -41,6 +41,16 @@ vi.mock("@/hooks/queries/task/use-all-project-tasks", () => ({
     isError: false,
   }),
 }));
+vi.mock(
+  "@/hooks/queries/custom-field/use-get-custom-fields-by-project",
+  () => ({
+    default: () => ({ data: [] }),
+  }),
+);
+vi.mock(
+  "@/hooks/queries/custom-field/use-get-custom-field-values-by-project",
+  () => ({ default: () => ({ data: [], isSuccess: true }) }),
+);
 vi.mock("@/components/sprint/task-sprint-popover", () => ({
   default: () => null,
 }));
@@ -146,8 +156,10 @@ it("Clear all filters is available for sort-only state and resets storage", asyn
     ).toEqual({
       filters: {},
       createdAtFilters: [],
+      customFieldFilters: {},
       titleQuery: "",
       sort: null,
+      customFieldColumns: [],
     }),
   );
 });

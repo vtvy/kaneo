@@ -10,14 +10,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import useCompleteSprint from "@/hooks/mutations/sprint/use-complete-sprint";
 import {
   getSprintCompletionReport,
   type SprintCompletionReport,
 } from "@/lib/sprint";
 import { toast } from "@/lib/toast";
-import type { Sprint } from "@/types/sprint";
+import type { Sprint, SprintSnapshotTask } from "@/types/sprint";
+import SprintReportContent from "./sprint-report-content";
 
 type CompleteSprintModalProps = {
   open: boolean;
@@ -29,6 +29,12 @@ type CompleteSprintModalProps = {
 
 const BACKLOG_VALUE = "__backlog__";
 
+type CompletedReport = {
+  report: SprintCompletionReport;
+  doneTasks: SprintSnapshotTask[];
+  carriedOverTasks: SprintSnapshotTask[];
+};
+
 function CompleteSprintModal({
   open,
   onClose,
@@ -37,7 +43,7 @@ function CompleteSprintModal({
 }: CompleteSprintModalProps) {
   const { t } = useTranslation();
   const [target, setTarget] = useState<string>(BACKLOG_VALUE);
-  const [report, setReport] = useState<SprintCompletionReport | null>(null);
+  const [report, setReport] = useState<CompletedReport | null>(null);
   const { mutateAsync: completeSprint, isPending } = useCompleteSprint();
 
   useEffect(() => {
@@ -55,7 +61,11 @@ function CompleteSprintModal({
         targetSprintId: target === BACKLOG_VALUE ? null : target,
       });
       toast.success(t("common:modals.completeSprint.completedToast"));
-      setReport(getSprintCompletionReport(completed));
+      setReport({
+        report: getSprintCompletionReport(completed),
+        doneTasks: completed.completionSnapshot.doneTasks,
+        carriedOverTasks: completed.completionSnapshot.carriedOverTasks,
+      });
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -78,49 +88,12 @@ function CompleteSprintModal({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 px-6">
-            <div className="flex items-center gap-2">
-              <Progress value={report.percentDone} className="flex-1" />
-              <span className="text-muted-foreground text-xs tabular-nums">
-                {report.percentDone}%
-              </span>
-            </div>
-            <dl className="grid grid-cols-3 gap-2 text-sm">
-              {[
-                {
-                  label: t("common:modals.sprintReport.done"),
-                  tasks: report.doneTasks,
-                  points: report.donePoints,
-                },
-                {
-                  label: t("common:modals.sprintReport.carriedOver"),
-                  tasks: report.carriedOverTasks,
-                  points: report.carriedOverPoints,
-                },
-                {
-                  label: t("common:modals.sprintReport.total"),
-                  tasks: report.totalTasks,
-                  points: report.totalPoints,
-                },
-              ].map((row) => (
-                <div
-                  key={row.label}
-                  className="rounded-lg border border-border px-3 py-2"
-                >
-                  <dt className="text-muted-foreground text-xs">{row.label}</dt>
-                  <dd className="font-medium text-foreground tabular-nums">
-                    {t("common:modals.sprintReport.tasks", {
-                      count: row.tasks,
-                    })}
-                  </dd>
-                  <dd className="text-muted-foreground text-xs tabular-nums">
-                    {t("common:modals.sprintReport.points", {
-                      count: row.points,
-                    })}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+          <div className="max-h-[60vh] overflow-y-auto px-6">
+            <SprintReportContent
+              report={report.report}
+              doneTasks={report.doneTasks}
+              carriedOverTasks={report.carriedOverTasks}
+            />
           </div>
 
           <DialogFooter>

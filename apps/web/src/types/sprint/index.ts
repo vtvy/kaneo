@@ -12,3 +12,12 @@ export type SprintTask = InferResponseType<
   (typeof client)["sprint"][":id"]["tasks"]["$get"],
   200
 >[number];
+
+export type SprintReport = InferResponseType<
+  (typeof client)["sprint"][":id"]["report"]["$get"],
+  200
+>;
+
+export type SprintCompletionSnapshot = NonNullable<SprintReport["snapshot"]>;
+
+export type SprintSnapshotTask = SprintCompletionSnapshot["doneTasks"][number];

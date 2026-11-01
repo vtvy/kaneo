@@ -9,4 +9,11 @@ describe("OtpEmail", () => {
     expect(html).toContain("123456");
     expect(html).toContain("verification code");
   });
+
+  it("renders Vietnamese copy for a vi-VN locale", async () => {
+    const html = await render(
+      createElement(OtpEmail, { otp: "123456", locale: "vi-VN" }),
+    );
+    expect(html).toContain("Mã xác minh của bạn");
+  });
 });

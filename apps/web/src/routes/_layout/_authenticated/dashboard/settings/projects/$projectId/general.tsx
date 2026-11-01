@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import PageTitle from "@/components/page-title";
+import { MoveProjectSection } from "@/components/project/move-project-section";
 import { TasksImportExport } from "@/components/project/tasks-import-export.tsx";
 import {
   AlertDialog,
@@ -41,6 +42,7 @@ import useDeleteProject from "@/hooks/mutations/project/use-delete-project";
 import useUpdateProject from "@/hooks/mutations/project/use-update-project";
 import { useGetTasks } from "@/hooks/queries/task/use-get-tasks";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
+import { useGetActiveWorkspaceUser } from "@/hooks/queries/workspace-users/use-active-workspace-user";
 import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
@@ -136,6 +138,13 @@ function RouteComponent() {
     !isCheckingProjectPerms && canProject("role", "manage");
   const canEdit = canManageProjects() || canManageThisProject;
   const canDelete = canDeleteProjects() || canManageThisProject;
+  // Same gate as the move endpoint: project role:manage, or owner/admin of
+  // the workspace the project lives in.
+  const { data: activeMember } = useGetActiveWorkspaceUser();
+  const canMove =
+    canManageThisProject ||
+    (workspace?.id === project?.workspaceId &&
+      (activeMember?.role === "owner" || activeMember?.role === "admin"));
 
   const projectForm = useForm<ProjectFormValues>({
     resolver: standardSchemaResolver(projectSchema),
@@ -558,6 +567,16 @@ function RouteComponent() {
             </div>
           </div>
         </div>
+
+        {canMove && project && (
+          <MoveProjectSection
+            project={{
+              id: project.id,
+              name: project.name,
+              workspaceId: project.workspaceId,
+            }}
+          />
+        )}
 
         {canDelete && (
           <div className="space-y-6">
