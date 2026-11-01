@@ -210,6 +210,7 @@ function RouteComponent() {
     projectId,
     boardSearchQuery,
     user?.id,
+    workspaceLabels,
   );
 
   const sortedProject = useMemo(() => {

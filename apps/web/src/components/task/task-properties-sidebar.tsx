@@ -219,7 +219,7 @@ export default function TaskPropertiesSidebar({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="justify-start h-7 px-1.5 gap-1.5"
+                    className="justify-start h-7 px-1.5 gap-1.5 min-w-0 max-w-full"
                   >
                     {getColumnIcon(
                       task.status ?? "",
@@ -237,7 +237,7 @@ export default function TaskPropertiesSidebar({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="justify-start h-7 px-1.5 gap-1.5"
+                    className="justify-start h-7 px-1.5 gap-1.5 min-w-0 max-w-full"
                   >
                     {getPriorityIcon(task.priority ?? "")}
                     <span className="text-xs font-semibold truncate">
@@ -251,7 +251,7 @@ export default function TaskPropertiesSidebar({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="justify-start h-7 px-1.5 gap-1.5"
+                    className="justify-start h-7 px-1.5 gap-1.5 min-w-0 max-w-full"
                   >
                     <Hash className="w-3.5 h-3.5 text-muted-foreground" />
                     <span
@@ -269,7 +269,7 @@ export default function TaskPropertiesSidebar({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="justify-start h-7 px-1.5 gap-1.5"
+                    className="justify-start h-7 px-1.5 gap-1.5 min-w-0 max-w-full"
                   >
                     {task.userId ? (
                       <Avatar className="h-[16px] w-[16px]">
@@ -302,7 +302,7 @@ export default function TaskPropertiesSidebar({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="justify-start h-7 px-1.5 gap-1.5"
+                    className="justify-start h-7 px-1.5 gap-1.5 min-w-0 max-w-full"
                   >
                     <Target className="w-3.5 h-3.5 text-muted-foreground" />
                     <span
@@ -338,11 +338,11 @@ export default function TaskPropertiesSidebar({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="justify-start h-7 px-1.5 gap-1.5"
+                    className="justify-start h-7 px-1.5 gap-1.5 min-w-0 max-w-full"
                   >
                     <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
                     <span
-                      className={`text-xs font-semibold ${task.startDate ? "" : "text-muted-foreground"}`}
+                      className={`text-xs font-semibold truncate max-w-[8.5rem] ${task.startDate ? "" : "text-muted-foreground"}`}
                     >
                       {task.startDate
                         ? formatDateShort(task.startDate)
@@ -356,7 +356,7 @@ export default function TaskPropertiesSidebar({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="justify-start h-7 px-1.5 gap-1.5"
+                    className="justify-start h-7 px-1.5 gap-1.5 min-w-0 max-w-full"
                   >
                     {task.dueDate ? (
                       <>
@@ -376,7 +376,7 @@ export default function TaskPropertiesSidebar({
                             className={`w-3.5 h-3.5 ${dueDateStatusColors[getDueDateStatus(task.dueDate)]}`}
                           />
                         )}
-                        <span className="text-xs font-semibold">
+                        <span className="text-xs font-semibold truncate max-w-[8.5rem]">
                           {formatDateShort(task.dueDate)}
                         </span>
                         <TaskRecurrenceBadge task={task} />
@@ -462,7 +462,7 @@ export default function TaskPropertiesSidebar({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="justify-start h-7 px-1.5 gap-1.5"
+                      className="justify-start h-7 px-1.5 gap-1.5 min-w-0 max-w-full"
                     >
                       {getColumnIcon(
                         task.status ?? "",
@@ -480,7 +480,7 @@ export default function TaskPropertiesSidebar({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="justify-start h-7 px-1.5 gap-1.5"
+                      className="justify-start h-7 px-1.5 gap-1.5 min-w-0 max-w-full"
                     >
                       {getPriorityIcon(task.priority ?? "")}
                       <span className="text-xs font-semibold truncate">
@@ -494,7 +494,7 @@ export default function TaskPropertiesSidebar({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="justify-start h-7 px-1.5 gap-1.5"
+                      className="justify-start h-7 px-1.5 gap-1.5 min-w-0 max-w-full"
                     >
                       <Hash className="w-3.5 h-3.5 text-muted-foreground" />
                       <span
@@ -512,7 +512,7 @@ export default function TaskPropertiesSidebar({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="justify-start h-7 px-1.5 gap-1.5"
+                      className="justify-start h-7 px-1.5 gap-1.5 min-w-0 max-w-full"
                     >
                       {task.userId ? (
                         <Avatar className="h-[16px] w-[16px]">
@@ -545,7 +545,7 @@ export default function TaskPropertiesSidebar({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="justify-start h-7 px-1.5 gap-1.5"
+                      className="justify-start h-7 px-1.5 gap-1.5 min-w-0 max-w-full"
                     >
                       <Target className="w-3.5 h-3.5 text-muted-foreground" />
                       <span
@@ -581,11 +581,11 @@ export default function TaskPropertiesSidebar({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="justify-start h-7 px-1.5 gap-1.5"
+                      className="justify-start h-7 px-1.5 gap-1.5 min-w-0 max-w-full"
                     >
                       <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
                       <span
-                        className={`text-xs font-semibold ${task.startDate ? "" : "text-muted-foreground"}`}
+                        className={`text-xs font-semibold truncate max-w-[8.5rem] ${task.startDate ? "" : "text-muted-foreground"}`}
                       >
                         {task.startDate
                           ? formatDateShort(task.startDate)
@@ -599,7 +599,7 @@ export default function TaskPropertiesSidebar({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="justify-start h-7 px-1.5 gap-1.5"
+                      className="justify-start h-7 px-1.5 gap-1.5 min-w-0 max-w-full"
                     >
                       {task.dueDate ? (
                         <>
@@ -620,7 +620,7 @@ export default function TaskPropertiesSidebar({
                               className={`w-3.5 h-3.5 ${dueDateStatusColors[getDueDateStatus(task.dueDate)]}`}
                             />
                           )}
-                          <span className="text-xs font-semibold">
+                          <span className="text-xs font-semibold truncate max-w-[8.5rem]">
                             {formatDateShort(task.dueDate)}
                           </span>
                           <TaskRecurrenceBadge task={task} />
@@ -831,7 +831,7 @@ export default function TaskPropertiesSidebar({
                     >
                       <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
                       <span
-                        className={`text-xs font-semibold ${task.startDate ? "" : "text-muted-foreground"}`}
+                        className={`text-xs font-semibold truncate max-w-[8.5rem] ${task.startDate ? "" : "text-muted-foreground"}`}
                       >
                         {task.startDate
                           ? formatDateShort(task.startDate)
@@ -866,7 +866,7 @@ export default function TaskPropertiesSidebar({
                               className={`w-3.5 h-3.5 ${dueDateStatusColors[getDueDateStatus(task.dueDate)]}`}
                             />
                           )}
-                          <span className="text-xs font-semibold">
+                          <span className="text-xs font-semibold truncate max-w-[8.5rem]">
                             {formatDateShort(task.dueDate)}
                           </span>
                           <TaskRecurrenceBadge task={task} />
