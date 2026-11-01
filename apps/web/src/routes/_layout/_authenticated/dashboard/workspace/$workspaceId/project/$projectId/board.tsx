@@ -91,7 +91,7 @@ function RouteComponent() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data, isError, refetch } = useGetTasks(projectId);
-  const { project, setProject } = useProjectStore();
+  const { project, setProject, boardSyncLocked } = useProjectStore();
   const { viewMode, setViewMode } = useUserPreferencesStore();
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [boardSearchQuery, setBoardSearchQuery] = useState("");
@@ -177,10 +177,10 @@ function RouteComponent() {
   });
 
   useEffect(() => {
-    if (data) {
+    if (data && !boardSyncLocked) {
       setProject(data);
     }
-  }, [data, setProject]);
+  }, [data, setProject, boardSyncLocked]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
