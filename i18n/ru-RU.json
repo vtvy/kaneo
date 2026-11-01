@@ -916,6 +916,8 @@
 			"off": "Выкл",
 			"newColumnPlaceholder": "Название новой колонки...",
 			"add": "Добавить",
+			"deleteAria": "Delete {{name}} column",
+			"renameAria": "Rename {{name}} column",
 			"pickColorTitle": "Pick column color",
 			"chooseColor": "Choose color",
 			"noColor": "No color",
@@ -2275,6 +2277,7 @@
 			"projectSettings": "Настройки проекта",
 			"linkCopied": "Ссылка на проект скопирована в буфер обмена",
 			"addProject": "Добавить проект",
+			"switcherLabel": "Switch project or view",
 			"deleteConfirmTitle": "Удалить проект?",
 			"deleteConfirmDescription": "Проект и все его данные будут безвозвратно удалены. Это действие нельзя отменить.",
 			"deletedToast": "Проект удалён",
@@ -2565,7 +2568,11 @@
 		"boardSearchPlaceholder": "Поиск задач...",
 		"view": {
 			"board": "Доска",
-			"list": "Список"
+			"list": "Список",
+			"backlog": "Backlog",
+			"gantt": "Gantt",
+			"sprints": "Sprints",
+			"heading": "View"
 		},
 		"common": {
 			"selectTask": "Выбрать задачу",

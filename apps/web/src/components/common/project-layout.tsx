@@ -207,10 +207,11 @@ export default function ProjectLayout({
               />
             </div>
 
-            <div className="md:hidden">
+            <div className="min-w-0 md:hidden">
               <MobileProjectNav
                 workspaceId={workspaceId}
                 projectId={projectId}
+                projectName={project?.name}
                 activeView={resolvedView}
                 onSelectBacklog={handleNavigateToBacklog}
                 onSelectBoard={handleNavigateToBoard}

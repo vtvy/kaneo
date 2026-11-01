@@ -819,6 +819,8 @@
 			"off": "Desactivado",
 			"newColumnPlaceholder": "Nombre de la nueva columna...",
 			"add": "Añadir",
+			"deleteAria": "Delete {{name}} column",
+			"renameAria": "Rename {{name}} column",
 			"pickColorTitle": "Pick column color",
 			"chooseColor": "Choose color",
 			"noColor": "No color",
@@ -2250,6 +2252,7 @@
 			"shareProject": "Compartir Proyecto",
 			"linkCopied": "Enlace al proyecto copiaro al portapapeles",
 			"addProject": "Añadir proyecto",
+			"switcherLabel": "Switch project or view",
 			"deleteConfirmTitle": "¿Eliminar proyecto?",
 			"deleteConfirmDescription": "Esto eliminará permanentemente el proyecto y todos sus datos. Esta acción no se puede deshacer.",
 			"deletedToast": "Proyecto eliminado",
@@ -2539,7 +2542,11 @@
 		"boardSearchPlaceholder": "Buscar tickets...",
 		"view": {
 			"board": "Tablero",
-			"list": "Lista"
+			"list": "Lista",
+			"backlog": "Backlog",
+			"gantt": "Gantt",
+			"sprints": "Sprints",
+			"heading": "View"
 		},
 		"common": {
 			"selectTask": "Seleccionar tarea",

@@ -171,7 +171,7 @@ export default function ColumnEditor({ projectId }: ColumnEditorProps) {
             role="listitem"
             onDragOver={(e) => handleDragOver(e, index)}
             onDragEnd={handleDragEnd}
-            className="flex items-center gap-2 p-2 border border-border rounded-md bg-sidebar hover:bg-sidebar-accent/50 transition-colors"
+            className="flex flex-wrap items-center gap-2 p-2 border border-border rounded-md bg-sidebar hover:bg-sidebar-accent/50 transition-colors"
           >
             {/* Only the grip handle starts a drag; making the whole row
                 draggable also dragged its inputs, buttons and popovers. */}
@@ -216,7 +216,7 @@ export default function ColumnEditor({ projectId }: ColumnEditorProps) {
                     placeholder={t(
                       "settings:columnEditor.searchIconsPlaceholder",
                     )}
-                    className="h-8 text-xs"
+                    className="h-8 text-base sm:text-xs"
                   />
                   <div className="max-h-[280px] overflow-y-auto pr-1">
                     <div className="grid grid-cols-6 gap-1.5">
@@ -252,7 +252,10 @@ export default function ColumnEditor({ projectId }: ColumnEditorProps) {
             </Popover>
             <Input
               defaultValue={col.name}
-              className="h-8 text-sm flex-1"
+              aria-label={t("settings:columnEditor.renameAria", {
+                name: col.name,
+              })}
+              className="h-8 min-w-0 flex-1 basis-40 text-base sm:text-sm"
               disabled={!canEdit}
               onBlur={(e) => {
                 if (e.target.value !== col.name) {
@@ -268,7 +271,7 @@ export default function ColumnEditor({ projectId }: ColumnEditorProps) {
                 }
               }}
             />
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="ml-auto flex items-center gap-1.5 shrink-0">
               <div
                 className="flex items-center gap-2"
                 title={t("settings:columnEditor.doneColumnTooltip")}
@@ -305,6 +308,9 @@ export default function ColumnEditor({ projectId }: ColumnEditorProps) {
                   variant="ghost"
                   size="sm"
                   className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                  aria-label={t("settings:columnEditor.deleteAria", {
+                    name: col.name,
+                  })}
                   onClick={() => handleDelete(col.id)}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -344,7 +350,7 @@ export default function ColumnEditor({ projectId }: ColumnEditorProps) {
                   placeholder={t(
                     "settings:columnEditor.searchIconsPlaceholder",
                   )}
-                  className="h-8 text-xs"
+                  className="h-8 text-base sm:text-xs"
                 />
                 <div className="max-h-[280px] overflow-y-auto pr-1">
                   <div className="grid grid-cols-6 gap-1.5">
@@ -381,7 +387,7 @@ export default function ColumnEditor({ projectId }: ColumnEditorProps) {
             placeholder={t("settings:columnEditor.newColumnPlaceholder")}
             value={newColumnName}
             onChange={(e) => setNewColumnName(e.target.value)}
-            className="h-8 text-sm flex-1"
+            className="h-8 text-base sm:text-sm flex-1"
             onKeyDown={(e) => {
               if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)
                 return;

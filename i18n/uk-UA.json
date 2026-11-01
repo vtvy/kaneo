@@ -916,6 +916,8 @@
 			"off": "Вимк.",
 			"newColumnPlaceholder": "Назва нової колонки...",
 			"add": "Додати",
+			"deleteAria": "Delete {{name}} column",
+			"renameAria": "Rename {{name}} column",
 			"pickColorTitle": "Pick column color",
 			"chooseColor": "Choose color",
 			"noColor": "No color",
@@ -2275,6 +2277,7 @@
 			"projectSettings": "Налаштування проєкту",
 			"linkCopied": "Посилання на проєкт скопійовано до буфера обміну",
 			"addProject": "Додати проєкт",
+			"switcherLabel": "Switch project or view",
 			"deleteConfirmTitle": "Видалити проєкт?",
 			"deleteConfirmDescription": "Це назавжди видалить проєкт та всі його дані. Цю дію неможливо скасувати.",
 			"deletedToast": "Проєкт видалено",
@@ -2565,7 +2568,11 @@
 		"boardSearchPlaceholder": "Пошук тікетів...",
 		"view": {
 			"board": "Дошка",
-			"list": "Список"
+			"list": "Список",
+			"backlog": "Backlog",
+			"gantt": "Gantt",
+			"sprints": "Sprints",
+			"heading": "View"
 		},
 		"common": {
 			"selectTask": "Обрати завдання",

@@ -1,4 +1,6 @@
+import { useLocation } from "@tanstack/react-router";
 import type * as React from "react";
+import { useEffect } from "react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
@@ -18,7 +20,8 @@ import { FeedbackButton } from "./feedback/feedback-dialog";
 import Search from "./search";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { toggleSidebar } = useSidebar();
+  const { setOpenMobile, toggleSidebar } = useSidebar();
+  const pathname = useLocation({ select: (location) => location.pathname });
 
   useRegisterShortcuts({
     modifierShortcuts: {
@@ -27,6 +30,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       },
     },
   });
+
+  // Navigation that doesn't start from a sidebar link still closes the drawer.
+  useEffect(() => {
+    if (pathname) setOpenMobile(false);
+  }, [pathname, setOpenMobile]);
 
   return (
     <Sidebar

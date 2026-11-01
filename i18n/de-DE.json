@@ -908,6 +908,8 @@
 			"off": "Aus",
 			"newColumnPlaceholder": "Neuer Spaltenname...",
 			"add": "Hinzufügen",
+			"deleteAria": "Delete {{name}} column",
+			"renameAria": "Rename {{name}} column",
 			"pickColorTitle": "Pick column color",
 			"chooseColor": "Choose color",
 			"noColor": "No color",
@@ -2251,6 +2253,7 @@
 			"projectSettings": "Projekteinstellungen",
 			"linkCopied": "Projektlink in die Zwischenablage kopiert",
 			"addProject": "Projekt hinzufügen",
+			"switcherLabel": "Switch project or view",
 			"deleteConfirmTitle": "Projekt löschen?",
 			"deleteConfirmDescription": "Dadurch wird das Projekt und alle zugehörigen Daten dauerhaft entfernt. Diese Aktion kann nicht rückgängig gemacht werden.",
 			"deletedToast": "Projekt gelöscht",
@@ -2539,7 +2542,11 @@
 		"boardSearchPlaceholder": "Tickets suchen...",
 		"view": {
 			"board": "Board",
-			"list": "Liste"
+			"list": "Liste",
+			"backlog": "Backlog",
+			"gantt": "Gantt",
+			"sprints": "Sprints",
+			"heading": "View"
 		},
 		"common": {
 			"selectTask": "Aufgabe auswählen",

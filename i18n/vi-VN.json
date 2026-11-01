@@ -908,6 +908,8 @@
 			"off": "Tắt",
 			"newColumnPlaceholder": "Tên cột mới...",
 			"add": "Thêm",
+			"deleteAria": "Xóa cột {{name}}",
+			"renameAria": "Đổi tên cột {{name}}",
 			"pickColorTitle": "Chọn màu cột",
 			"chooseColor": "Chọn màu",
 			"noColor": "Không màu",
@@ -2251,6 +2253,7 @@
 			"projectSettings": "Cài đặt dự án",
 			"linkCopied": "Đã sao chép liên kết dự án",
 			"addProject": "Thêm dự án",
+			"switcherLabel": "Đổi project hoặc chế độ xem",
 			"deleteConfirmTitle": "Xóa dự án?",
 			"deleteConfirmDescription": "Thao tác này sẽ xóa vĩnh viễn dự án và toàn bộ dữ liệu. Bạn không thể hoàn tác.",
 			"deletedToast": "Đã xóa dự án",
@@ -2539,7 +2542,11 @@
 		"boardSearchPlaceholder": "Tìm công việc...",
 		"view": {
 			"board": "Bảng",
-			"list": "Danh sách"
+			"list": "Danh sách",
+			"backlog": "Backlog",
+			"gantt": "Gantt",
+			"sprints": "Sprint",
+			"heading": "Chế độ xem"
 		},
 		"common": {
 			"selectTask": "Chọn công việc",
