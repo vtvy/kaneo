@@ -101,6 +101,72 @@ describe("useTaskFiltersWithLabelsSupport", () => {
       "task-1",
     );
   });
+
+  it("keeps a saved label filter matching a later label with the same name and color", async () => {
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify({ labels: ["label-bug"] }),
+    );
+
+    const project = {
+      id: "project-1",
+      name: "Project",
+      slug: "PROJ",
+      icon: null,
+      description: null,
+      isPublic: false,
+      workspaceId: "workspace-1",
+      columns: [
+        {
+          id: "todo",
+          slug: "todo",
+          name: "Todo",
+          icon: null,
+          color: null,
+          isFinal: false,
+          tasks: [
+            {
+              id: "task-new",
+              title: "New bug",
+              number: 3,
+              description: null,
+              status: "todo",
+              priority: null,
+              startDate: null,
+              dueDate: null,
+              position: 0,
+              createdAt: "2026-04-16T00:00:00.000Z",
+              updatedAt: "2026-04-16T00:00:00.000Z",
+              userId: null,
+              assigneeId: null,
+              assigneeName: null,
+              assigneeImage: null,
+              projectId: "project-1",
+              labels: [{ id: "label-bug-2", name: "bug", color: "RED" }],
+              externalLinks: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    const { result } = renderHook(() =>
+      useTaskFiltersWithLabelsSupport(
+        project,
+        "project-1",
+        undefined,
+        undefined,
+        [
+          { id: "label-bug", name: "bug", color: "red" },
+          { id: "label-bug-2", name: "bug", color: "RED" },
+        ],
+      ),
+    );
+
+    await waitFor(() => {
+      expect(result.current.filteredProject?.columns[0]?.tasks).toHaveLength(1);
+    });
+  });
 });
 
 describe("board filter persistence lifecycle", () => {

@@ -1,6 +1,10 @@
 import { addWeeks, endOfWeek, isWithinInterval, startOfWeek } from "date-fns";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { matchesCreatedDateFilter } from "@/lib/created-date-filter";
+import {
+  expandLabelFilter,
+  type FilterLabel,
+} from "@/lib/task-filters/label-groups";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 import type { ProjectWithTasks } from "@/types/project";
 import type Task from "@/types/task";
@@ -56,6 +60,7 @@ export function useTaskFiltersWithLabelsSupport(
   projectId?: string,
   textQuery?: string,
   currentUserId?: string | null,
+  catalogLabels?: readonly FilterLabel[],
 ) {
   const weekStartsOn = useUserPreferencesStore((state) => state.weekStartsOn);
   const storageKey = projectId ? `kaneo:board-filters:${projectId}` : null;
@@ -96,6 +101,21 @@ export function useTaskFiltersWithLabelsSupport(
       // ignore quota / private mode
     }
   }, [filters, storageKey, hydratedStorageKey]);
+
+  const knownLabels = useMemo(() => {
+    const byId = new Map<string, FilterLabel>();
+    for (const label of catalogLabels ?? []) byId.set(label.id, label);
+    for (const column of project?.columns ?? []) {
+      for (const task of column.tasks) {
+        for (const label of task.labels ?? []) byId.set(label.id, label);
+      }
+    }
+    return [...byId.values()];
+  }, [project, catalogLabels]);
+
+  const matchingLabelIds = useMemo(() => {
+    return new Set(expandLabelFilter(knownLabels, filters.labels) ?? []);
+  }, [knownLabels, filters.labels]);
 
   const filterTasks = useCallback(
     (tasks: Task[]): Task[] => {
@@ -223,13 +243,10 @@ export function useTaskFiltersWithLabelsSupport(
           }
         }
 
-        // Label filtering
-        if (filters.labels && filters.labels.length > 0) {
-          const taskLabelIds = (task.labels ?? []).map((label) => label.id);
-
-          // Check if task has at least one of the selected labels
-          const hasMatchingLabel = filters.labels.some((labelId) =>
-            taskLabelIds.includes(labelId),
+        // Match the saved ids and any later label with the same name and color.
+        if (matchingLabelIds.size > 0) {
+          const hasMatchingLabel = (task.labels ?? []).some((label) =>
+            matchingLabelIds.has(label.id),
           );
 
           if (!hasMatchingLabel) {
@@ -240,7 +257,14 @@ export function useTaskFiltersWithLabelsSupport(
         return true;
       });
     },
-    [filters, project?.slug, textQuery, weekStartsOn, currentUserId],
+    [
+      filters,
+      project?.slug,
+      textQuery,
+      weekStartsOn,
+      currentUserId,
+      matchingLabelIds,
+    ],
   );
 
   const filteredProject = useMemo(() => {
