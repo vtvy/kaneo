@@ -40,8 +40,6 @@ export const REQUIRED_OPERATIONS: ReadonlyArray<RequiredOperation> = [
   { method: "PUT", path: "/api/custom-field/value" },
   { method: "DELETE", path: "/api/custom-field/{id}" },
   { method: "GET", path: "/api/external-link/task/{taskId}" },
-  { method: "POST", path: "/api/external-link/task/{taskId}" },
-  { method: "DELETE", path: "/api/external-link/task/{taskId}/{linkId}" },
   { method: "GET", path: "/api/invitation/pending" },
   { method: "GET", path: "/api/invitation/{invitationId}" },
   { method: "POST", path: "/api/label" },

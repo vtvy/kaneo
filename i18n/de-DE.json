@@ -2821,7 +2821,8 @@
 			"updateDatesError": "Aufgabendaten konnten nicht aktualisiert werden",
 			"resizeStart": "Startdatum anpassen",
 			"resizeDue": "Fälligkeitsdatum anpassen",
-			"taskAriaLabel": "{{title}} — öffnen oder ziehen zum Verschieben"
+			"taskAriaLabel": "{{title}} — öffnen oder ziehen zum Verschieben",
+			"undatedHeading": "No date"
 		},
 		"delete": {
 			"title": "Aufgabe löschen?",
@@ -3007,7 +3008,8 @@
 				"revoke": "Revoke feed",
 				"revoked": "Calendar feed revoked.",
 				"revokeError": "Could not revoke the calendar feed."
-			}
+			},
+			"undatedHeading": "No date"
 		}
 	},
 	"invitations": {

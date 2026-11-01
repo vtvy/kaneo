@@ -2821,7 +2821,8 @@
 			"updateDatesError": "Неуспешно ажурирање на датуми на задача",
 			"resizeStart": "Промени почетен датум",
 			"resizeDue": "Промени краен рок",
-			"taskAriaLabel": "{{title}} — отвори или повлечи за преместување"
+			"taskAriaLabel": "{{title}} — отвори или повлечи за преместување",
+			"undatedHeading": "No date"
 		},
 		"delete": {
 			"title": "Избриши задача?",
@@ -3007,7 +3008,8 @@
 				"revoke": "Revoke feed",
 				"revoked": "Calendar feed revoked.",
 				"revokeError": "Could not revoke the calendar feed."
-			}
+			},
+			"undatedHeading": "No date"
 		}
 	},
 	"invitations": {

@@ -3,17 +3,24 @@ import { useCallback, useEffect, useState } from "react";
 import { Alert, ScrollView, View } from "react-native";
 import { Button, Field, Loading, Notice, Screen } from "@/components/ui";
 import {
+  assignLabel,
   createComment,
+  createLabel,
   deleteComment,
   deleteTask,
+  detachLabel,
   getBoard,
   getProject,
   getTask,
   listComments,
   listMembers,
+  listProjectFields,
   listTaskFields,
   listTaskLabels,
+  listWorkspaceLabels,
+  setTaskFieldValue,
   updateComment,
+  updateLabel,
   updateTaskAssignee,
   updateTaskDescription,
   updateTaskPriority,
@@ -26,12 +33,16 @@ import { useSession } from "@/lib/session";
 import type {
   BoardColumn,
   Comment,
+  CustomFieldDefinition,
   Member,
   TaskDetail,
   TaskFieldValue,
   TaskLabel,
 } from "@/lib/types";
+import { useLiveRefresh } from "@/lib/use-live-refresh";
 import { useProjectAccess } from "@/lib/use-project-access";
+
+const LABEL_COLORS = ["#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7"];
 
 const PRIORITIES = ["no-priority", "low", "medium", "high", "urgent"] as const;
 
@@ -42,7 +53,16 @@ export default function TaskScreen() {
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [labels, setLabels] = useState<TaskLabel[]>([]);
+  const [workspaceLabels, setWorkspaceLabels] = useState<TaskLabel[]>([]);
   const [fields, setFields] = useState<TaskFieldValue[]>([]);
+  const [fieldDefinitions, setFieldDefinitions] = useState<
+    CustomFieldDefinition[]
+  >([]);
+  const [labelName, setLabelName] = useState("");
+  const [labelColor, setLabelColor] = useState(LABEL_COLORS[3]);
+  const [editingLabelId, setEditingLabelId] = useState<string | null>(null);
+  const [labelDraft, setLabelDraft] = useState("");
+  const [fieldDrafts, setFieldDrafts] = useState<Record<string, string>>({});
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [commentDraft, setCommentDraft] = useState("");
   const [columns, setColumns] = useState<BoardColumn[]>([]);
@@ -64,31 +84,36 @@ export default function TaskScreen() {
     session?.user.id,
   );
 
-  const load = useCallback(() => {
-    if (!taskId) return;
-    setLoading(true);
-    Promise.all([
-      getTask(taskId),
-      listComments(taskId),
-      listTaskLabels(taskId),
-      listTaskFields(taskId),
-    ])
-      .then(([nextTask, nextComments, nextLabels, nextFields]) => {
-        setTask(nextTask);
-        setTitle(nextTask.title);
-        setDescription(nextTask.description ?? "");
-        setComments(nextComments);
-        setLabels(nextLabels);
-        setFields(nextFields);
-        setError(null);
-      })
-      .catch((reason: unknown) => setError(errorMessage(reason)))
-      .finally(() => setLoading(false));
-  }, [taskId]);
+  const load = useCallback(
+    (silent = false) => {
+      if (!taskId) return;
+      if (!silent) setLoading(true);
+      Promise.all([
+        getTask(taskId),
+        listComments(taskId),
+        listTaskLabels(taskId),
+        listTaskFields(taskId),
+      ])
+        .then(([nextTask, nextComments, nextLabels, nextFields]) => {
+          setTask(nextTask);
+          if (!silent) {
+            setTitle(nextTask.title);
+            setDescription(nextTask.description ?? "");
+          }
+          setComments(nextComments);
+          setLabels(nextLabels);
+          setFields(nextFields);
+          setError(null);
+        })
+        .catch((reason: unknown) => setError(errorMessage(reason)))
+        .finally(() => {
+          if (!silent) setLoading(false);
+        });
+    },
+    [taskId],
+  );
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useLiveRefresh((silent) => load(silent), Boolean(taskId));
 
   useEffect(() => {
     if (!projectId || access.loading || !canTransition) return;
@@ -120,6 +145,28 @@ export default function TaskScreen() {
       cancelled = true;
     };
   }, [projectId, access.loading, showAssign]);
+
+  useEffect(() => {
+    if (!projectId || access.loading || !canUpdate) return;
+    let cancelled = false;
+    Promise.all([getProject(projectId), listProjectFields(projectId)])
+      .then(async ([project, nextFields]) => {
+        const nextLabels = await listWorkspaceLabels(project.workspaceId);
+        if (!cancelled) {
+          setWorkspaceLabels(nextLabels);
+          setFieldDefinitions(nextFields);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setWorkspaceLabels([]);
+          setFieldDefinitions([]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, access.loading, canUpdate]);
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
@@ -261,21 +308,156 @@ export default function TaskScreen() {
                 ))}
               </>
             ) : null}
-            {labels.length > 0 ? (
-              <Notice>
-                {`Nhãn: ${labels.map((label) => label.name).join(", ")}`}
-              </Notice>
-            ) : null}
-            {fields.length > 0 ? (
+            <Notice>Nhãn</Notice>
+            {labels.length === 0 ? <Notice>Chưa có nhãn.</Notice> : null}
+            {labels.map((label) =>
+              editingLabelId === label.id ? (
+                <View key={label.id}>
+                  <Field
+                    label="Tên nhãn"
+                    onChangeText={setLabelDraft}
+                    value={labelDraft}
+                  />
+                  <Button
+                    disabled={busy || !labelDraft.trim()}
+                    label="Lưu nhãn"
+                    onPress={() => {
+                      void run(async () => {
+                        await updateLabel(
+                          label.id,
+                          labelDraft.trim(),
+                          label.color,
+                        );
+                        setEditingLabelId(null);
+                        setLabelDraft("");
+                      });
+                    }}
+                  />
+                </View>
+              ) : (
+                <View key={label.id}>
+                  <Notice>{label.name}</Notice>
+                  {canUpdate ? (
+                    <>
+                      <Button
+                        disabled={busy}
+                        label="Sửa nhãn"
+                        onPress={() => {
+                          setEditingLabelId(label.id);
+                          setLabelDraft(label.name);
+                        }}
+                      />
+                      <Button
+                        disabled={busy}
+                        label="Gỡ nhãn"
+                        onPress={() => {
+                          void run(() => detachLabel(label.id));
+                        }}
+                      />
+                    </>
+                  ) : null}
+                </View>
+              ),
+            )}
+            {canUpdate
+              ? workspaceLabels
+                  .filter(
+                    (label) =>
+                      !labels.some((current) => current.id === label.id),
+                  )
+                  .map((label) => (
+                    <Button
+                      disabled={busy}
+                      key={label.id}
+                      label={`Gắn ${label.name}`}
+                      onPress={() => {
+                        void run(() => assignLabel(label.id, taskId));
+                      }}
+                    />
+                  ))
+              : null}
+            {canUpdate ? (
               <>
-                <Notice>Trường tùy chỉnh</Notice>
-                {fields.map((field) => (
-                  <Notice key={field.id}>
-                    {`${field.fieldName}: ${field.value || "—"}`}
-                  </Notice>
-                ))}
+                <Field
+                  label="Nhãn mới"
+                  onChangeText={setLabelName}
+                  value={labelName}
+                />
+                <View>
+                  {LABEL_COLORS.map((color) => (
+                    <Button
+                      disabled={busy}
+                      key={color}
+                      label={labelColor === color ? `Màu ${color}` : color}
+                      onPress={() => setLabelColor(color)}
+                    />
+                  ))}
+                </View>
+                <Button
+                  disabled={busy || !labelName.trim()}
+                  label="Tạo nhãn"
+                  onPress={() => {
+                    void run(async () => {
+                      const project = await getProject(projectId);
+                      await createLabel({
+                        name: labelName.trim(),
+                        color: labelColor,
+                        workspaceId: project.workspaceId,
+                        taskId,
+                      });
+                      setLabelName("");
+                    });
+                  }}
+                />
               </>
             ) : null}
+            <Notice>Trường tùy chỉnh</Notice>
+            {(fieldDefinitions.length > 0
+              ? fieldDefinitions.map((definition) => ({
+                  id: definition.id,
+                  name: definition.name,
+                  value:
+                    fields.find((field) => field.fieldId === definition.id)
+                      ?.value ?? "",
+                }))
+              : fields.map((field) => ({
+                  id: field.fieldId,
+                  name: field.fieldName,
+                  value: field.value ?? "",
+                }))
+            ).map((field) =>
+              canUpdate ? (
+                <View key={field.id}>
+                  <Field
+                    label={field.name}
+                    onChangeText={(value) =>
+                      setFieldDrafts((current) => ({
+                        ...current,
+                        [field.id]: value,
+                      }))
+                    }
+                    value={fieldDrafts[field.id] ?? field.value}
+                  />
+                  <Button
+                    disabled={busy}
+                    label={`Lưu ${field.name}`}
+                    onPress={() => {
+                      void run(() =>
+                        setTaskFieldValue(
+                          taskId,
+                          field.id,
+                          fieldDrafts[field.id] ?? field.value,
+                        ),
+                      );
+                    }}
+                  />
+                </View>
+              ) : (
+                <Notice key={field.id}>
+                  {`${field.name}: ${field.value || "—"}`}
+                </Notice>
+              ),
+            )}
             <Notice>Bình luận</Notice>
             {comments.map((item) => {
               const own = canEditOwnComment(item.userId, session?.user.id);

@@ -2855,7 +2855,8 @@
 			"updateDatesError": "Не удалось обновить даты задачи",
 			"resizeStart": "Изменить дату начала",
 			"resizeDue": "Изменить срок выполнения",
-			"taskAriaLabel": "{{title}} — откройте или перетащите для перемещения"
+			"taskAriaLabel": "{{title}} — откройте или перетащите для перемещения",
+			"undatedHeading": "No date"
 		},
 		"delete": {
 			"title": "Удалить задачу?",
@@ -3083,7 +3084,8 @@
 				"revoke": "Revoke feed",
 				"revoked": "Calendar feed revoked.",
 				"revokeError": "Could not revoke the calendar feed."
-			}
+			},
+			"undatedHeading": "No date"
 		}
 	},
 	"invitations": {

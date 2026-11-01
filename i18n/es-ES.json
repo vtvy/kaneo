@@ -2810,7 +2810,8 @@
 			"updateDatesError": "Error al actualizar las fechas de la tarea",
 			"resizeStart": "Cambiar la fecha de comienzo",
 			"resizeDue": "Cambiar la fecha de vencimiento",
-			"taskAriaLabel": "{{title}} — abrir o arrastrar para mover"
+			"taskAriaLabel": "{{title}} — abrir o arrastrar para mover",
+			"undatedHeading": "No date"
 		},
 		"delete": {
 			"title": "¿Eliminar tarea?",
@@ -3007,7 +3008,8 @@
 				"revoke": "Revoke feed",
 				"revoked": "Calendar feed revoked.",
 				"revokeError": "Could not revoke the calendar feed."
-			}
+			},
+			"undatedHeading": "No date"
 		}
 	},
 	"invitations": {
