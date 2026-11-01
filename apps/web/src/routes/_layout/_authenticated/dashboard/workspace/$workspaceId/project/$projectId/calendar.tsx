@@ -10,9 +10,10 @@ import SubscribeCalendarDialog from "@/components/calendar/subscribe-calendar-di
 import ProjectLayout from "@/components/common/project-layout";
 import PageTitle from "@/components/page-title";
 import TaskDetailsSheet from "@/components/task/task-details-sheet";
+import useGetBacklogTasks from "@/hooks/queries/sprint/use-get-backlog-tasks";
 import { useGetTasks } from "@/hooks/queries/task/use-get-tasks";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { toScheduledTasks } from "@/lib/task-schedule";
+import { appendUnseenById, partitionBySchedule } from "@/lib/task-schedule";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 
 type CalendarSearchParams = {
@@ -36,13 +37,17 @@ function RouteComponent() {
   const { taskId } = Route.useSearch();
   const navigate = useNavigate();
   const { data: project, isLoading, isError } = useGetTasks(projectId);
+  const { data: backlogTasks = [] } = useGetBacklogTasks(projectId);
   const weekStartsOn = useUserPreferencesStore((state) => state.weekStartsOn);
   const isMobile = useIsMobile();
   const [visibleMonth, setVisibleMonth] = useState(() =>
     startOfMonth(new Date()),
   );
 
-  const scheduledTasks = useMemo(() => toScheduledTasks(project), [project]);
+  const { scheduled: scheduledTasks, undated: undatedTasks } = useMemo(() => {
+    const onBoard = project?.columns.flatMap((column) => column.tasks) ?? [];
+    return partitionBySchedule(appendUnseenById(onBoard, backlogTasks));
+  }, [backlogTasks, project]);
 
   const weeks = useMemo(
     () => buildMonthWeeks(visibleMonth, weekStartsOn),
@@ -108,7 +113,7 @@ function RouteComponent() {
           <div className="flex flex-1 items-center justify-center text-sm text-destructive">
             {t("tasks:calendar.loadError")}
           </div>
-        ) : scheduledTasks.length === 0 ? (
+        ) : scheduledTasks.length === 0 && undatedTasks.length === 0 ? (
           <div className="flex flex-1 items-center justify-center px-6">
             <div className="max-w-sm text-center">
               <h2 className="text-sm font-semibold text-foreground">
@@ -119,22 +124,48 @@ function RouteComponent() {
               </p>
             </div>
           </div>
-        ) : isMobile ? (
-          <MonthAgenda
-            tasks={scheduledTasks}
-            visibleMonth={visibleMonth}
-            projectSlug={project?.slug}
-            onOpenTask={handleOpenTask}
-          />
         ) : (
-          <MonthGrid
-            weeks={weeks}
-            tasks={scheduledTasks}
-            visibleMonth={visibleMonth}
-            maxLanes={MAX_LANES_DESKTOP}
-            projectSlug={project?.slug}
-            onOpenTask={handleOpenTask}
-          />
+          <>
+            {scheduledTasks.length === 0 ? null : isMobile ? (
+              <MonthAgenda
+                tasks={scheduledTasks}
+                visibleMonth={visibleMonth}
+                projectSlug={project?.slug}
+                onOpenTask={handleOpenTask}
+              />
+            ) : (
+              <MonthGrid
+                weeks={weeks}
+                tasks={scheduledTasks}
+                visibleMonth={visibleMonth}
+                maxLanes={MAX_LANES_DESKTOP}
+                projectSlug={project?.slug}
+                onOpenTask={handleOpenTask}
+              />
+            )}
+            {undatedTasks.length > 0 ? (
+              <div className="shrink-0 border-t border-border px-3 py-2">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {t("tasks:calendar.undatedHeading")}
+                </p>
+                <div className="mt-1 flex max-h-40 flex-col overflow-auto">
+                  {undatedTasks.map((task) => (
+                    <button
+                      key={task.id}
+                      type="button"
+                      className="flex min-h-9 items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-muted"
+                      onClick={() => handleOpenTask(task.id)}
+                    >
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {project?.slug}-{task.number}
+                      </span>
+                      <span className="truncate">{task.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </>
         )}
       </div>
 

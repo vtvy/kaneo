@@ -74,9 +74,16 @@ export type TaskLabel = {
 
 export type TaskFieldValue = {
   id: string;
+  fieldId: string;
   fieldName: string;
   fieldType: string;
   value: string | null;
+};
+
+export type CustomFieldDefinition = {
+  id: string;
+  name: string;
+  type: string;
 };
 
 export type Sprint = {

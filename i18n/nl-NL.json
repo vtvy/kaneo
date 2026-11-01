@@ -2810,7 +2810,8 @@
 			"updateDatesError": "Bijwerken taakdatums mislukt",
 			"resizeStart": "Startdatum wijzigen",
 			"resizeDue": "Einddatum wijzigen",
-			"taskAriaLabel": "{{title}} — openen of slepen om te verplaatsen"
+			"taskAriaLabel": "{{title}} — openen of slepen om te verplaatsen",
+			"undatedHeading": "No date"
 		},
 		"delete": {
 			"title": "Taak verwijderen?",
@@ -3007,7 +3008,8 @@
 				"revoke": "Revoke feed",
 				"revoked": "Calendar feed revoked.",
 				"revokeError": "Could not revoke the calendar feed."
-			}
+			},
+			"undatedHeading": "No date"
 		}
 	},
 	"invitations": {

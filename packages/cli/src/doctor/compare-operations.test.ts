@@ -58,6 +58,15 @@ describe("missingOperations", () => {
     expect(missingOperations(REQUIRED_OPERATIONS, "<html>")).toBeUndefined();
   });
 
+  it("does not require external-link writes", () => {
+    const writes = REQUIRED_OPERATIONS.filter(
+      (operation) =>
+        operation.path.startsWith("/api/external-link/") &&
+        operation.method !== "GET",
+    );
+    expect(writes).toEqual([]);
+  });
+
   it("lists every required operation once", () => {
     const keys = REQUIRED_OPERATIONS.map((operation) =>
       operationKey(operation.method, operation.path),

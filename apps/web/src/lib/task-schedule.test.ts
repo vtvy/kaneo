@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   appendUnseenById,
   parseTaskDate,
+  partitionBySchedule,
   toScheduledTask,
   toScheduledTasks,
 } from "./task-schedule";
@@ -98,6 +99,18 @@ describe("appendUnseenById", () => {
       "on-board",
       "no-status",
     ]);
+  });
+});
+
+describe("partitionBySchedule", () => {
+  it("keeps dated tasks on the schedule and undated tasks in the list", () => {
+    const result = partitionBySchedule([
+      task("dated", "2026-08-02T00:00:00.000Z", "2026-08-04T00:00:00.000Z"),
+      task("open", null, null),
+    ]);
+
+    expect(result.scheduled.map((entry) => entry.id)).toEqual(["dated"]);
+    expect(result.undated.map((entry) => entry.id)).toEqual(["open"]);
   });
 });
 

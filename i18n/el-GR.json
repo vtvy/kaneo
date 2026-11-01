@@ -2821,7 +2821,8 @@
 			"updateDatesError": "Αποτυχία ενημέρωσης ημερομηνιών εργασίας",
 			"resizeStart": "Αλλαγή μεγέθους ημερομηνίας έναρξης",
 			"resizeDue": "Αλλαγή μεγέθους ημερομηνίας λήξης",
-			"taskAriaLabel": "{{title}} — άνοιγμα ή σύρσιμο για μετακίνηση"
+			"taskAriaLabel": "{{title}} — άνοιγμα ή σύρσιμο για μετακίνηση",
+			"undatedHeading": "No date"
 		},
 		"delete": {
 			"title": "Διαγραφή εργασίας;",
@@ -3007,7 +3008,8 @@
 				"revoke": "Revoke feed",
 				"revoked": "Calendar feed revoked.",
 				"revokeError": "Could not revoke the calendar feed."
-			}
+			},
+			"undatedHeading": "No date"
 		}
 	},
 	"invitations": {
