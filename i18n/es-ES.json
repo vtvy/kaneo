@@ -217,7 +217,15 @@
 			"taskCount_one": "{{count}} task",
 			"taskCount_other": "{{count}} tasks",
 			"showingActiveSprint": "Showing active sprint",
-			"filterToActiveSprint": "Filter to active sprint"
+			"filterToActiveSprint": "Filter to active sprint",
+			"pointsTotal": "{{completed}}/{{total}} pts",
+			"pointsTotalTitle": "Completed / total story points"
+		},
+		"notFound": {
+			"title": "Page not found",
+			"description": "This link may be incomplete, or the page may have moved. Return home to open an available workspace.",
+			"home": "Go to home",
+			"back": "Go back"
 		}
 	},
 	"auth": {
@@ -2134,6 +2142,7 @@
 			"allPriorities": "Todas las prioridades",
 			"allAssignees": "Todos los asignados",
 			"allDueDates": "Todas las fechas de vencimiento",
+			"allCreatedDates": "All created dates",
 			"allLabels": "Todas las etiquetas",
 			"selectedCount": "{{count}} selecionadas",
 			"subjects": {
@@ -2141,9 +2150,16 @@
 				"priority": "Prioridad",
 				"assignee": "Asignado",
 				"dueDate": "Fecha de vencimiento",
+				"createdAt": "Created date",
 				"labels": "Etiquetas",
 				"creator": "Creator",
 				"relatedToMe": "Related to me"
+			},
+			"createdDate": {
+				"createdToday": "Created today",
+				"createdThisWeek": "Created this week",
+				"createdLastWeek": "Created last week",
+				"createdLast30Days": "Created in last 30 days"
 			},
 			"operators": {
 				"isAnyOf": "es alguno de",
@@ -2218,7 +2234,8 @@
 		},
 		"contextMenu": {
 			"copyLink": "Copiar enlace",
-			"copyLinkSuccess": "¡Enlace a la tarea copiado!"
+			"copyLinkSuccess": "¡Enlace a la tarea copiado!",
+			"sprint": "Sprint"
 		},
 		"actions": {
 			"archive": "Archivar",
@@ -2255,7 +2272,9 @@
 			"actions": "Actiones",
 			"searchActions": "Buscar acciones...",
 			"noActionsFound": "No se han encontrado acciones.",
-			"changeStatus": "Cambiar estado"
+			"changeStatus": "Cambiar estado",
+			"addToSprint": "Add to sprint",
+			"addToSprintError": "Failed to add tasks to sprint"
 		},
 		"move": {
 			"title": "Move task",
@@ -2630,7 +2649,8 @@
 			"priority": "Priority",
 			"sprint": "Sprint",
 			"assignee": "Assignee",
-			"creator": "Created by"
+			"creator": "Created by",
+			"createdAt": "Created date"
 		},
 		"sort": {
 			"asc": "Sort ascending",
@@ -2646,6 +2666,20 @@
 			"title": "No tasks yet",
 			"description": "Create a task to start building your backlog."
 		},
-		"error": "Could not load tasks. Please try again."
+		"error": "Could not load tasks. Please try again.",
+		"savedViews": {
+			"rename": "Rename view",
+			"nameLabel": "View name",
+			"saveName": "Save view name",
+			"label": "Saved views",
+			"empty": "No saved views yet. Set filters, then save one.",
+			"save": "Save",
+			"namePlaceholder": "View name…",
+			"nameRequired": "Enter a name for this view",
+			"saved": "Saved view “{{name}}”",
+			"setDefault": "Set as default when opening backlog",
+			"saveAsDefault": "Set as default filter",
+			"delete": "Delete view"
+		}
 	}
 }

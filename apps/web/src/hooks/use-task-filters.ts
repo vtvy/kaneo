@@ -1,5 +1,6 @@
 import { addWeeks, endOfWeek, isWithinInterval, startOfWeek } from "date-fns";
 import { useEffect, useState } from "react";
+import { matchesCreatedDateFilter } from "@/lib/created-date-filter";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 import type { ProjectWithTasks } from "@/types/project";
 import type Task from "@/types/task";
@@ -10,6 +11,7 @@ export type BoardFilters = {
   assignee: string[] | null;
   creator: string[] | null;
   dueDate: string[] | null;
+  createdAt: string[] | null;
   labels: string[] | null;
   relatedToMe: boolean | null;
 };
@@ -26,6 +28,7 @@ const DEFAULT_FILTERS: BoardFilters = {
   assignee: null,
   creator: null,
   dueDate: null,
+  createdAt: null,
   labels: null,
   relatedToMe: null,
 };
@@ -36,6 +39,7 @@ const FILTER_KEYS: Array<keyof BoardFilters> = [
   "assignee",
   "creator",
   "dueDate",
+  "createdAt",
   "labels",
   "relatedToMe",
 ];
@@ -178,6 +182,19 @@ export function useTaskFilters(
         });
 
         if (!matchesAnyDueDate) {
+          return false;
+        }
+      }
+
+      if (filters.createdAt && filters.createdAt.length > 0) {
+        const matchesAnyCreatedAt = filters.createdAt.some((createdAtFilter) =>
+          matchesCreatedDateFilter(
+            task.createdAt,
+            createdAtFilter,
+            weekStartsOn,
+          ),
+        );
+        if (!matchesAnyCreatedAt) {
           return false;
         }
       }

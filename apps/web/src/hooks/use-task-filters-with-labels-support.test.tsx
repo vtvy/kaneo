@@ -1,5 +1,6 @@
-import { renderHook, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { StrictMode } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useTaskFiltersWithLabelsSupport } from "./use-task-filters-with-labels-support";
 
 describe("useTaskFiltersWithLabelsSupport", () => {
@@ -102,5 +103,46 @@ describe("useTaskFiltersWithLabelsSupport", () => {
     expect(result.current.filteredProject?.columns[0]?.tasks[0]?.id).toBe(
       "task-1",
     );
+  });
+});
+
+describe("board filter persistence lifecycle", () => {
+  beforeEach(() => window.localStorage.clear());
+  afterEach(() => {
+    window.localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it("restores priority under StrictMode and keeps it after remount", () => {
+    const key = "kaneo:board-filters:a";
+    window.localStorage.setItem(key, JSON.stringify({ priority: ["high"] }));
+    const first = renderHook(() => useTaskFiltersWithLabelsSupport(null, "a"), {
+      wrapper: StrictMode,
+    });
+    expect(first.result.current.filters.priority).toEqual(["high"]);
+    first.unmount();
+    const second = renderHook(
+      () => useTaskFiltersWithLabelsSupport(null, "a"),
+      { wrapper: StrictMode },
+    );
+    expect(second.result.current.filters.priority).toEqual(["high"]);
+  });
+
+  it("never writes the previous project's filters into the next project's storage", () => {
+    const key = "kaneo:board-filters:b";
+    window.localStorage.setItem(key, JSON.stringify({ priority: ["low"] }));
+    const { result, rerender } = renderHook(
+      ({ id }) => useTaskFiltersWithLabelsSupport(null, id),
+      { initialProps: { id: "a" } },
+    );
+    act(() => result.current.updateFilter("priority", ["high"]));
+    const writes = vi.spyOn(window.localStorage, "setItem");
+    rerender({ id: "b" });
+    expect(result.current.filters.priority).toEqual(["low"]);
+    expect(
+      writes.mock.calls
+        .filter(([storedKey]) => storedKey === key)
+        .every(([, value]) => JSON.parse(value).priority[0] === "low"),
+    ).toBe(true);
   });
 });

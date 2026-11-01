@@ -1,17 +1,11 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { authClient } from "@/lib/auth-client";
+import { SessionConnectionError } from "@/components/auth/session-connection-error";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { getRouteSession } from "@/lib/get-route-session";
 
 export const Route = createFileRoute("/auth")({
   beforeLoad: async () => {
-    let session = null;
-    try {
-      const { data } = await authClient.getSession();
-      session = data;
-    } catch (error) {
-      // getSession() rejected — treat as unauthenticated so the auth pages
-      // still render instead of surfacing an unhandled rejection.
-      if (import.meta.env.DEV) console.warn("getSession failed", error);
-    }
+    const session = await getRouteSession();
     if (session) {
       throw redirect({
         to: "/dashboard",
@@ -19,4 +13,6 @@ export const Route = createFileRoute("/auth")({
     }
     return { session };
   },
+  pendingComponent: LoadingSkeleton,
+  errorComponent: SessionConnectionError,
 });

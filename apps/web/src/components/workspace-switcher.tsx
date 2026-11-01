@@ -102,9 +102,11 @@ export function WorkspaceSwitcher() {
     },
   });
 
-  if (!workspace) {
-    return null;
-  }
+  // Keep the switcher available without an active workspace so users can
+  // still pick or create one instead of hitting a dead end.
+  const hasWorkspaces = Boolean(workspaces && workspaces.length > 0);
+  const label =
+    workspace?.name ?? t("navigation:workspaceSwitcher.selectWorkspace");
 
   return (
     <>
@@ -122,9 +124,9 @@ export function WorkspaceSwitcher() {
               >
                 <div className="flex items-center min-w-0 w-full">
                   <span
-                    className={`truncate text-sm font-medium text-foreground ${isSwitching ? "opacity-50" : ""}`}
+                    className={`truncate text-sm font-medium ${workspace ? "text-foreground" : "text-muted-foreground"} ${isSwitching ? "opacity-50" : ""}`}
                   >
-                    {workspace.name}
+                    {label}
                   </span>
                 </div>
                 <ChevronDown
@@ -149,12 +151,12 @@ export function WorkspaceSwitcher() {
                   <DropdownMenuItem
                     key={ws.id}
                     onClick={() => {
-                      if (!isSwitching && ws.id !== workspace.id) {
+                      if (!isSwitching && ws.id !== workspace?.id) {
                         handleWorkspaceChange(ws);
                         setIsOpen(false);
                       }
                     }}
-                    disabled={isSwitching || ws.id === workspace.id}
+                    disabled={isSwitching || ws.id === workspace?.id}
                     className="h-7 text-sm data-highlighted:bg-sidebar-accent data-highlighted:text-sidebar-accent-foreground"
                   >
                     <span className="flex-1 text-left">
@@ -168,7 +170,7 @@ export function WorkspaceSwitcher() {
                   </DropdownMenuItem>
                 ))}
 
-                <DropdownMenuSeparator />
+                {hasWorkspaces ? <DropdownMenuSeparator /> : null}
                 <DropdownMenuItem
                   onClick={() => {
                     setIsCreateWorkspaceModalOpen(true);

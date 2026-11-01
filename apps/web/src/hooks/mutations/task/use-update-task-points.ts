@@ -25,6 +25,10 @@ export function useUpdateTaskPoints() {
       queryClient.invalidateQueries({
         queryKey: ["all-project-tasks", variables.projectId],
       });
+      // Sprint lists carry per-sprint point totals.
+      queryClient.invalidateQueries({
+        queryKey: ["sprints", variables.projectId],
+      });
       queryClient.invalidateQueries({
         queryKey: ["notifications"],
       });

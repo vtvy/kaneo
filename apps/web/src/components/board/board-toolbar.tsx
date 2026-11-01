@@ -23,6 +23,7 @@ import {
   DUE_DATE_FILTER_VALUES,
 } from "@/hooks/use-task-filters";
 import { getColumnIcon } from "@/lib/column";
+import { CREATED_DATE_FILTER_OPTIONS } from "@/lib/created-date-filter";
 import { getPriorityLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
 import type { SortConfig } from "@/lib/sort-tasks";
@@ -125,6 +126,7 @@ export default function BoardToolbar({
   const selectedAssigneeIds = filters.assignee ?? [];
   const selectedCreatorIds = filters.creator ?? [];
   const selectedDueDateFilters = filters.dueDate ?? [];
+  const selectedCreatedAtFilters = filters.createdAt ?? [];
 
   const getStatusDisplayName = (statusId: string) => {
     const column = project?.columns?.find((col) => col.id === statusId);
@@ -212,6 +214,14 @@ export default function BoardToolbar({
       ? selectedDueDateFilters.filter((id) => id !== dueDate)
       : [...selectedDueDateFilters, dueDate];
     updateFilter("dueDate", next.length > 0 ? next : null);
+  };
+
+  const toggleCreatedAtFilter = (createdAt: string) => {
+    const exists = selectedCreatedAtFilters.includes(createdAt);
+    const next = exists
+      ? selectedCreatedAtFilters.filter((id) => id !== createdAt)
+      : [...selectedCreatedAtFilters, createdAt];
+    updateFilter("createdAt", next.length > 0 ? next : null);
   };
 
   const toggleLabelGroup = (label: { name: string; color: string }) => {
@@ -532,6 +542,49 @@ export default function BoardToolbar({
 
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger className="h-8 rounded-md text-sm">
+                    {t("tasks:boardFilters.subjects.createdAt")}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-56">
+                    <div className="grid grid-cols-1 gap-1 p-1">
+                      <button
+                        className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-left text-xs ${
+                          selectedCreatedAtFilters.length === 0
+                            ? "bg-accent text-accent-foreground"
+                            : "text-foreground/90 hover:bg-accent/60 hover:text-foreground"
+                        }`}
+                        onClick={() => updateFilter("createdAt", null)}
+                        type="button"
+                      >
+                        <CheckSlot
+                          checked={selectedCreatedAtFilters.length === 0}
+                        />
+                        {t("tasks:boardFilters.allCreatedDates")}
+                      </button>
+                      {CREATED_DATE_FILTER_OPTIONS.map((createdAt) => (
+                        <button
+                          key={createdAt}
+                          className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-left text-xs ${
+                            selectedCreatedAtFilters.includes(createdAt)
+                              ? "bg-accent text-accent-foreground"
+                              : "text-foreground/90 hover:bg-accent/60 hover:text-foreground"
+                          }`}
+                          onClick={() => toggleCreatedAtFilter(createdAt)}
+                          type="button"
+                        >
+                          <CheckSlot
+                            checked={selectedCreatedAtFilters.includes(
+                              createdAt,
+                            )}
+                          />
+                          {t(`tasks:boardFilters.createdDate.${createdAt}`)}
+                        </button>
+                      ))}
+                    </div>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="h-8 rounded-md text-sm">
                     {t("tasks:properties.labels")}
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent className="w-64">
@@ -723,6 +776,23 @@ export default function BoardToolbar({
                       })
                 }
                 onClear={() => updateFilter("dueDate", null)}
+              />
+            )}
+
+            {selectedCreatedAtFilters.length > 0 && (
+              <ActiveFilterChip
+                subject={t("tasks:boardFilters.subjects.createdAt")}
+                operator={t("tasks:boardFilters.operators.isAnyOf")}
+                value={
+                  selectedCreatedAtFilters.length === 1
+                    ? t(
+                        `tasks:boardFilters.createdDate.${selectedCreatedAtFilters[0]}`,
+                      )
+                    : t("tasks:boardFilters.selectedCount", {
+                        count: selectedCreatedAtFilters.length,
+                      })
+                }
+                onClear={() => updateFilter("createdAt", null)}
               />
             )}
 

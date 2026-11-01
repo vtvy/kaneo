@@ -4,6 +4,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import queryClient from "@/query-client";
 import "@/index.css";
+import { NotFound } from "@/components/common/not-found";
 import { useAuth } from "@/components/providers/auth-provider/hooks/use-auth";
 import { KeyboardShortcutsHelp } from "./components/keyboard-shortcuts-help";
 import AuthProvider from "./components/providers/auth-provider";
@@ -35,6 +36,7 @@ console.log(`
 
 const router = createRouter({
   routeTree,
+  defaultNotFoundComponent: NotFound,
   defaultPreload: "intent",
   defaultPreloadStaleTime: 0,
   context: {

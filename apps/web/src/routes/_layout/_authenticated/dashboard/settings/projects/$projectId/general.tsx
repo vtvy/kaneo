@@ -45,6 +45,7 @@ import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
 import { toast } from "@/lib/toast";
+import { getWorkspaceDestination } from "@/lib/workspace-destination";
 import useProjectStore from "@/store/project.ts";
 
 export const Route = createFileRoute(
@@ -315,10 +316,7 @@ function RouteComponent() {
 
       await queryClient.invalidateQueries({ queryKey: ["projects"] });
 
-      navigate({
-        to: "/dashboard/workspace/$workspaceId",
-        params: { workspaceId: workspace?.id || "" },
-      });
+      navigate(getWorkspaceDestination(workspace?.id));
     } catch (error) {
       toast.error(
         error instanceof Error

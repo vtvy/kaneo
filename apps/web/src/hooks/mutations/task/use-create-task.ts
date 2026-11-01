@@ -16,6 +16,8 @@ function useCreateTask() {
       startDate,
       dueDate,
       priority,
+      points,
+      sprintId,
     }: CreateTaskRequest) =>
       createTask(
         title,
@@ -26,6 +28,8 @@ function useCreateTask() {
         startDate ? new Date(startDate) : undefined,
         dueDate ? new Date(dueDate) : undefined,
         priority,
+        points,
+        sprintId,
       ),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
@@ -35,6 +39,15 @@ function useCreateTask() {
       void queryClient.invalidateQueries({
         queryKey: ["all-project-tasks", variables.projectId],
       });
+      // A task created into a sprint changes that sprint's list and totals.
+      if (variables.sprintId) {
+        void queryClient.invalidateQueries({
+          queryKey: ["sprints", variables.projectId],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["sprint-tasks", variables.sprintId],
+        });
+      }
     },
   });
 }

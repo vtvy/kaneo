@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { SquircleDashed, Target, X } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,6 +12,8 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
+import useAssignTaskToSprint from "@/hooks/mutations/sprint/use-assign-task-to-sprint";
+import useRemoveTaskFromSprint from "@/hooks/mutations/sprint/use-remove-task-from-sprint";
 import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
 import { useUpdateTaskAssignee } from "@/hooks/mutations/task/use-update-task-assignee";
 import { useUpdateTaskDescription } from "@/hooks/mutations/task/use-update-task-description";
@@ -20,6 +22,7 @@ import { useUpdateTaskStatus } from "@/hooks/mutations/task/use-update-task-stat
 import { useUpdateTaskPriority } from "@/hooks/mutations/task/use-update-task-status-priority";
 import { useUpdateTaskTitle } from "@/hooks/mutations/task/use-update-task-title";
 import { useGetColumns } from "@/hooks/queries/column/use-get-columns";
+import useGetSprintsByProject from "@/hooks/queries/sprint/use-get-sprints-by-project";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { useProjectPermission } from "@/hooks/use-project-permission";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
@@ -29,7 +32,15 @@ import { getPriorityLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
 import { toast } from "@/lib/toast";
 import useProjectStore from "@/store/project";
+import type { Sprint } from "@/types/sprint";
 import type Task from "@/types/task";
+
+// Show active first, then planned/future, then completed.
+const sprintStateOrder: Record<Sprint["state"], number> = {
+  active: 0,
+  future: 1,
+  completed: 2,
+};
 
 type TaskCardContext = {
   worskpaceId: string;
@@ -74,6 +85,11 @@ export default function TaskCardContextMenuContent({
   const { mutateAsync: updateTaskTitle } = useUpdateTaskTitle();
   const { mutateAsync: updateTaskDescription } = useUpdateTaskDescription();
   const { mutateAsync: updateTaskDueDate } = useUpdateTaskDueDate();
+  const { mutateAsync: assignTaskToSprint } = useAssignTaskToSprint();
+  const { mutateAsync: removeTaskFromSprint } = useRemoveTaskFromSprint();
+  const { data: sprints = [] } = useGetSprintsByProject(
+    taskCardContext.projectId,
+  );
   const { canManageTasks, canAssignTasks } = useWorkspacePermission();
   const { can: canProject, isCheckingPermissions } = useProjectPermission(
     task.projectId,
@@ -87,6 +103,42 @@ export default function TaskCardContextMenuContent({
   const canAssign =
     canAssignTasks() ||
     (!isCheckingPermissions && canProject("item", "assign"));
+
+  const sortedSprints = useMemo(
+    () =>
+      [...sprints].sort(
+        (a, b) => sprintStateOrder[a.state] - sprintStateOrder[b.state],
+      ),
+    [sprints],
+  );
+
+  const handleAssignSprint = async (sprintId: string) => {
+    if (task.sprintId === sprintId) return;
+    try {
+      await assignTaskToSprint({ id: sprintId, taskId: task.id });
+      toast.success(t("common:sprints.taskAssigned"));
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("common:sprints.taskAssignError"),
+      );
+    }
+  };
+
+  const handleRemoveSprint = async () => {
+    if (!task.sprintId) return;
+    try {
+      await removeTaskFromSprint({ id: task.sprintId, taskId: task.id });
+      toast.success(t("common:sprints.taskMovedToBacklog"));
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("common:sprints.taskRemoveError"),
+      );
+    }
+  };
 
   const usersOptions = useMemo(() => {
     return workspaceUsers?.members?.map((member) => ({
@@ -197,6 +249,41 @@ export default function TaskCardContextMenuContent({
               >
                 {getColumnIcon(col.slug, col.isFinal, col.icon)}
                 <span>{col.name}</span>
+              </ContextMenuCheckboxItem>
+            ))}
+          </ContextMenuSubContent>
+        </ContextMenuSub>
+      )}
+
+      {canEdit && (
+        <ContextMenuSub>
+          <ContextMenuSubTrigger>
+            <span>{t("tasks:contextMenu.sprint")}</span>
+          </ContextMenuSubTrigger>
+          <ContextMenuSubContent className="w-56">
+            <ContextMenuCheckboxItem
+              checked={!task.sprintId}
+              onCheckedChange={() => {
+                void handleRemoveSprint();
+              }}
+              closeOnClick
+              className="[&_svg]:text-muted-foreground"
+            >
+              <SquircleDashed className="h-4 w-4" />
+              <span>{t("common:sprints.noSprintBacklog")}</span>
+            </ContextMenuCheckboxItem>
+            {sortedSprints.map((sprint) => (
+              <ContextMenuCheckboxItem
+                key={sprint.id}
+                checked={task.sprintId === sprint.id}
+                onCheckedChange={() => {
+                  void handleAssignSprint(sprint.id);
+                }}
+                closeOnClick
+                className="[&_svg]:text-muted-foreground"
+              >
+                <Target className="h-4 w-4" />
+                <span className="truncate">{sprint.name}</span>
               </ContextMenuCheckboxItem>
             ))}
           </ContextMenuSubContent>

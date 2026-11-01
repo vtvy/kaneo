@@ -2,6 +2,7 @@ import {
   CalendarDays,
   ChevronRight,
   CircleCheck,
+  Hash,
   Pencil,
   Target,
   Trash2,
@@ -192,6 +193,18 @@ function SprintCard({
             {sprint.startDate ? formatDateMedium(sprint.startDate) : "—"}
             {" → "}
             {sprint.endDate ? formatDateMedium(sprint.endDate) : "—"}
+          </span>
+        )}
+        {sprint.totalTasks != null && sprint.totalTasks > 0 && (
+          <span
+            className="flex items-center gap-1.5"
+            title={t("common:sprints.pointsTotalTitle")}
+          >
+            <Hash className="h-3.5 w-3.5" />
+            {t("common:sprints.pointsTotal", {
+              completed: sprint.completedPoints ?? 0,
+              total: sprint.totalPoints ?? 0,
+            })}
           </span>
         )}
       </div>

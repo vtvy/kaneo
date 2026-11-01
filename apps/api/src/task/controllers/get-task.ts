@@ -24,6 +24,8 @@ async function getTask(taskId: string) {
       assigneeName: userTable.name,
       assigneeId: userTable.id,
       projectId: taskTable.projectId,
+      sprintId: taskTable.sprintId,
+      points: taskTable.points,
       reporterId: taskTable.reporterId,
       reporterName: reporterUser.name,
       reporterImage: reporterUser.image,

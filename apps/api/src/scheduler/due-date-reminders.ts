@@ -2,6 +2,7 @@ import { and, between, eq, isNotNull, isNull, or } from "drizzle-orm";
 import db from "../database";
 import {
   columnTable,
+  projectTable,
   taskReminderSentTable,
   taskTable,
 } from "../database/schema";
@@ -49,8 +50,10 @@ async function getTasksNeedingReminder(
       userId: taskTable.userId,
       dueDate: taskTable.dueDate,
       projectId: taskTable.projectId,
+      workspaceId: projectTable.workspaceId,
     })
     .from(taskTable)
+    .leftJoin(projectTable, eq(taskTable.projectId, projectTable.id))
     .leftJoin(columnTable, eq(taskTable.columnId, columnTable.id))
     .leftJoin(
       taskReminderSentTable,
@@ -80,6 +83,7 @@ async function processReminder(
     userId: string | null;
     dueDate: Date | null;
     projectId: string;
+    workspaceId: string | null;
   },
   reminderType: ReminderType,
   notificationType: "due_date_reminder" | "task_overdue",
@@ -114,6 +118,9 @@ async function processReminder(
       taskTitle: task.title,
       reminderType,
       dueDate: task.dueDate?.toISOString() ?? null,
+      // Needed for the in-app notification to deep-link to the task.
+      projectId: task.projectId,
+      workspaceId: task.workspaceId,
     },
     resourceId: task.id,
     resourceType: "task",
