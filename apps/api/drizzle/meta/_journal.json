@@ -379,6 +379,13 @@
 			"when": 1793631200000,
 			"tag": "0053_work_item_hierarchy",
 			"breakpoints": true
+		},
+		{
+			"idx": 54,
+			"version": "7",
+			"when": 1793631200001,
+			"tag": "0054_manual_test_plans",
+			"breakpoints": true
 		}
 	]
 }

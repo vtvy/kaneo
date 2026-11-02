@@ -1,4 +1,5 @@
 export const PROJECT_PERMISSION_CATALOG = {
+  test: ["read", "design", "manage", "execute"],
   item: ["create", "read", "update", "delete", "transition", "assign"],
   sprint: ["create", "start", "complete", "manage"],
   backlog: ["read", "manage"],
@@ -28,6 +29,7 @@ export const DEFAULT_PROJECT_ROLE_PAYLOADS: Record<
   ProjectPermissionMap
 > = {
   Owner: {
+    test: allOf("test"),
     item: allOf("item"),
     sprint: allOf("sprint"),
     backlog: allOf("backlog"),
@@ -36,12 +38,14 @@ export const DEFAULT_PROJECT_ROLE_PAYLOADS: Record<
     member: allOf("member"),
   },
   Member: {
+    test: allOf("test"),
     item: ["create", "read", "update", "transition", "assign"],
     sprint: ["create", "start", "complete", "manage"],
     backlog: ["read", "manage"],
     doc: ["view", "upload", "manage"],
   },
   Viewer: {
+    test: ["read"],
     item: ["read"],
     backlog: ["read"],
     doc: ["view"],

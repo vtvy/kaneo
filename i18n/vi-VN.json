@@ -1498,7 +1498,8 @@
 				"backlog": "Danh sách tồn đọng",
 				"doc": "Tài liệu",
 				"role": "Vai trò",
-				"member": "Thành viên"
+				"member": "Thành viên",
+				"test": "Kế hoạch kiểm thử"
 			},
 			"permissions": {
 				"item": {
@@ -1583,6 +1584,24 @@
 					"manage": {
 						"label": "Quản lý thành viên",
 						"description": "Thêm, xóa và gán vai trò cho thành viên dự án."
+					}
+				},
+				"test": {
+					"read": {
+						"label": "Xem kế hoạch kiểm thử",
+						"description": "Xem test case, lần chạy, kết quả và báo cáo trong dự án."
+					},
+					"design": {
+						"label": "Thiết kế test case",
+						"description": "Tạo, chỉnh sửa và ngừng sử dụng test case."
+					},
+					"manage": {
+						"label": "Quản lý kế hoạch kiểm thử",
+						"description": "Quản lý plan, suite và các case; giám sát việc thực thi."
+					},
+					"execute": {
+						"label": "Thực thi kiểm thử thủ công",
+						"description": "Tạo lần chạy và lưu kết quả kiểm thử được phân công."
 					}
 				}
 			},

@@ -230,6 +230,34 @@ tuyên bố upstream hiện thiếu mọi tính năng cùng tên.
 - Dùng `git diff BASE..FORK` để hiểu chủ đích local; dùng `BASE..UPSTREAM`
   để hiểu chủ đích upstream; diff hai tip chỉ cho trạng thái cuối khác nhau.
 
+### MAP-13 — Manual Test Plans MVP (sau Work Items)
+
+- Nhánh triển khai: `codex/manual-test-plans`; chưa xác nhận release/DB production.
+- Đây là module riêng ở cấp project, không đổi task checklist hoặc repository
+  unit tests thành Test Case. Menu Test Plans có Define/Execute/Runs/Reports.
+- Model chuẩn: `test_plan`, `test_suite`, `test_case`, `test_suite_case`,
+  `test_run`, `test_result`; migration `0054_manual_test_plans`.
+- Case có revision; mỗi run giữ snapshot bất biến. Retest tạo run mới theo case
+  Ready hiện tại. Không ghi đè lần Failed hoặc tự biến Not run thành Passed.
+- Backend: `apps/api/src/test-plan/`, `database/test-plan-schema.ts`.
+- Frontend: `apps/web/src/components/test-plans/`, route project `test-plans.tsx`.
+- Điều hướng project chuyển từ thanh ngang sang sidebar trái trong
+  `components/project-navigation.tsx`, được truyền qua ProjectLayout → Layout →
+  AppSidebar. Nhóm Boards gồm Work items/Boards/Backlogs/Sprints; Test Plans là
+  nhóm riêng; Calendar/Gantt/Documents vẫn truy cập được. Workspace giữ menu
+  toàn cục; màn hình nhỏ giữ drawer và bộ chuyển view gọn ở header. Không khôi
+  phục thanh view ngang khi nhận thay đổi layout từ upstream.
+- Quyền project: `test.read/design/manage/execute`. Migration backfill dựa trên
+  quyền item/backlog thực tế, không reset role tùy chỉnh hoặc đoán theo tên role.
+- API `/api/test-plans/:projectId/*`; typed client riêng `testPlansClient` dùng
+  chung URL/cookie/window-ID nhưng không đưa vào union AppType quá lớn.
+- Evidence MVP là HTTP(S) links; tạo Bug draft và Save result là hai hành động.
+- Khi nhận upstream Test Plans: đối chiếu lifecycle, snapshot/revision, FK/scope,
+  quyền người được phân công, idempotency và công thức báo cáo trước thay module.
+  Không map outcome của test result vào status Task hoặc sửa run đã đóng.
+- Đọc [hợp đồng MVP và kiểm thử](apps/api/src/test-plan/README.md). Chưa có CI,
+  import unit-test results, shared steps hay dynamic suites trong phạm vi này.
+
 ## 6. Quy trình cập nhật upstream
 
 ### Trước khi tích hợp

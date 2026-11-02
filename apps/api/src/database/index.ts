@@ -97,10 +97,12 @@ import {
   workspaceTable,
   workspaceUserTable,
 } from "./schema";
+import * as testPlanSchema from "./test-plan-schema";
 
 config();
 
 export const schema = {
+  ...testPlanSchema,
   instanceRoleTable,
   instanceRoleAssignmentTable,
   instanceWebhookTable,
