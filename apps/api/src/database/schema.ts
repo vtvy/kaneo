@@ -1593,3 +1593,5 @@ export {
   instanceWebhookDeliveryTable,
   instanceWebhookTable,
 } from "./admin-schema";
+
+export * from "./test-plan-schema";

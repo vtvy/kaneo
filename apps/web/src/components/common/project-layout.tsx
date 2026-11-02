@@ -1,12 +1,4 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import {
-  Calendar,
-  CalendarDays,
-  Files,
-  Repeat,
-  SquareKanban,
-  SquircleDashed,
-} from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import MobileProjectNav from "@/components/common/header/mobile-project-nav";
@@ -14,8 +6,8 @@ import ProjectCrumbSelect from "@/components/common/header/project-crumb-select"
 import WorkspaceCrumbSelect from "@/components/common/header/workspace-crumb-select";
 import Layout from "@/components/common/layout";
 import NotificationDropdown from "@/components/notification/notification-dropdown";
+import { ProjectNavigation } from "@/components/project-navigation";
 import CreateProjectModal from "@/components/shared/modals/create-project-modal";
-import { Button } from "@/components/ui/button";
 import { KbdSequence } from "@/components/ui/kbd";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
@@ -40,6 +32,7 @@ type ProjectLayoutProps = {
   children: ReactNode;
   showViewSwitcher?: boolean;
   activeView?:
+    | "test-plans"
     | "work-items"
     | "backlog"
     | "board"
@@ -97,20 +90,27 @@ export default function ProjectLayout({
 
   const resolvedView =
     activeView ??
-    (location.pathname.includes("/work-items")
-      ? "work-items"
-      : location.pathname.includes("/backlog")
-        ? "backlog"
-        : location.pathname.includes("/calendar")
-          ? "calendar"
-          : location.pathname.includes("/gantt")
-            ? "gantt"
-            : location.pathname.includes("/sprints")
-              ? "sprints"
-              : location.pathname.includes("/documents")
-                ? "documents"
-                : "board");
+    (location.pathname.includes("/test-plans")
+      ? "test-plans"
+      : location.pathname.includes("/work-items")
+        ? "work-items"
+        : location.pathname.includes("/backlog")
+          ? "backlog"
+          : location.pathname.includes("/calendar")
+            ? "calendar"
+            : location.pathname.includes("/gantt")
+              ? "gantt"
+              : location.pathname.includes("/sprints")
+                ? "sprints"
+                : location.pathname.includes("/documents")
+                  ? "documents"
+                  : "board");
 
+  const handleNavigateToTestPlans = () =>
+    navigate({
+      to: "/dashboard/workspace/$workspaceId/project/$projectId/test-plans",
+      params: { workspaceId, projectId },
+    });
   const handleNavigateToWorkItems = () =>
     navigate({
       to: "/dashboard/workspace/$workspaceId/project/$projectId/work-items",
@@ -161,19 +161,21 @@ export default function ProjectLayout({
   const handleProjectSwitch = (nextProjectId: string) => {
     navigate({
       to:
-        resolvedView === "work-items"
-          ? "/dashboard/workspace/$workspaceId/project/$projectId/work-items"
-          : resolvedView === "backlog"
-            ? "/dashboard/workspace/$workspaceId/project/$projectId/backlog"
-            : resolvedView === "calendar"
-              ? "/dashboard/workspace/$workspaceId/project/$projectId/calendar"
-              : resolvedView === "gantt"
-                ? "/dashboard/workspace/$workspaceId/project/$projectId/gantt"
-                : resolvedView === "sprints"
-                  ? "/dashboard/workspace/$workspaceId/project/$projectId/sprints"
-                  : resolvedView === "documents"
-                    ? "/dashboard/workspace/$workspaceId/project/$projectId/documents"
-                    : "/dashboard/workspace/$workspaceId/project/$projectId/board",
+        resolvedView === "test-plans"
+          ? "/dashboard/workspace/$workspaceId/project/$projectId/test-plans"
+          : resolvedView === "work-items"
+            ? "/dashboard/workspace/$workspaceId/project/$projectId/work-items"
+            : resolvedView === "backlog"
+              ? "/dashboard/workspace/$workspaceId/project/$projectId/backlog"
+              : resolvedView === "calendar"
+                ? "/dashboard/workspace/$workspaceId/project/$projectId/calendar"
+                : resolvedView === "gantt"
+                  ? "/dashboard/workspace/$workspaceId/project/$projectId/gantt"
+                  : resolvedView === "sprints"
+                    ? "/dashboard/workspace/$workspaceId/project/$projectId/sprints"
+                    : resolvedView === "documents"
+                      ? "/dashboard/workspace/$workspaceId/project/$projectId/documents"
+                      : "/dashboard/workspace/$workspaceId/project/$projectId/board",
       params: {
         workspaceId,
         projectId: nextProjectId,
@@ -182,7 +184,18 @@ export default function ProjectLayout({
   };
 
   return (
-    <Layout>
+    <Layout
+      projectNavigation={
+        showViewSwitcher ? (
+          <ProjectNavigation
+            workspaceId={workspaceId}
+            projectId={projectId}
+            projectName={project?.name}
+            activeView={resolvedView}
+          />
+        ) : undefined
+      }
+    >
       <Layout.Header
         className={cn("h-11 border-border/80 px-2", {
           "bg-card/90 backdrop-blur": !!background,
@@ -229,6 +242,7 @@ export default function ProjectLayout({
                 projectId={projectId}
                 projectName={project?.name}
                 activeView={resolvedView}
+                onSelectTestPlans={handleNavigateToTestPlans}
                 onSelectWorkItems={handleNavigateToWorkItems}
                 onSelectBacklog={handleNavigateToBacklog}
                 onSelectBoard={handleNavigateToBoard}
@@ -240,92 +254,6 @@ export default function ProjectLayout({
                 onAddProject={() => setIsCreateProjectModalOpen(true)}
               />
             </div>
-
-            {showViewSwitcher && (
-              <div className="hidden h-8 items-center gap-0.5 rounded-lg border border-border/80 bg-background p-0.5 sm:inline-flex">
-                <Button
-                  size="xs"
-                  variant={
-                    resolvedView === "work-items" ? "secondary" : "ghost"
-                  }
-                  onClick={handleNavigateToWorkItems}
-                >
-                  Work items
-                </Button>
-                <Button
-                  variant={resolvedView === "backlog" ? "secondary" : "ghost"}
-                  size="xs"
-                  onClick={handleNavigateToBacklog}
-                  className={cn(
-                    "h-6 gap-1.5 rounded-md px-2 text-xs",
-                    resolvedView !== "backlog" && "text-muted-foreground",
-                  )}
-                >
-                  <SquircleDashed className="size-3.5" />
-                  Backlogs
-                </Button>
-                <Button
-                  variant={resolvedView === "board" ? "secondary" : "ghost"}
-                  size="xs"
-                  onClick={handleNavigateToBoard}
-                  className={cn(
-                    "h-6 gap-1.5 rounded-md px-2 text-xs",
-                    resolvedView !== "board" && "text-muted-foreground",
-                  )}
-                >
-                  <SquareKanban className="size-3.5" />
-                  Boards
-                </Button>
-                <Button
-                  variant={resolvedView === "calendar" ? "secondary" : "ghost"}
-                  size="xs"
-                  onClick={handleNavigateToCalendar}
-                  className={cn(
-                    "h-6 gap-1.5 rounded-md px-2 text-xs",
-                    resolvedView !== "calendar" && "text-muted-foreground",
-                  )}
-                >
-                  <Calendar className="size-3.5" />
-                  {t("tasks:calendar.title")}
-                </Button>
-                <Button
-                  variant={resolvedView === "gantt" ? "secondary" : "ghost"}
-                  size="xs"
-                  onClick={handleNavigateToGantt}
-                  className={cn(
-                    "h-6 gap-1.5 rounded-md px-2 text-xs",
-                    resolvedView !== "gantt" && "text-muted-foreground",
-                  )}
-                >
-                  <CalendarDays className="size-3.5" />
-                  Gantt
-                </Button>
-                <Button
-                  variant={resolvedView === "sprints" ? "secondary" : "ghost"}
-                  size="xs"
-                  onClick={handleNavigateToSprints}
-                  className={cn(
-                    "h-6 gap-1.5 rounded-md px-2 text-xs",
-                    resolvedView !== "sprints" && "text-muted-foreground",
-                  )}
-                >
-                  <Repeat className="size-3.5" />
-                  Sprints
-                </Button>
-                <Button
-                  variant={resolvedView === "documents" ? "secondary" : "ghost"}
-                  size="xs"
-                  onClick={handleNavigateToDocuments}
-                  className={cn(
-                    "h-6 gap-1.5 rounded-md px-2 text-xs",
-                    resolvedView !== "documents" && "text-muted-foreground",
-                  )}
-                >
-                  <Files className="size-3.5" />
-                  {t("documents:nav.title")}
-                </Button>
-              </div>
-            )}
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">

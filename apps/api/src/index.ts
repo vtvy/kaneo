@@ -76,6 +76,7 @@ import { getPrivateObject } from "./storage/s3";
 import task from "./task";
 import taskRelation from "./task-relation";
 import telegramIntegration from "./telegram-integration";
+import testPlans from "./test-plan";
 import timeEntry from "./time-entry";
 import user from "./user";
 import {
@@ -600,6 +601,7 @@ export function createApp() {
   const projectApi = api.route("/project", project);
   const taskApi = api.route("/task", task);
   const workItemsApi = api.route("/work-items", workItems);
+  const testPlansApi = api.route("/test-plans", testPlans);
   const dashboardApi = api.route("/dashboard", dashboard);
   const sprintApi = api.route("/sprint", sprint);
   const columnApi = api.route("/column", column);
@@ -806,6 +808,7 @@ export function createApp() {
     searchApi,
     slackIntegrationApi,
     sprintApi,
+    testPlansApi,
     workItemsApi,
     taskApi,
     taskRelationApi,
@@ -952,6 +955,7 @@ const {
   searchApi,
   slackIntegrationApi,
   sprintApi,
+  testPlansApi,
   workItemsApi,
   taskApi,
   taskRelationApi,
@@ -970,6 +974,8 @@ const isMainModule = isDirectApiEntry(process.argv[1]);
 if (isMainModule) {
   void startServer(injectWebSocket);
 }
+
+export type TestPlansApiType = typeof testPlansApi;
 
 export type AppType =
   | typeof configApi

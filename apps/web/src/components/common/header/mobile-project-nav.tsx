@@ -25,6 +25,7 @@ type MobileProjectNavProps = {
   projectId: string;
   projectName?: string;
   activeView:
+    | "test-plans"
     | "work-items"
     | "backlog"
     | "board"
@@ -32,6 +33,7 @@ type MobileProjectNavProps = {
     | "gantt"
     | "sprints"
     | "documents";
+  onSelectTestPlans?: () => void;
   onSelectWorkItems?: () => void;
   onSelectBoard: () => void;
   onSelectBacklog: () => void;
@@ -48,6 +50,7 @@ export default function MobileProjectNav({
   projectId,
   projectName,
   activeView,
+  onSelectTestPlans,
   onSelectWorkItems,
   onSelectBoard,
   onSelectBacklog,
@@ -90,6 +93,15 @@ export default function MobileProjectNav({
               {t("tasks:view.heading")}
             </p>
             <div className="grid grid-cols-3 gap-1">
+              {onSelectTestPlans && (
+                <button
+                  type="button"
+                  className="rounded-md p-2 text-xs"
+                  onClick={() => choose(onSelectTestPlans)}
+                >
+                  Test Plans
+                </button>
+              )}
               {onSelectWorkItems && (
                 <button
                   type="button"

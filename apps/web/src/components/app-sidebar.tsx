@@ -19,7 +19,12 @@ import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { FeedbackButton } from "./feedback/feedback-dialog";
 import Search from "./search";
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  projectNavigation,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  projectNavigation?: React.ReactNode;
+}) {
   const { setOpenMobile, toggleSidebar } = useSidebar();
   const pathname = useLocation({ select: (location) => location.pathname });
 
@@ -49,7 +54,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent className="overflow-hidden gap-1 py-1">
         <Search />
         <NavMain />
-        <NavProjects />
+        {projectNavigation ?? <NavProjects />}
       </SidebarContent>
       <SidebarFooter>
         <FeedbackButton />

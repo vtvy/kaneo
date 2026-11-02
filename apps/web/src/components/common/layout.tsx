@@ -10,6 +10,7 @@ import { useBackgroundStore } from "@/store/background";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 
 type LayoutProps = {
+  projectNavigation?: ReactNode;
   children: ReactNode;
   className?: string;
 };
@@ -45,7 +46,7 @@ function LayoutContent({ children, className }: ContentProps) {
   );
 }
 
-function Layout({ children, className }: LayoutProps) {
+function Layout({ children, className, projectNavigation }: LayoutProps) {
   const { sidebarDefaultOpen } = useUserPreferencesStore();
   const background = useBackgroundStore((state) => state.background);
 
@@ -62,7 +63,7 @@ function Layout({ children, className }: LayoutProps) {
           } as React.CSSProperties
         }
       >
-        <AppSidebar />
+        <AppSidebar projectNavigation={projectNavigation} />
         <SidebarInset
           className={cn(
             "m-2 flex flex-1 flex-col overflow-auto rounded-xl border border-border/80 bg-background shadow-sm/5",

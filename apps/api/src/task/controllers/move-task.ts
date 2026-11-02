@@ -7,6 +7,10 @@ import {
   projectTable,
   taskTable,
 } from "../../database/schema";
+import {
+  testCaseTable,
+  testResultTable,
+} from "../../database/test-plan-schema";
 import { publishEvent } from "../../events";
 import getNextTaskNumber from "./get-next-task-number";
 
@@ -104,6 +108,24 @@ async function moveTask({
       message: "Task is already in that project",
     });
   }
+
+  const [linkedCase, linkedResult] = await Promise.all([
+    db
+      .select({ id: testCaseTable.id })
+      .from(testCaseTable)
+      .where(eq(testCaseTable.requirementId, taskId))
+      .limit(1),
+    db
+      .select({ id: testResultTable.id })
+      .from(testResultTable)
+      .where(eq(testResultTable.bugId, taskId))
+      .limit(1),
+  ]);
+  if (linkedCase.length || linkedResult.length)
+    throw new HTTPException(400, {
+      message:
+        "This work item is referenced by Test Plans. Keep it in this project or create a copy in the destination.",
+    });
 
   const child = await db.query.taskTable.findFirst({
     where: eq(taskTable.parentId, taskId),

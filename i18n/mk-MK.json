@@ -1498,7 +1498,8 @@
 				"backlog": "Backlog",
 				"doc": "Documents",
 				"role": "Roles",
-				"member": "Members"
+				"member": "Members",
+				"test": "Test Plans"
 			},
 			"permissions": {
 				"item": {
@@ -1583,6 +1584,24 @@
 					"manage": {
 						"label": "Manage members",
 						"description": "Add, remove, and assign roles to project members."
+					}
+				},
+				"test": {
+					"read": {
+						"label": "View Test Plans",
+						"description": "View cases, snapshots, runs and reports in this project."
+					},
+					"design": {
+						"label": "Design test cases",
+						"description": "Create, revise and retire test cases."
+					},
+					"manage": {
+						"label": "Manage test plans and suites",
+						"description": "Manage plans, suites and case membership; supervise test execution."
+					},
+					"execute": {
+						"label": "Execute manual tests",
+						"description": "Start runs and save results for assigned tests."
 					}
 				}
 			},
